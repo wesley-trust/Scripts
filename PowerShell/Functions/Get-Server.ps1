@@ -38,7 +38,7 @@ Function Get-Server () {
         [Parameter(
             Mandatory=$True,
             Position=2,
-            HelpMessage="Enter the FQDN",
+            HelpMessage="Enter in DN format",
             ValueFromPipeLine=$true,
             ValueFromPipeLineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]

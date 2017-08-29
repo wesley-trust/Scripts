@@ -6,12 +6,12 @@
 #References:
 
 .Synopsis
-    Script to get a domain controller from a domain name
+    Script that resolves a domain controller from a domain name.
 .Description
-    Script to get a domain controller from a domain name, when using an AD integrated DNS zone for the domain
+    Script that resolves a domain controller from a domain name, when using an AD integrated DNS zone for the domain.
 .Example
-    Specify domain name
-    Get-DC -Domain "DOMANNAME"
+    Specify the fully qualified Domain Name (FQDN) and Organisational Unit (OU) by distinguished name (DN).
+    Configure-Drive -Domain $Domain -OU $OU
 .Example
     
 
@@ -29,10 +29,24 @@ Function Get-DC () {
         [ValidateNotNullOrEmpty()]
         [String]
         $Domain)
+    
     #Get start of authority of domain
     $DC = Resolve-DnsName $Domain -Type SOA
+    
     #Select primary server, convert to string
     $DC= $DC.PrimaryServer.ToString()
-    #Return string
-    $DC
+    
+    #Write message to host
+    Write-Host ""
+    If ($DC -eq $null){
+        Write-Error "Unable to resolve a domain controller" -ErrorAction Stop
     }
+    Else{
+        Write-Host "Found Domain Controller"
+        Write-Host ""
+        
+    }
+    
+    #Return domain controller
+    Return $DC
+}

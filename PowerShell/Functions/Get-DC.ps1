@@ -2,7 +2,7 @@
 #Script name: Get domain controller from domain name
 #Creator: Wesley Trust
 #Date: 2017-08-28
-#Revision:
+#Revision: 2
 #References:
 
 .Synopsis

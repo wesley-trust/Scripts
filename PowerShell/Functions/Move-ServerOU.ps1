@@ -2,7 +2,7 @@
 #Script name: Get servers from an OU
 #Creator: Wesley Trust
 #Date: 2017-08-28
-#Revision: 3
+#Revision: UNFINISHED
 #References:
 
 .Synopsis
@@ -85,7 +85,10 @@ Function Get-Server () {
     $ServerGroup = Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
 
         #Get Servers within OU
-        Get-ADComputer -Filter * -SearchBase $Using:OU | Select-Object -ExpandProperty DNSHostName
+        Get-ADObject -Filter * -SearchBase $OU
+        #Move AD Object to OU
+        $Server | Move-ADObject -TargetPath $Using:TargetOU
+
     }
     
     #Remove session

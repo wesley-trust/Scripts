@@ -2,7 +2,7 @@
 #Script name: Run server command template
 #Creator: Wesley Trust
 #Date: 2017-08-28
-#Revision:
+#Revision: 3
 #References:
 
 .Synopsis
@@ -26,7 +26,7 @@ function New-ServerCommand () {
     Param(
         #Request Domain
         [Parameter(
-            Mandatory=$True,
+            Mandatory=$true,
             Position=1,
             HelpMessage="Enter the FQDN",
             ValueFromPipeLine=$true,
@@ -37,7 +37,7 @@ function New-ServerCommand () {
         
         #Request OU
         [Parameter(
-            Mandatory=$True,
+            Mandatory=$true,
             Position=2,
             HelpMessage="Enter in DN format",
             ValueFromPipeLine=$true,
@@ -45,58 +45,29 @@ function New-ServerCommand () {
         [ValidateNotNullOrEmpty()]
         [String]
         $OU)
-    
-    #Storage
-    $Volume = "Data"
-    $VirtualDisk = $Volume+"VD"
-    $StoragePool = $Volume+"SP"
 
-    #If there are no credentials, prompt for credentials
+    #Credentials
+    #Prompt if no credentials stored
     if ($Credential -eq $null) {
         Write-Output "Enter credentials for remote computer"
         $Credential = Get-Credential
     }
     
-    #Get Servers
-    $ServerGroup = Test-Server -Domain $Domain -OU $OU
-    
-    #Check server name(s) returned
-    if ($ServerGroup -eq $null){
+    #If there are no servers in array, get servers that can successfully be connected to
+    if ($ServerSuccessGroup -eq $Null) {
+        $ServerSuccessGroup = Get-SuccessServer -Domain $Domain -OU $OU
+        
+        #Display the servers returned for confirmation
         Write-Host ""
-        Write-Error 'No servers returned.' -ErrorAction Stop
-    }
-
-    #Add successfully connected servers to variable
-    $ServerSuccessGroup = $ServerGroup | Where-Object -Property Status -eq "Success"
-    #Add failed to connect servers to variable
-    $ServerFailGroup = $ServerGroup | Where-Object -Property Status -eq "Fail"
-    
-    #Check whether no servers are successful.
-    If ($ServerSuccessGroup -eq $null){
-        Write-Error "Unable to connect to any servers." -ErrorAction Stop
-    }
-
-    #Display host message for successfully connected servers.
-    Write-Host ""
-    Write-Host "Successfully connected to:"
-    Write-Host ""
-    Write-Output $ServerSuccessGroup.name
-    Write-Host ""
-
-    #Check if there are any servers that failed.
-    If ($ServerFailGroup -eq $null){
-    }
-    #If there are servers that failed, display a host message.
-    Else {
-        Write-Host "Failed to connect to:"
+        Write-Host "Servers that can successfully be connected to:"
         Write-Host ""
-        Write-Output $ServerFailGroup.name
+        Write-Output $ServerSuccessGroup.name
         Write-Host ""
     }
     
     #Prompt for input
     while ($choice -notmatch "[y|n]"){
-        $choice = read-host "Run command on successful servers? (Y/N)"
+        $choice = read-host "Run command on servers? (Y/N)"
         
     }
     if ($choice -eq "y"){

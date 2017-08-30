@@ -2,7 +2,7 @@
 #Script name: Test connection to server
 #Creator: Wesley Trust
 #Date: 2017-08-28
-#Revision: 2
+#Revision: 3
 #References:
 
 .Synopsis
@@ -93,4 +93,49 @@ function Test-Server () {
         Continue
     }
     Return $ServerGroup
+}
+
+function Get-SuccessServer () {
+    #Parameters
+    Param(
+        #Request Domain
+        [Parameter(
+            Mandatory=$True,
+            Position=1,
+            HelpMessage="Enter the FQDN",
+            ValueFromPipeLine=$true,
+            ValueFromPipeLineByPropertyName=$true)]
+        [ValidateNotNullOrEmpty()]
+        [String]
+        $Domain,
+        #Request OU
+        [Parameter(
+            Mandatory=$True,
+            Position=2,
+            HelpMessage="Enter in DN format",
+            ValueFromPipeLine=$true,
+            ValueFromPipeLineByPropertyName=$true)]
+        [ValidateNotNullOrEmpty()]
+        [String]
+        $OU
+        )
+       
+    $ServerGroup = Test-Server -Domain $Domain -OU $OU
+        
+    #Check server name(s) are returned
+    if ($ServerGroup -eq $null){
+        Write-Host ""
+        Write-Error 'No servers returned.' -ErrorAction Stop
+        }
+    
+    #Add successfully connected servers to variable
+    $ServerSuccessGroup = $ServerGroup | Where-Object -Property Status -eq "Success"
+    
+    #Check whether no servers are successful.
+    If ($ServerSuccessGroup -eq $null){
+        Write-Error "Unable to connect to any servers." -ErrorAction Stop
+    }
+    
+    #Return servers
+    Return $ServerSuccessGroup
 }

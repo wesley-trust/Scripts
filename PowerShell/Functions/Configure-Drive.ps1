@@ -2,7 +2,7 @@
 #Script name: Configure data drives
 #Creator: Wesley Trust
 #Date: 2017-08-28
-#Revision: 2
+#Revision: 3
 #References:
 
 .Synopsis
@@ -26,7 +26,7 @@ function Configure-Drive () {
     Param(
         #Request Domain
         [Parameter(
-            Mandatory=$True,
+            Mandatory=$true,
             Position=1,
             HelpMessage="Enter the FQDN",
             ValueFromPipeLine=$true,
@@ -37,7 +37,7 @@ function Configure-Drive () {
         
         #Request OU
         [Parameter(
-            Mandatory=$True,
+            Mandatory=$true,
             Position=2,
             HelpMessage="Enter in DN format",
             ValueFromPipeLine=$true,
@@ -46,54 +46,31 @@ function Configure-Drive () {
         [String]
         $OU)
     
+    #Credentials
+    #Prompt if no credentials stored
+    if ($Credential -eq $null) {
+        Write-Output "Enter credentials for remote computer"
+        $Credential = Get-Credential
+    }
+        
+    #Script Variables
     #Storage
     $Volume = "Data"
     $VirtualDisk = $Volume+"VD"
     $StoragePool = $Volume+"SP"
 
-    #If there are no credentials, prompt for credentials
-    if ($Credential -eq $null) {
-        Write-Output "Enter credentials for remote computer"
-        $Credential = Get-Credential
-    }
-    
-    #Get Servers
-    $ServerGroup = Test-Server -Domain $Domain -OU $OU
-    
-    #Check server name(s) returned
-    if ($ServerGroup -eq $null){
+    #If there are no servers array, get servers that can successfully be connected to
+    if ($ServerSuccessGroup -eq $Null) {
+        $ServerSuccessGroup = Get-SuccessServer -Domain $Domain -OU $OU
+        
+        #Display the servers returned for confirmation
         Write-Host ""
-        Write-Error 'No servers returned.' -ErrorAction Stop
-    }
-
-    #Add successfully connected servers to variable
-    $ServerSuccessGroup = $ServerGroup | Where-Object -Property Status -eq "Success"
-    #Add failed to connect servers to variable
-    $ServerFailGroup = $ServerGroup | Where-Object -Property Status -eq "Fail"
-    
-    #Check whether no servers are successful.
-    If ($ServerSuccessGroup -eq $null){
-        Write-Error "Unable to connect to any servers." -ErrorAction Stop
-    }
-
-    #Display host message for successfully connected servers.
-    Write-Host ""
-    Write-Host "Successfully connected to:"
-    Write-Host ""
-    Write-Output $ServerSuccessGroup.name
-    Write-Host ""
-
-    #Check if there are any servers that failed.
-    If ($ServerFailGroup -eq $null){
-    }
-    #If there are servers that failed, display a host message.
-    Else {
-        Write-Host "Failed to connect to:"
+        Write-Host "Servers that can successfully be connected to:"
         Write-Host ""
-        Write-Output $ServerFailGroup.name
+        Write-Output $ServerSuccessGroup.name
         Write-Host ""
     }
-    
+ 
     #Prompt for input
     while ($choice -notmatch "[y|n]"){
         $choice = read-host "Configure the data drives on servers that are accessible? (Y/N)"
@@ -107,7 +84,7 @@ function Configure-Drive () {
         foreach ($Server in $ServerSuccessGroup) {
                 $Session = New-PSSession -ComputerName $Server.name -Credential $Credential
                 
-                #Run command in remote session for servers
+                #Run command in remote session for server
                 Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
                     
                     #Provision storage
@@ -141,7 +118,7 @@ function Configure-Drive () {
     }
 	else {  
         Write-Host ""
-        write-Error "Operation cancelled"
+        write-Error "Operation cancelled" -ErrorAction Stop
         Write-Host ""
     }
 }

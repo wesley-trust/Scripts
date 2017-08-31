@@ -62,6 +62,9 @@ function Test-Server () {
     #Write message to host
     Write-Host "Testing remote connection to servers"
 
+    #Select DNS host name from server objects returned
+    $ServerGroup = $ServerGroup | Select-Object -ExpandProperty DNSHostName
+
     #Try connecting to server
     $ServerGroup = foreach ($Server in $ServerGroup){
         try {

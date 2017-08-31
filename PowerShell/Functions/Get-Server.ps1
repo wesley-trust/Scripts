@@ -67,6 +67,7 @@ Function Get-Server () {
         Write-Error "Unable to ping '$DC'" -ErrorAction Stop
         }
     
+    #Try remotely connecting to domain controller
     try {
         #Create PowerShell session
         $Session = New-PSSession -ComputerName $DC -Credential $Credential
@@ -85,7 +86,7 @@ Function Get-Server () {
     $ServerGroup = Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
 
         #Get Servers within OU
-        Get-ADComputer -Filter * -SearchBase $Using:OU | Select-Object -ExpandProperty DNSHostName
+        Get-ADComputer -Filter * -SearchBase $Using:OU
     }
     
     #Remove session
@@ -94,10 +95,9 @@ Function Get-Server () {
     #Check if servers are returned
     if ($ServerGroup -eq $Null) {
         Write-Host ""
-        Write-Error "No servers returned."
+        Write-Error "No servers returned." -ErrorAction Stop
     }
     else {
-        Write-Host ""
         Return $ServerGroup
     }
 } 

@@ -42,7 +42,7 @@ Function Get-DC () {
         Write-Error "Unable to resolve a domain controller" -ErrorAction Stop
     }
     Else{
-        Write-Host "Found Domain Controller"
+        Write-Host "Resolve Domain Controller"
         Write-Host ""
         
     }

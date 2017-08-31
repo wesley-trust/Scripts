@@ -53,7 +53,7 @@ function Configure-Drive () {
         $Credential = Get-Credential
     }
         
-    #Script Variables
+    #Function Variables
     #Storage
     $Volume = "Data"
     $VirtualDisk = $Volume+"VD"
@@ -110,8 +110,6 @@ function Configure-Drive () {
                     Write-Host ""
                     Write-Host "Successfully configured data drives on "$Server.name
                     Write-Host ""
-                    
-                    #Set permissions to drive
                     
             }
         }

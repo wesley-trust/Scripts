@@ -1,18 +1,18 @@
 <#
-#Script name: Get servers from an OU
+#Script name: Move servers to new OU
 #Creator: Wesley Trust
 #Date: 2017-08-28
 #Revision: UNFINISHED
 #References:
 
 .Synopsis
-    Script that calls a function to resolve the domain controller, from the domain, and gets the servers from within an OU.
+    Script that calls a function to resolve the domain controller, then asks whether to move the servers to a new OU.
 .Description
-    Script that calls a function to resolve the domain controller, from the domain, and gets the servers from within an OU,
-    with the results put in an array.
+    Script that calls a function to resolve the domain controller, then asks whether to move the servers to a new OU.
 .Example
-    Specify the fully qualified Domain Name (FQDN) and Organisational Unit (OU) by distinguished name (DN).
-    Configure-Drive -Domain $Domain -OU $OU
+    Specify the fully qualified Domain Name (FQDN) and Organisational Unit (OU, MoveOU) by distinguished name (DN).
+    MoveOU is an optional parameter.
+    Configure-Drive -Domain $Domain -OU $OU -MoveOU $MoveOU
 .Example
     
 
@@ -20,8 +20,9 @@
 
 #Include Functions
 . .\Get-DC.ps1
+. .\Get-Server.ps1
 
-Function Get-Server () {
+Function Move-OU () {
     #Parameters
     Param(
         #Request Domain
@@ -34,6 +35,7 @@ Function Get-Server () {
         [ValidateNotNullOrEmpty()]
         [String]
         $Domain,
+        
         #Request OU
         [Parameter(
             Mandatory=$True,
@@ -43,7 +45,18 @@ Function Get-Server () {
             ValueFromPipeLineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
         [String]
-        $OU
+        $OU,
+
+        #Request New OU to move servers to
+        [Parameter(
+            Mandatory=$false,
+            Position=3,
+            HelpMessage="Enter in DN format",
+            ValueFromPipeLine=$true,
+            ValueFromPipeLineByPropertyName=$true)]
+        [ValidateNotNullOrEmpty()]
+        [String]
+        $MoveOU
         )
     
     #If there are no credentials, prompt for credentials
@@ -52,55 +65,73 @@ Function Get-Server () {
         $Credential = Get-Credential
     }
 
-    #Get DC and store in variable
-    $DC = Get-DC -Domain $Domain
-
-    #Attempting conection to domain controller
-    Write-Host "Attempting conection to $DC"
-
-    #Try pinging domain controller
-    Try {
-        Test-Connection $DC -Count 1 | Out-Null
-        }
-    Catch {
-        Write-Host ""
-        Write-Error "Unable to ping '$DC'" -ErrorAction Stop
-        }
+    #Get Servers
+    $ServerGroup = Get-Server -Domain $Domain -OU $OU
     
-    try {
-        #Create PowerShell session
-        $Session = New-PSSession -ComputerName $DC -Credential $Credential
-    }
-    catch {
-        Write-Error "Failed to remotely connect to $DC" -ErrorAction Stop
+    #Check server name(s) returned
+    if ($ServerGroup -eq $null){
+        Write-Error 'No servers returned.' -ErrorAction Stop
     }
 
-    #Write message to host
+    #List server names returned
     Write-Host ""
-    Write-Host "Getting servers within OU:"
+    Write-Host "Servers:"
     Write-Host ""
-    Write-Host $OU
-    
-    #Invoke remote command within open session
-    $ServerGroup = Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
-
-        #Get Servers within OU
-        Get-ADObject -Filter * -SearchBase $OU
-        #Move AD Object to OU
-        $Server | Move-ADObject -TargetPath $Using:TargetOU
-
+    #Write server name per line
+    foreach ($Server in $ServerGroup){
+        Write-Host $Server.name
     }
-    
-    #Remove session
-    Remove-pssession -Session $Session
-    
-    #Check if servers are returned
-    if ($ServerGroup -eq $Null) {
-        Write-Host ""
-        Write-Error "No servers returned."
+    Write-Host ""
+
+    #Prompt for input
+    while ($choice -notmatch "[y|n]"){
+        $choice = read-host "Move servers to new OU? (Y/N)"
+        
     }
-    else {
+    if ($choice -eq "y"){
+        
+        #Request new OU if parameter not specified
+        If ($MoveOU -eq $null){
+            $MoveOU = Read-Host "Specify OU to move servers to"
+        }
+       
+        #Get Domain controller
+        $DC = Get-DC -Domain $Domain
+
+        #Try connecting to domain controller
+        try {
+            #Create PowerShell session
+            $Session = New-PSSession -ComputerName $DC -Credential $Credential
+        }
+        catch {
+            Write-Error "Failed to remotely connect to $DC" -ErrorAction Stop
+        }
+
+        #Invoke remote command within open session
+        $ServerGroup = Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
+            
+            #Get computer objects and move to new OU
+            Get-ADComputer -Filter * -SearchBase $Using:OU | Move-ADObject -TargetPath $Using:MoveOU
+            Get-ADComputer -Filter * -SearchBase $Using:MoveOU
+        }
+
+        #Remove session
+        Remove-pssession -Session $Session
+
+        #Check if servers are returned
+        if ($ServerGroup -eq $Null) {
+            Write-Error "No servers returned." -ErrorAction Stop
+        }
+        else {
+            #Return servers
+            Write-Host "Servers moved to new OU"
+            Return $ServerGroup
+
+        }
+    }
+    else {  
         Write-Host ""
+        write-output "Servers will remain in current OU"
         Return $ServerGroup
     }
-} 
+}

@@ -66,6 +66,9 @@ function Post-VMProvision () {
         $Credential = Get-Credential
     }
     
+    #Get Servers
+    $ServerGroup = Get-Server -Domain $Domain -OU $OU
+
     #Check if server requires moving to new OU
     Move-OU -Domain $Domain -OU $OU
 

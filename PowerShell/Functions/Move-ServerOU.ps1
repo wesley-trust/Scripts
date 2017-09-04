@@ -30,7 +30,6 @@ Function Move-ServerOU () {
             Mandatory=$false,
             Position=1,
             HelpMessage="Enter the FQDN",
-            ValueFromPipeLine=$true,
             ValueFromPipeLineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
         [String]
@@ -41,7 +40,6 @@ Function Move-ServerOU () {
             Mandatory=$false,
             Position=2,
             HelpMessage="Enter in DN format",
-            ValueFromPipeLine=$true,
             ValueFromPipeLineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
         [String]
@@ -59,25 +57,20 @@ Function Move-ServerOU () {
         #Servers
         [Parameter(
             Mandatory=$false,
-            ValueFromPipeLine=$true,
             ValueFromPipeLineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
         [string]
         $DNSHostName
         )
-        
-        #If there are no credentials, prompt for credentials
-        if ($Credential -eq $null) {
-            Write-Output "Enter credentials for remote computer"
-            $Credential = Get-Credential
-        }
        
         #Get Servers
-        if ($Domain -ne $null -and $OU -ne $Null){
-            $ServerGroup = Get-Server -Domain $Domain -OU $OU
-        }
-        else {
-            $ServerGroup = Get-Server
+        If ($_ -ne $null){
+            if ($Domain -ne $null -and $OU -ne $Null){
+                $ServerGroup = Get-Server -Domain $Domain -OU $OU
+            }
+            else {
+                    $ServerGroup = Get-Server
+            }       
         }
 
         #Check server name(s) returned
@@ -96,15 +89,19 @@ Function Move-ServerOU () {
         Write-Host ""
     
     #Pipline compatible input
-    Begin {
-
-    }
-    Process {
+    #Begin {
+        
+        #If there are no credentials, prompt for credentials
+        if ($Credential -eq $null) {
+            Write-Output "Enter credentials for remote computer"
+            $Credential = Get-Credential
+        }
+    #}
+    #Process {
 
         #Prompt for input
         while ($choice -notmatch "[y|n]"){
             $choice = read-host "Move servers to new OU? (Y/N)"
-            
         }
         if ($choice -eq "y"){
             
@@ -114,7 +111,11 @@ Function Move-ServerOU () {
             }
             
             #Get Domain controller
-            $DC = Get-DC -Domain $Domain
+            if ($Domain -ne $null){
+                $DC = Get-DC -Domain $Domain
+            }
+            else {
+            }       $DC = Get-DC
 
             #Try connecting to domain controller
             try {
@@ -129,10 +130,16 @@ Function Move-ServerOU () {
             $ServerGroup = Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
                 
                 #Get computer objects and move to new OU
-                If ($Using:DNSHostName -eq $null){
+                
+                #Check is the pipeline is empty
+                If ($_ -eq $null){
+                    
+                    #If it is, move all computers within OU
                     Get-ADComputer -Filter * -SearchBase $Using:OU | Move-ADObject -TargetPath $Using:MoveOU
                 }
                 Else {
+                    
+                    #Move each computer object in the pipeline to the new OU
                     foreach ($DNSHostName in $_){
                         Get-ADComputer -Filter {Name -eq $_} | Move-ADObject -TargetPath $Using:MoveOU
                     }
@@ -161,8 +168,8 @@ Function Move-ServerOU () {
             write-output "Servers will remain in current OU"
             Return $ServerGroup
         }
-    }
-    End{
+    #}
+    #End{
 
-    }
+    #}
 }

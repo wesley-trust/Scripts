@@ -21,12 +21,12 @@
 #Include Functions
 . .\Test-Server.ps1
 
-function Configure-Drive () {
+function Configure-Drive() {
     #Parameters
     Param(
         #Request Domain
         [Parameter(
-            Mandatory=$true,
+            Mandatory=$false,
             Position=1,
             HelpMessage="Enter the FQDN",
             ValueFromPipeLine=$true,
@@ -37,53 +37,106 @@ function Configure-Drive () {
         
         #Request OU
         [Parameter(
-            Mandatory=$true,
+            Mandatory=$false,
             Position=2,
             HelpMessage="Enter in DN format",
             ValueFromPipeLine=$true,
             ValueFromPipeLineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
         [String]
-        $OU)
-    
-    #Credentials
-    #Prompt if no credentials stored
-    if ($Credential -eq $null) {
-        Write-Output "Enter credentials for remote computer"
-        $Credential = Get-Credential
-    }
+        $OU,
         
-    #Function Variables
-    #Storage
-    $Volume = "Data"
-    $VirtualDisk = $Volume+"VD"
-    $StoragePool = $Volume+"SP"
+        #Server Host name
+        [Parameter(
+            Mandatory=$false,
+            ValueFromPipeLineByPropertyName=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $DNSHostName,
+        
+        #Server status
+        [Parameter(
+            Mandatory=$false,
+            ValueFromPipeLineByPropertyName=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $Status)
 
-    #If there are no servers array, get servers that can successfully be connected to
-    if ($ServerSuccessGroup -eq $Null) {
-        $ServerSuccessGroup = Get-SuccessServer -Domain $Domain -OU $OU
-        
-        #Display the servers returned for confirmation
-        Write-Host ""
-        Write-Host "Servers that can successfully be connected to:"
-        Write-Host ""
-        Write-Output $ServerSuccessGroup.name
-        Write-Host ""
-    }
- 
-    #Prompt for input
-    while ($choice -notmatch "[y|n]"){
-        $choice = read-host "Configure the data drives on servers that are accessible? (Y/N)"
+    Begin {
+    
+        #Function Variables
+        #Storage
+        $Volume = "Data"
+        $VirtualDisk = $Volume+"VD"
+        $StoragePool = $Volume+"SP"
+    
+        #If there are no credentials, prompt for credentials
+        if ($Credential -eq $null) {
+            Write-Output "Enter credentials for remote computer"
+            $Credential = Get-Credential
+        }
     }
     
-    #Execute command
-    if ($choice -eq "y"){
-        Write-Host ""
-        Write-Output "Configuring drives on remote computers."
-        Write-Output ""
-        foreach ($Server in $ServerSuccessGroup) {
-                $Session = New-PSSession -ComputerName $Server.name -Credential $Credential
+    Process {
+
+        #Reconstitute object from pipeline
+        $ServerGroup = foreach ($Server in $_){
+            $ObjectProperties = @{
+                DNSHostName  = $Server.DNSHostName
+                Status  = $Server.Status
+            }
+            New-Object psobject -Property $ObjectProperties
+        }
+
+        #If there are no statuses for servers
+        if (!$Server.Status){
+
+            #If there are no servers at all in array, get servers that can successfully be connected to
+            if (!$ServerGroup){
                 
+                #If there aren't any servers, and no domain and OU are specified, get successful servers
+                If (!$Domain -or !$ou){
+                    $ServerSuccessGroup = Get-SuccessServer
+                }
+                else {
+                    #Get successful servers and pass parameters
+                    $ServerSuccessGroup = Get-SuccessServer -Domain $Domain -OU $OU
+                }
+            }
+            Else {
+                
+                #Pipe the servers to test and get successful ones
+                $ServerSuccessGroup = $ServerGroup | Test-Server | Get-SuccessServer
+            }
+        }
+        
+            #Display the servers returned for confirmation
+            Write-Host ""
+            Write-Host "Servers that can successfully be connected to:"
+            Write-Host ""
+            Write-Output $ServerSuccessGroup.DNSHostName
+            Write-Host ""
+    
+        #Prompt for input
+        while ($choice -notmatch "[y|n]"){
+            $choice = read-host "Configure the data drives on servers that are accessible? (Y/N)"
+        }
+        
+        #Execute command
+        if ($choice -eq "y"){
+            Write-Host ""
+            Write-Output "Configuring drives on remote computers."
+            Write-Output ""
+            foreach ($Server in $ServerSuccessGroup) {
+                
+                #Commenting out action, whilst troubleshooting process
+                Write-Host ""
+                Write-Host "TEST: Successfully configured data drives on"$Server.DNSHostName
+                Write-Host ""
+
+                <# #Create new session
+                $Session = New-PSSession -ComputerName $Server.name -Credential $Credential
+                    
                 #Run command in remote session for server
                 Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
                     
@@ -110,13 +163,17 @@ function Configure-Drive () {
                     Write-Host ""
                     Write-Host "Successfully configured data drives on "$Server.name
                     Write-Host ""
-                    
+                        
+                } #>
             }
         }
+        else {  
+            Write-Host ""
+            write-Error "Operation cancelled" -ErrorAction Stop
+            Write-Host ""
+        }
     }
-	else {  
-        Write-Host ""
-        write-Error "Operation cancelled" -ErrorAction Stop
-        Write-Host ""
+    End {
+        
     }
 }

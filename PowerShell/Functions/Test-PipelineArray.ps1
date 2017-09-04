@@ -24,7 +24,7 @@ function Test-PipelineArray () {
     #Parameters
     Param(
         
-    #Servers
+        #Server host name
         [Parameter(
             Mandatory=$false,
             Position=0,
@@ -32,7 +32,17 @@ function Test-PipelineArray () {
             ValueFromPipeLineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $DNSHostName
+        $DNSHostName,
+        
+        #Server connection status
+        [Parameter(
+            Mandatory=$false,
+            Position=0,
+            ValueFromPipeLine=$true,
+            ValueFromPipeLineByPropertyName=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $Success
     )
     Begin {
         Write-Host "Test-PipelineArray Function"
@@ -40,9 +50,16 @@ function Test-PipelineArray () {
     
     Process
     {
-        foreach ($Server in $_)
+        #Reconstitute object from pipeline
+        $ServerGroup = foreach ($Server in $_)
         {
-            $Server.DNSHostName
+            $ObjectProperties = @{
+                DNSHostName  = $Server.DNSHostName
+                Status = $Server.Status
+            }
+            New-Object psobject -Property $ObjectProperties
+            
         }
+    Return $ServerGroup
     }
 }

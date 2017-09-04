@@ -22,8 +22,10 @@
 . .\Get-DC.ps1
 
 Function Get-Server () {
+    
     #Parameters
     Param(
+        
         #Request Domain
         [Parameter(
             Mandatory=$True,
@@ -34,6 +36,7 @@ Function Get-Server () {
         [ValidateNotNullOrEmpty()]
         [String]
         $Domain,
+        
         #Request OU
         [Parameter(
             Mandatory=$True,
@@ -46,58 +49,67 @@ Function Get-Server () {
         $OU
         )
     
-    #If there are no credentials, prompt for credentials
-    if ($Credential -eq $null) {
-        Write-Output "Enter credentials for remote computer"
-        $Credential = Get-Credential
-    }
-
-    #Get DC and store in variable
-    $DC = Get-DC -Domain $Domain
-
-    #Attempting conection to domain controller
-    Write-Host "Attempting conection to $DC"
-
-    #Try pinging domain controller
-    Try {
-        Test-Connection $DC -Count 1 | Out-Null
+    Begin {
+        #If there are no credentials, prompt for credentials
+        if ($Credential -eq $null) {
+            Write-Output "Enter credentials for remote computer"
+            $Credential = Get-Credential
         }
-    Catch {
-        Write-Host ""
-        Write-Error "Unable to ping '$DC'" -ErrorAction Stop
+    }
+
+    Process {
+
+        #Get DC and store in variable
+        $DC = Get-DC -Domain $Domain
+    
+        #Attempting conection to domain controller
+        Write-Host "Attempting conection to $DC"
+    
+        #Try pinging domain controller
+        Try {
+            Test-Connection $DC -Count 1 | Out-Null
+        }
+        Catch {
+            Write-Host ""
+            Write-Error "Unable to ping '$DC'" -ErrorAction Stop
+        }
+        
+        #Try remotely connecting to domain controller
+        try {
+            #Create PowerShell session
+            $Session = New-PSSession -ComputerName $DC -Credential $Credential
+        }
+        catch {
+            Write-Error "Failed to remotely connect to $DC" -ErrorAction Stop
         }
     
-    #Try remotely connecting to domain controller
-    try {
-        #Create PowerShell session
-        $Session = New-PSSession -ComputerName $DC -Credential $Credential
-    }
-    catch {
-        Write-Error "Failed to remotely connect to $DC" -ErrorAction Stop
-    }
-
-    #Write message to host
-    Write-Host ""
-    Write-Host "Getting servers within OU:"
-    Write-Host ""
-    Write-Host $OU
-    
-    #Invoke remote command within open session
-    $ServerGroup = Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
-
-        #Get Servers within OU
-        Get-ADComputer -Filter * -SearchBase $Using:OU
-    }
-    
-    #Remove session
-    Remove-pssession -Session $Session
-    
-    #Check if servers are returned
-    if ($ServerGroup -eq $Null) {
+        #Write message to host
         Write-Host ""
-        Write-Error "No servers returned." -ErrorAction Stop
+        Write-Host "Getting servers within OU:"
+        Write-Host ""
+        Write-Host $OU
+        
+        #Invoke remote command within open session
+        $ServerGroup = Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
+    
+            #Get Servers within OU
+            Get-ADComputer -Filter * -SearchBase $Using:OU
+        }
+        
+        #Remove session
+        Remove-pssession -Session $Session
+        
+        #Check if servers are returned
+        if ($ServerGroup -eq $Null) {
+            Write-Host ""
+            Write-Error "No servers returned." -ErrorAction Stop
+        }
+        else {
+            Return $ServerGroup
+        }
     }
-    else {
-        Return $ServerGroup
+
+    End {
+
     }
 } 

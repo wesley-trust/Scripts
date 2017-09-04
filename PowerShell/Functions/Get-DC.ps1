@@ -18,6 +18,7 @@
 #>
 
 Function Get-DC () {
+    
     #Request Domain name
     Param(
         [Parameter(
@@ -30,23 +31,34 @@ Function Get-DC () {
         [String]
         $Domain)
     
-    #Get start of authority of domain
-    $DC = Resolve-DnsName $Domain -Type SOA
-    
-    #Select primary server, convert to string
-    $DC= $DC.PrimaryServer.ToString()
-    
-    #Write message to host
-    Write-Host ""
-    If ($DC -eq $null){
-        Write-Error "Unable to resolve a domain controller" -ErrorAction Stop
+    Begin {
+
     }
-    Else{
-        Write-Host "Resolve Domain Controller"
-        Write-Host ""
+
+    Process {
         
+        #Get start of authority of domain
+        $DC = Resolve-DnsName $Domain -Type SOA
+        
+        #Select primary server, convert to string
+        $DC= $DC.PrimaryServer.ToString()
+        
+        #Write message to host
+        Write-Host ""
+        If ($DC -eq $null){
+            Write-Error "Unable to resolve a domain controller" -ErrorAction Stop
+        }
+        Else{
+            Write-Host "Resolve Domain Controller"
+            Write-Host ""
+            
+        }
+        
+        #Return domain controller
+        Return $DC
     }
-    
-    #Return domain controller
-    Return $DC
+
+    End {
+
+    }
 }

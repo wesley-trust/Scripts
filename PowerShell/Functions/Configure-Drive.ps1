@@ -112,14 +112,14 @@ function Configure-Drive() {
         
             #Display the servers returned for confirmation
             Write-Host ""
-            Write-Host "Servers that can successfully be connected to:"
+            Write-Host "Successfully connected to:"
             Write-Host ""
             Write-Output $ServerSuccessGroup.DNSHostName
             Write-Host ""
     
         #Prompt for input
         while ($choice -notmatch "[y|n]"){
-            $choice = read-host "Configure the data drives on servers that are accessible? (Y/N)"
+            $choice = read-host "Configure data drive? (Y/N)"
         }
         
         #Execute command
@@ -129,7 +129,7 @@ function Configure-Drive() {
             Write-Output ""
             foreach ($Server in $ServerSuccessGroup) {
                 
-                #Commenting out action, whilst troubleshooting process
+                #Temp commenting out action section, whilst troubleshooting pipeline process
                 Write-Host ""
                 Write-Host "TEST: Successfully configured data drives on"$Server.DNSHostName
                 Write-Host ""

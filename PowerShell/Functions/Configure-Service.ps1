@@ -1,8 +1,8 @@
 <#
 #Script name: Configure service
 #Creator: Wesley Trust
-#Date: 2017-08-28
-#Revision: 3
+#Date: 2017-09-05
+#Revision: 1
 #References:
 
 .Synopsis

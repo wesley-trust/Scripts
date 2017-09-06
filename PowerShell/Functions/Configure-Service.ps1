@@ -2,8 +2,13 @@
 #Script name: Configure service
 #Creator: Wesley Trust
 #Date: 2017-09-05
-#Revision: 1
+#Revision: 2
 #References:
+#ToDo
+    .Write error logging to file
+    .Pipeline input for servers
+    .Force parameter for install
+    .Ability to override server connection checks?
 
 .Synopsis
     Function that calls a function that tests servers, within an OU, can be connected to remotely, and installs a service.
@@ -13,8 +18,6 @@
 .Example
     Specify the fully qualified Domain Name (FQDN) and Organisational Unit (OU) by distinguished name (DN).
     Configure-Service -Domain $Domain -OU $OU -ServiceEXE $ServiceEXE -ServiceName $ServiceName -ServiceConfig $ServiceConfig -ServiceInstallLocation $ServiceInstallLocation
-.Example
-    
 
 #>
 
@@ -78,7 +81,7 @@ function Configure-Service() {
         [string]
         $ServiceName,
         
-        #Service Name
+        #Service Config
         [Parameter(
             Mandatory=$true,
             ValueFromPipeLineByPropertyName=$true)]
@@ -92,7 +95,16 @@ function Configure-Service() {
             ValueFromPipeLineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $ServiceInstallLocation)
+        $ServiceInstallLocation,
+        
+        #Service InstallLocation
+        [Parameter(
+            Mandatory=$true,
+            ValueFromPipeLineByPropertyName=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $ArgumentList
+        )
 
     Begin {
         
@@ -152,71 +164,111 @@ function Configure-Service() {
         if ($choice -eq "y"){
             Write-Host ""
             Write-Output "Configuring service on remote computers."
-            Write-Output ""
             foreach ($Server in $ServerSuccessGroup) {
                 
                 try {
                     
                     #Create new session
-                    $Session = New-PSSession -ComputerName $Server.DNSHostName -Credential $Credential
+                    $Session = New-PSSession -ComputerName $Server.DNSHostName -Credential $Credential -ErrorAction Stop
                     
-<#                     #Run command in remote session to install
-                    Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
-                        $Service = $null
-                        $Service = Get-Service $Using:ServiceName -ErrorAction SilentlyContinue
-                    }
-
-                    if ($Service -ne $null) {
-                        #Service already installed
-                        Write-Host ""
-                        Write-Host "Service already installed on"
-                        Write-Output $Server.DNSHostName | Tee-Object -Append -FilePath .\InstalledLog.txt
-                        Write-Host ""
-                    }
-                    else { #>
-
-                        #Get file, pipe to copy to remote session
-                        Get-ChildItem $ServiceEXE | Copy-Item -Destination $env:SystemDrive\ -ToSession $Session -Force -ErrorAction Stop
-                        
+                    try {
                         #Run command in remote session to install
                         Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
                             
-                            #Execute installer
-                            Set-Location $env:SystemDrive\
-                            $FileName = Split-Path $Using:ServiceEXE -Leaf
+                            #Check if service is installed
+                            $Service = Get-Service $Using:ServiceName -ErrorAction Stop
                             
-                            Start-Process "msiexec.exe" -ArgumentList "/qn /i $FileName" -Wait
+                            #Check if service is running
+                            If ($Service | Where-Object Status -eq "Running") {
+        
+                                #Service already installed and running
+                                Write-Host ""
+                                Write-Output "Service already installed and running on"$using:Server.DNSHostName | Tee-Object -Append -FilePath .\RunningLog.txt
+                            }
+                            Else {
+                                
+                                try {
+                                    #Try starting service
+                                    $Service = $Service | Start-Service -PassThru -ErrorAction Stop
+                                    
+                                    #Service already installed and running
+                                    Write-Host ""
+                                    Write-Output "Service already installed and now running on"$using:Server.DNSHostName | Tee-Object -Append -FilePath .\RunningLog.txt
+                                }
+                                Catch {
+                                    #Service already installed but won't start
+                                    Write-Host ""
+                                    Write-Output "Service already installed but will not start on"$using:Server.DNSHostName | Tee-Object -Append -FilePath .\StoppedLog.txt
+                                }
+                            }
                         }
-                        
-                        #Get file, pipe to copy to remote session
-                        Get-ChildItem $ServiceConfig | Copy-Item -Destination $ServiceInstallLocation -ToSession $Session -Force
-                        
-                        #Run command in remote session to install
-                        Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
-                            
-                            #Restart Service
-                            Restart-Service $Using:ServiceName
-                            
-                            #Clean up
-                            Remove-Item $Using:ServiceEXE
+                    }
+                    catch {
+
+                        Try{
+                            #Get file, pipe to copy to remote session
+                            Get-ChildItem $ServiceEXE | Copy-Item -Destination $env:SystemDrive\ -ToSession $Session -Force -ErrorAction Stop
+                        }
+                        Catch {
+                            Write-Error "Failed to copy service to server." -ErrorAction Stop
+                        }
+                        try{
+                            #Run command in remote session to install
+                            Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
+                                
+                                #Execute installer
+                                Set-Location $env:SystemDrive\
+                                
+                                #$FileName = Split-Path $Using:ServiceEXE -Leaf
+                                #Start-Process "msiexec.exe" -ArgumentList "/qn /i $FileName" -Wait
+                                
+                                Start-Process "msiexec.exe" -ArgumentList $Using:ArgumentList -Wait
+                            }
+                        }
+                        Catch {
+                            Write-Error "Failed to install service" -ErrorAction Stop
+                        }
+                        Try{
+                            #Get file, pipe to remote session
+                            Get-ChildItem $ServiceConfig | Copy-Item -Destination $ServiceInstallLocation -ToSession $Session -Force
+                        }
+                        Catch {
+                            Write-Error "Failed to copy config to server" -ErrorAction Stop
+                        }
+                        Finally {
+                            #Run command in remote session
+                            Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
+                                
+                                #Restart Service
+                                try {
+                                    Restart-Service $Using:ServiceName -WarningAction Stop
+                                }
+                                Catch {
+                                    Write-Error "Unable to restart service on"$Server.DNSHostName
+                                }
+                                Finally {
+                                    #Clean up
+                                    Remove-Item $Using:ServiceEXE
+                                }
+                            }
                         }
                     
                         #Successfully configured service
                         Write-Host ""
-                        Write-Host "Successfully configured service on"
-                        Write-Output $Server.DNSHostName | Tee-Object -Append -FilePath .\SuccessLog.txt
-                        Write-Host ""
+                        Write-Output "Successfully configured service on" $Server.DNSHostName | Tee-Object -Append -FilePath .\SuccessLog.txt
                                             
                         #Remove session
                         Remove-PSSession -Session $Session
-                    #}
+                    }                    
+                    Finally {
+                        #Remove session
+                        Remove-PSSession -Session $Session
+                    }
                 }
                 Catch {
-                    
-                    #Failed to configure service
+                    #Service was not installed
                     Write-Host ""
-                    Write-Host "Failed to configured service on"
-                    Write-Error $Server.DNSHostName | Tee-Object -Append -FilePath .\ErrorLog.txt
+                    Write-Output "Service not installed on"$Server.DNSHostName | Tee-Object -Append -FilePath .\ErrorLog.txt
                     Write-Host ""
                 }
             }

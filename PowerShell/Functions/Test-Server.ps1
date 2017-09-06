@@ -4,6 +4,8 @@
 #Date: 2017-08-28
 #Revision: 3
 #References:
+#ToDo
+    .Connection progress for server checks
 
 .Synopsis
     Script to call a function that gets servers within an OU and tests that the servers can be connected to remotely.

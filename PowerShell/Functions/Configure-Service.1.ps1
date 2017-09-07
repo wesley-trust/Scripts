@@ -2,7 +2,7 @@
 #Script name: Configure service
 #Creator: Wesley Trust
 #Date: 2017-09-05
-#Revision: 3
+#Revision: 2
 #References:
 #ToDo
     .Write error logging to file
@@ -165,7 +165,9 @@ function Configure-Service() {
             Write-Host ""
             Write-Output "Configuring service on remote computers."
             foreach ($Server in $ServerSuccessGroup) {
+                
                 try {
+                    
                     #Create new session
                     $Session = New-PSSession -ComputerName $Server.DNSHostName -Credential $Credential -ErrorAction Stop
                     
@@ -184,6 +186,7 @@ function Configure-Service() {
                                 Write-Output "Service already installed and running on"$using:Server.DNSHostName | Tee-Object -Append -FilePath .\RunningLog.txt
                             }
                             Else {
+                                
                                 try {
                                     #Try starting service
                                     $Service = $Service | Start-Service -PassThru -ErrorAction Stop
@@ -201,37 +204,62 @@ function Configure-Service() {
                         }
                     }
                     catch {
-                        #Get file, pipe to copy to remote session
-                        Get-ChildItem $ServiceEXE | Copy-Item -Destination $env:SystemDrive\ -ToSession $Session -Force -ErrorAction Stop
-                        #Run command in remote session to install
-                        Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
-                            
-                            #Execute installer
-                            Set-Location $env:SystemDrive\
-                            
-                            #$FileName = Split-Path $Using:ServiceEXE -Leaf
-                            #Start-Process "msiexec.exe" -ArgumentList "/qn /i $FileName" -Wait
-                            
-                            Start-Process "msiexec.exe" -ArgumentList $Using:ArgumentList -Wait
+
+                        Try{
+                            #Get file, pipe to copy to remote session
+                            Get-ChildItem $ServiceEXE | Copy-Item -Destination $env:SystemDrive\ -ToSession $Session -Force -ErrorAction Stop
                         }
-                        
-                        #Get file, pipe to remote session
-                        Get-ChildItem $ServiceConfig | Copy-Item -Destination $ServiceInstallLocation -ToSession $Session -Force
-                        
-                        #Run command in remote session
-                        Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
-                            
-                            #Restart Service
-                            Restart-Service $Using:ServiceName -WarningAction Stop
-                            
-                            #Clean up
-                            Remove-Item $Using:ServiceEXE
+                        Catch {
+                            Write-Error "Failed to copy service to server." -ErrorAction Stop
                         }
-                        
+                        try{
+                            #Run command in remote session to install
+                            Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
+                                
+                                #Execute installer
+                                Set-Location $env:SystemDrive\
+                                
+                                #$FileName = Split-Path $Using:ServiceEXE -Leaf
+                                #Start-Process "msiexec.exe" -ArgumentList "/qn /i $FileName" -Wait
+                                
+                                Start-Process "msiexec.exe" -ArgumentList $Using:ArgumentList -Wait
+                            }
+                        }
+                        Catch {
+                            Write-Error "Failed to install service" -ErrorAction Stop
+                        }
+                        Try{
+                            #Get file, pipe to remote session
+                            Get-ChildItem $ServiceConfig | Copy-Item -Destination $ServiceInstallLocation -ToSession $Session -Force
+                        }
+                        Catch {
+                            Write-Error "Failed to copy config to server" -ErrorAction Stop
+                        }
+                        Finally {
+                            #Run command in remote session
+                            Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
+                                
+                                #Restart Service
+                                try {
+                                    Restart-Service $Using:ServiceName -WarningAction Stop
+                                }
+                                Catch {
+                                    Write-Error "Unable to restart service on"$Server.DNSHostName
+                                }
+                                Finally {
+                                    #Clean up
+                                    Remove-Item $Using:ServiceEXE
+                                }
+                            }
+                        }
+                    
                         #Successfully configured service
                         Write-Host ""
                         Write-Output "Successfully configured service on" $Server.DNSHostName | Tee-Object -Append -FilePath .\SuccessLog.txt
-                    }
+                                            
+                        #Remove session
+                        Remove-PSSession -Session $Session
+                    }                    
                     Finally {
                         #Remove session
                         Remove-PSSession -Session $Session
@@ -239,8 +267,8 @@ function Configure-Service() {
                 }
                 Catch {
                     #Catch Exception
-                    Write-Host ""
-                    Write-Output $_.Exception.Message | Tee-Object -FilePath .\errorlog.txt
+                    $ErrorMessage = $_.Exception.Message
+                    $ErrorMessage | Tee-Object -Append -FilePath .\ErrorLog.txt
                 }
             }
         }

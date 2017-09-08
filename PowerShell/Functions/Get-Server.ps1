@@ -4,6 +4,9 @@
 #Date: 2017-08-28
 #Revision: 3
 #References:
+#ToDo
+    .Check home domain, to see whether script can be run from local device.
+    ..Check whether AD module is installed, so can bypass the need for a remote connection.
 
 .Synopsis
     Script that calls a function to resolve the domain controller, from the domain, and gets the servers from within an OU.

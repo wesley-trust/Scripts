@@ -135,7 +135,7 @@ function Configure-Drive() {
                 Write-Host ""
 
                 <# #Create new session
-                $Session = New-PSSession -ComputerName $Server.name -Credential $Credential
+                $Session = New-PSSession -ComputerName $Server.DNSHostName -Credential $Credential
                     
                 #Run command in remote session for server
                 Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {

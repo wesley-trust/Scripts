@@ -35,7 +35,7 @@ function New-AzureDNSZone() {
 
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Enter the location for the DNS Zone resource group"
+            HelpMessage="Enter the subscription ID"
         )]
         [string]
         $SubscriptionID
@@ -93,9 +93,7 @@ function New-AzureDNSZone() {
             New-AzureRmResourceGroup -Name $ResourceGroupName -Location $Location -ErrorAction Stop
 
             # Create DNZ Zone
-            $DNSZoneObject = New-AzureRmDnsZone -Name $DNSZone -ResourceGroupName $ResourceGroupName
-
-            Write-Host "DNS Zone created"
+            New-AzureRmDnsZone -Name $DNSZone -ResourceGroupName $ResourceGroupName
         }
         Catch {
             Write-Error -Message $_.exception

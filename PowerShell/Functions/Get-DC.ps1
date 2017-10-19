@@ -13,7 +13,6 @@
     Specify the fully qualified Domain Name (FQDN) and Organisational Unit (OU) by distinguished name (DN).
     Configure-Drive -Domain $Domain -OU $OU
 .Example
-    
 
 #>
 

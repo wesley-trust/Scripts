@@ -76,13 +76,14 @@ function Get-AzureDNSZone() {
 
             # If this doesn't exist, display message
             if (!$DNSZoneObject){
-                Write-Host "Azure DNS Zone does not currently exist"
+                Write-Host "Azure DNS Zone does not exist"
             }
         }
         Catch {
             Write-Error -Message $_.exception
             throw $_.exception
         }
+        return $DNSZoneObject
     }
     End {
         

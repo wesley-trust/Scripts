@@ -164,7 +164,7 @@ function New-VM() {
             # Check if the resource group exists
             $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName
 
-            # Get Azure resions
+            # Get Azure regions
             $Locations = Get-AzureRmLocation
 
             #If the resource group does not exist
@@ -211,19 +211,15 @@ function New-VM() {
             $PIp = New-AzureRmPublicIpAddress -Name $InterfaceName -ResourceGroupName $ResourceGroupName -Location $Location -AllocationMethod Dynamic
 
             # Get existing vNET
-            Get-AzureRmVirtualNetwork | Tee-object -Variable vnet | Select-Object -Property Name
+            Get-AzureRmVirtualNetwork | Tee-object -Variable Vnet | Select-Object -Property Name
 
-            if (!$vnet){
-
-                # Create virtual network
-                
+            if (!$Vnet){
+               
                 # Create virtual network config
+                $SubnetConfig = New-AzureRmVirtualNetworkSubnetConfig -Name $SubnetName -AddressPrefix $VNetSubnetAddressPrefix
                 
-            }
-            Else {
-                # Get existing subnetconfig
-                $vnet | Get-AzureRmVirtualNetworkSubnetConfig | Where-Object -Property Name -EQ $SubnetName | Tee-Object -Variable subnetconfig | Select-Object -Property Name,AddressPrefix
-                
+                # Create virtual network
+                $VNet = New-AzureRmVirtualNetwork -Name $VNetName -ResourceGroupName $ResourceGroupName -Location $Location -AddressPrefix $VNetAddressPrefix -Subnet $SubnetConfig
             }
 
             # Create VM Network Interface

@@ -108,7 +108,35 @@ function New-VM() {
             HelpMessage="Enter the OS disk name"
         )]
         [string]
-        $SubnetName = "default"
+        $StorageType,
+
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the OS disk name"
+        )]
+        [string]
+        $SubnetName = "default",
+
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the virtual network name"
+        )]
+        [string]
+        $VNetName,
+
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the virtual network address prefix"
+        )]
+        [string]
+        $VNetAddressPrefix,
+
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the virtual network subnet address prefix"
+        )]
+        [string]
+        $VNetSubnetAddressPrefix
     )
 
     Begin {
@@ -162,7 +190,7 @@ function New-VM() {
             }
                 
             # Check if the resource group exists
-            $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName
+            $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
 
             # Get Azure regions
             $Locations = Get-AzureRmLocation
@@ -174,7 +202,7 @@ function New-VM() {
                 if (!$Location){
                     
                     # Get Azure region locations
-                    $Locations | Select-Object Location
+                    $Locations | Select-Object Location | Format-Table | more
                     
                     # Prompt for location
                     $Location = Read-Host "Enter the location for this VM"
@@ -182,11 +210,15 @@ function New-VM() {
 
                 # Check for valid location
                 if ($Locations.location -notcontains $Location){
-                    throw "Location is invalid or not available"
+                    throw "Location is invalid or not available in this subscription."
                 }
 
                 # Create Resource Group
                 New-AzureRmResourceGroup -Name $ResourceGroupName -Location $Location
+            }
+            Else {
+                # Set location from resource group
+                $Location = $ResourceGroup.Location
             }
                                         
             # Get supported sizes in location of VM
@@ -196,7 +228,7 @@ function New-VM() {
             if (!$VMSize){
                 
                 # Get supported VM sizes and display the name
-                $SupportedVMSize | Select-Object Name
+                $SupportedVMSize | Select-Object Name | Format-Table | more
 
                 # Prompt for VM size
                 $VMSize = Read-Host "Please enter the name of the VM Size"
@@ -226,6 +258,9 @@ function New-VM() {
             $Interface = New-AzureRmNetworkInterface -Name $InterfaceName -ResourceGroupName $ResourceGroupName -Location $Location -SubnetId $VNet.Subnets[0].Id -PublicIpAddressId $PIp.Id
 
             # Create Managed Disk
+            $DiskConfig = New-AzureRmDiskConfig -AccountType $StorageType -Location $Location -CreateOption Empty -OsType Windows -DiskSizeGB "128"
+
+            $Disk = New-AzureRmDisk -Disk $DiskConfig -ResourceGroupName $resourceGroupName -DiskName $osDiskName
 
             # Compute
 
@@ -234,9 +269,7 @@ function New-VM() {
             $VirtualMachine = Set-AzureRmVMOperatingSystem -VM $VirtualMachine -Windows -ComputerName $ComputerName -Credential $VMCredential -ProvisionVMAgent -EnableAutoUpdate
             $VirtualMachine = Set-AzureRmVMSourceImage -VM $VirtualMachine -PublisherName $PublisherName -Offer $Offer -Skus $SKU -Version $latest
             $VirtualMachine = Add-AzureRmVMNetworkInterface -VM $VirtualMachine -Id $Interface.Id
-            #Need to review managed disks
-            #$OSDiskUri = $StorageAccount.PrimaryEndpoints.Blob.ToString() + "vhds/" + $OSDiskName + ".vhd"
-            $VirtualMachine = Set-AzureRmVMOSDisk -VM $VirtualMachine -Name $OSDiskName -VhdUri $OSDiskUri -CreateOption FromImage
+            $VirtualMachine = Set-AzureRmVMOSDisk -VM $VirtualMachine -ManagedDiskId $disk.Id -CreateOption FromImage -Windows
 
             ## Create the VM in Azure
             New-AzureRmVM -ResourceGroupName $ResourceGroupName -Location $Location -VM $VirtualMachine

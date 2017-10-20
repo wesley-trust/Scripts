@@ -304,37 +304,35 @@ function New-VM() {
 
             # Consider Availability group
 
-            # Compute
-
-            ## Set up VM object
+            # Create VM Object
             $VirtualMachine = New-AzureRmVMConfig -VMName $VMName -VMSize $VMSize
             $VirtualMachine = Set-AzureRmVMOperatingSystem -VM $VirtualMachine -Windows -ComputerName $VMName -Credential $VMCredential -ProvisionVMAgent -EnableAutoUpdate
             $VirtualMachine = Set-AzureRmVMSourceImage -VM $VirtualMachine -PublisherName $PublisherName -Offer $Offer -Skus $SKU -Version $latest
             $VirtualMachine = Add-AzureRmVMNetworkInterface -VM $VirtualMachine -Id $Interface.Id
             $VirtualMachine = Set-AzureRmVMOSDisk -VM $VirtualMachine -StorageAccountType $StorageType -CreateOption FromImage -Windows
 
-            ## Create the VM in Azure
+            # Create VM in Azure
             New-AzureRmVM -ResourceGroupName $ResourceGroupName -Location $Location -VM $VirtualMachine
 
             # If Data disks are required
 
-            # Create Managed Data Disk
-            #$DiskConfig = New-AzureRmDiskConfig -AccountType $StorageType -Location $Location -CreateOption Empty -OsType Windows -DiskSizeGB "1024"
-            #$Disk = New-AzureRmDisk -Disk $DiskConfig -ResourceGroupName $resourceGroupName -DiskName $VMName+'_data01'
+                # Create Managed Data Disk
+                #$DiskConfig = New-AzureRmDiskConfig -AccountType $StorageType -Location $Location -CreateOption Empty -OsType Windows -DiskSizeGB "1024"
+                #$Disk = New-AzureRmDisk -Disk $DiskConfig -ResourceGroupName $resourceGroupName -DiskName $VMName+'_data01'
 
-            # Attach Data disk to VM
+                # Attach Data disk to VM
 
             # If postprovision is true
 
-            # Call Post Provision Function
+                # Call Post Provision Function
 
-            # Antivirus
+                # Antivirus
 
-            # Bring on domain?
-            
-                # Enable RDP? (may not be needed if auto-joined to domain)
+                # Bring on domain?
                 
-                # Move Public IP to post provision? (may not be needed if auto-joined to domain)
+                    # Enable RDP? (may not be needed if auto-joined to domain)
+                    
+                    # Move Public IP to post provision? (may not be needed if auto-joined to domain)
 
             # Else Deallocate
 

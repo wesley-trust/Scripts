@@ -243,8 +243,9 @@ function New-VM() {
             $PIp = New-AzureRmPublicIpAddress -Name $InterfaceName -ResourceGroupName $ResourceGroupName -Location $Location -AllocationMethod Dynamic
 
             # Get existing vNET
-            Get-AzureRmVirtualNetwork | Tee-object -Variable Vnet | Select-Object -Property Name
+            $Vnet = Get-AzureRmVirtualNetwork
 
+            # If there are no Vnets
             if (!$Vnet){
                
                 # Create virtual network config
@@ -252,6 +253,30 @@ function New-VM() {
                 
                 # Create virtual network
                 $VNet = New-AzureRmVirtualNetwork -Name $VNetName -ResourceGroupName $ResourceGroupName -Location $Location -AddressPrefix $VNetAddressPrefix -Subnet $SubnetConfig
+            }
+            # Else if there is more than 1 vnet
+            Elseif ($VNet.count -ne "1") {
+                
+                # Display vnet names
+                $Vnet | Select-Object Name
+
+                # Clear variable
+                $VNetName = $null
+
+                # While no vnet name is specified
+                while (!$VnetName) {
+                    
+                    # Continue to prompt for vnet name
+                    $VnetName = Read-Host "Specify VNet name to use"
+                }
+
+                # Set vnet variable to include only the specified vnet object
+                $Vnet = $Vnet | Where-Object Name -eq $VNetName
+                
+                # If there is no vnet object
+                if (!$vnet){
+                    throw "No valid virtual network specified."
+                }
             }
 
             # Create VM Network Interface

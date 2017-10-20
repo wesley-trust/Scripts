@@ -239,8 +239,15 @@ function New-VM() {
                 $VMObject = $null
                 
                 # Prompt for new name
-                Write-Host "$VMName already exists"
-                $VMName = Read-Host "Specify a new name"
+                Write-Host "VM Name $VMName already exists"
+
+                # Clear variable
+                $VMName = $null
+
+                # While no name is entered, prompt for name
+                while (!$VMName){
+                    $VMName = Read-Host "Specify a new name"
+                }
                 
                 # Recheck if VM exists with new name
                 $VMObject = Get-AzureRMVM -ResourceGroupName $ResourceGroupName -VMName $VMName -ErrorAction SilentlyContinue
@@ -316,6 +323,8 @@ function New-VM() {
 
             # Enable diagnostics
 
+            # Consider Availability group
+
             # Compute
 
             ## Set up VM object
@@ -340,11 +349,13 @@ function New-VM() {
 
             # Call Post Provision Function
 
-            # Antivirus extension
-            
-            # Enable RDP access
+            # Antivirus
 
-            # Trigger post provision function to bring on to domain?
+            # Bring on domain?
+            
+                # Enable RDP? (may not be needed if auto-joined to domain)
+                
+                # Move Public IP to post provision? (may not be needed if auto-joined to domain)
 
             # Else Deallocate
 

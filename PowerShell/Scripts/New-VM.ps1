@@ -32,14 +32,7 @@ function New-VM() {
         )]
         [string]
         $ResourceGroupName,
-        
-        [Parameter(
-            Mandatory=$false,
-            HelpMessage="Enter the server interface name"
-        )]
-        [string]
-        $InterfaceName = "ServerInterface01",
-        
+               
         [Parameter(
             Mandatory=$false,
             HelpMessage="Enter the publisher name"
@@ -91,6 +84,13 @@ function New-VM() {
 
         [Parameter(
             Mandatory=$false,
+            HelpMessage="Enter the server interface name"
+        )]
+        [string]
+        $InterfaceName = $VMName,
+
+        [Parameter(
+            Mandatory=$false,
             HelpMessage="Enter the VM size"
         )]
         [string]
@@ -104,7 +104,7 @@ function New-VM() {
         $OSDiskName = $VMName + "OSDisk",
 
         [Parameter(
-            Mandatory=$false,
+            Mandatory=$true,
             HelpMessage="Enter the OS disk name"
         )]
         [string]
@@ -225,7 +225,27 @@ function New-VM() {
                 # Set location from resource group
                 $Location = $ResourceGroup.Location
             }
-                                        
+            
+            # Clear the variable
+            $VMObject = $null
+
+            # Check if a VM exists with specified name
+            $VMObject = Get-AzureRMVM -ResourceGroupName $ResourceGroupName -VMName $VMName -ErrorAction SilentlyContinue
+            
+            # While a VM exists with the same name
+            while ($VMObject){
+                
+                # Clear the variable
+                $VMObject = $null
+                
+                # Prompt for new name
+                Write-Host "$VMName already exists"
+                $VMName = Read-Host "Specify a new name"
+                
+                # Recheck if VM exists with new name
+                $VMObject = Get-AzureRMVM -ResourceGroupName $ResourceGroupName -VMName $VMName -ErrorAction SilentlyContinue
+            }
+
             # Get supported sizes in location of VM
             $SupportedVMSize = Get-AzureRmVMSize -Location $Location
 
@@ -233,6 +253,8 @@ function New-VM() {
             if (!$VMSize){
                 
                 # Get supported VM sizes and display the name
+                Write-Host ""
+                Write-Host "Getting supported VM sizes in $location"
                 $SupportedVMSize | Select-Object Name | Format-Table | more
 
                 # Prompt for VM size
@@ -248,7 +270,7 @@ function New-VM() {
             $PIp = New-AzureRmPublicIpAddress -Name $InterfaceName -ResourceGroupName $ResourceGroupName -Location $Location -AllocationMethod Dynamic
 
             # Get existing vNET
-            $Vnet = Get-AzureRmVirtualNetwork
+            $Vnet = Get-AzureRmVirtualNetwork -ErrorAction SilentlyContinue
 
             # If there are no Vnets
             if (!$Vnet){
@@ -292,17 +314,7 @@ function New-VM() {
             # Create VM Network Interface
             $Interface = New-AzureRmNetworkInterface -Name $InterfaceName -ResourceGroupName $ResourceGroupName -Location $Location -SubnetId $VNet.Subnets[0].Id -PublicIpAddressId $PIp.Id
 
-            # Create Managed Disk
-            $DiskConfig = New-AzureRmDiskConfig -AccountType $StorageType -Location $Location -CreateOption Empty -OsType Windows -DiskSizeGB "128"
-            $Disk = New-AzureRmDisk -Disk $DiskConfig -ResourceGroupName $resourceGroupName -DiskName $osDiskName
-
-            # Antivirus extension
-            
             # Enable diagnostics
-
-            # Enable RDP access
-
-            # Trigger post provision function to bring on to domain?
 
             # Compute
 
@@ -311,13 +323,34 @@ function New-VM() {
             $VirtualMachine = Set-AzureRmVMOperatingSystem -VM $VirtualMachine -Windows -ComputerName $ComputerName -Credential $VMCredential -ProvisionVMAgent -EnableAutoUpdate
             $VirtualMachine = Set-AzureRmVMSourceImage -VM $VirtualMachine -PublisherName $PublisherName -Offer $Offer -Skus $SKU -Version $latest
             $VirtualMachine = Add-AzureRmVMNetworkInterface -VM $VirtualMachine -Id $Interface.Id
-            $VirtualMachine = Set-AzureRmVMOSDisk -VM $VirtualMachine -ManagedDiskId $disk.Id -CreateOption FromImage -Windows
+            $VirtualMachine = Set-AzureRmVMOSDisk -VM $VirtualMachine -StorageAccountType $StorageType -CreateOption FromImage -Windows
 
             ## Create the VM in Azure
             New-AzureRmVM -ResourceGroupName $ResourceGroupName -Location $Location -VM $VirtualMachine
 
+            # If Data disks are required
+
+            # Create Managed Data Disk
+            #$DiskConfig = New-AzureRmDiskConfig -AccountType $StorageType -Location $Location -CreateOption Empty -OsType Windows -DiskSizeGB "1024"
+            #$Disk = New-AzureRmDisk -Disk $DiskConfig -ResourceGroupName $resourceGroupName -DiskName $OSDiskName+'_data'
+
+            # Attach Data disk to VM
+
+            # If postprovision is true
+
+            # Call Post Provision Function
+
+            # Antivirus extension
+            
+            # Enable RDP access
+
+            # Trigger post provision function to bring on to domain?
+
+            # Else Deallocate
+
         }
         Catch {
+
             Write-Error -Message $_.exception
             throw $_.exception
         }

@@ -140,38 +140,43 @@ function New-VM() {
     )
 
     Begin {
-        
-        # Check if AzureRM module is installed
-        if (!(Get-Module -ListAvailable | Where-Object Name -Like "*AzureRM*")){
+        try {
+            # Check if AzureRM module is installed
+            if (!(Get-Module -ListAvailable | Where-Object Name -Like "*AzureRM*")){
+                
+                # If not installed, install the module
+                Install-Module -Name AzureRM -AllowClobber -Force
+            }
+
+            # Connect to Azure
             
-            # If not installed, install the module
-            Install-Module -Name AzureRM -AllowClobber -Force
+            # Try connecting to see if a session is currently active
+            $AzureConnection = Get-AzureRmContext | Where-Object Name -NE "Default"
+
+            # If not, connect to Azure (will prompt for credentials)
+            if (!$AzureConnection) {
+                Add-AzureRmAccount
+            }
+
+            # Subscription info
+            if (!$SubscriptionID){
+            
+                # List subscriptions
+                Write-Host ""
+                Write-Host "Loading subscriptions this account has access to:"
+                Get-AzureRmSubscription | Select-Object Name,SubscriptionId | Format-List
+            
+                # Prompt for subscription ID
+                $SubscriptionId = Read-Host "Enter subscription ID"
+            }
+
+            # Select subscription
+            Select-AzureRmSubscription -SubscriptionId $SubscriptionId
         }
-
-        # Connect to Azure
-        
-        # Try connecting to see if a session is currently active
-        $AzureConnection = Get-AzureRmContext | Where-Object Name -NE "Default"
-
-        # If not, connect to Azure
-        if (!$AzureConnection) {
-            Add-AzureRmAccount
+        Catch {
+            Write-Error -Message $_.exception
+            throw $_.exception
         }
-
-        # Subscription info
-        if (!$SubscriptionID){
-        
-            # List subscriptions
-            Write-Host ""
-            Write-Host "Loading subscriptions this account has access to:"
-            Get-AzureRmSubscription | Select-Object Name,SubscriptionId | Format-List
-        
-            # Prompt for subscription ID
-            $SubscriptionId = Read-Host "Enter subscription ID"
-        }
-
-        # Select subscription
-        Select-AzureRmSubscription -SubscriptionId $SubscriptionId
     }
     
     Process {
@@ -284,8 +289,15 @@ function New-VM() {
 
             # Create Managed Disk
             $DiskConfig = New-AzureRmDiskConfig -AccountType $StorageType -Location $Location -CreateOption Empty -OsType Windows -DiskSizeGB "128"
-
             $Disk = New-AzureRmDisk -Disk $DiskConfig -ResourceGroupName $resourceGroupName -DiskName $osDiskName
+
+            # Antivirus extension
+            
+            # Enable diagnostics
+
+            # Enable RDP access
+
+            # Trigger post provision function to bring on to domain?
 
             # Compute
 

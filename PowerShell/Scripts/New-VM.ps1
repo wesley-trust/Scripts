@@ -336,7 +336,9 @@ function New-VM() {
                         
                         # Move Public IP to post provision? (may not be needed if auto-joined to domain)
 
-            # Else Deallocate
+            # Else 
+            
+                #Call Deallocate function
 
         }
         Catch {

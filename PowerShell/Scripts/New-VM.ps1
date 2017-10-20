@@ -77,42 +77,21 @@ function New-VM() {
 
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Enter the computer name (default to VM Name)"
-        )]
-        [string]
-        $Computername = $VMName,
-
-        [Parameter(
-            Mandatory=$false,
-            HelpMessage="Enter the server interface name"
-        )]
-        [string]
-        $InterfaceName = $VMName,
-
-        [Parameter(
-            Mandatory=$false,
             HelpMessage="Enter the VM size"
         )]
         [string]
         $VMSize,
 
         [Parameter(
-            Mandatory=$false,
-            HelpMessage="Enter the OS disk name"
-        )]
-        [string]
-        $OSDiskName = $VMName + "OSDisk",
-
-        [Parameter(
             Mandatory=$true,
-            HelpMessage="Enter the OS disk name"
+            HelpMessage="Enter the Storage Account Type"
         )]
         [string]
         $StorageType,
 
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Enter the OS disk name"
+            HelpMessage="Enter the subnet name"
         )]
         [string]
         $SubnetName = "default",
@@ -274,7 +253,7 @@ function New-VM() {
             }
 
             # Create public IP
-            $PIp = New-AzureRmPublicIpAddress -Name $InterfaceName -ResourceGroupName $ResourceGroupName -Location $Location -AllocationMethod Dynamic
+            $PIp = New-AzureRmPublicIpAddress -Name $VMName -ResourceGroupName $ResourceGroupName -Location $Location -AllocationMethod Dynamic
 
             # Get existing vNET
             $Vnet = Get-AzureRmVirtualNetwork -ErrorAction SilentlyContinue
@@ -319,7 +298,7 @@ function New-VM() {
             }
 
             # Create VM Network Interface
-            $Interface = New-AzureRmNetworkInterface -Name $InterfaceName -ResourceGroupName $ResourceGroupName -Location $Location -SubnetId $VNet.Subnets[0].Id -PublicIpAddressId $PIp.Id
+            $Interface = New-AzureRmNetworkInterface -Name $VMName -ResourceGroupName $ResourceGroupName -Location $Location -SubnetId $VNet.Subnets[0].Id -PublicIpAddressId $PIp.Id
 
             # Enable diagnostics
 
@@ -329,7 +308,7 @@ function New-VM() {
 
             ## Set up VM object
             $VirtualMachine = New-AzureRmVMConfig -VMName $VMName -VMSize $VMSize
-            $VirtualMachine = Set-AzureRmVMOperatingSystem -VM $VirtualMachine -Windows -ComputerName $ComputerName -Credential $VMCredential -ProvisionVMAgent -EnableAutoUpdate
+            $VirtualMachine = Set-AzureRmVMOperatingSystem -VM $VirtualMachine -Windows -ComputerName $VMName -Credential $VMCredential -ProvisionVMAgent -EnableAutoUpdate
             $VirtualMachine = Set-AzureRmVMSourceImage -VM $VirtualMachine -PublisherName $PublisherName -Offer $Offer -Skus $SKU -Version $latest
             $VirtualMachine = Add-AzureRmVMNetworkInterface -VM $VirtualMachine -Id $Interface.Id
             $VirtualMachine = Set-AzureRmVMOSDisk -VM $VirtualMachine -StorageAccountType $StorageType -CreateOption FromImage -Windows
@@ -341,7 +320,7 @@ function New-VM() {
 
             # Create Managed Data Disk
             #$DiskConfig = New-AzureRmDiskConfig -AccountType $StorageType -Location $Location -CreateOption Empty -OsType Windows -DiskSizeGB "1024"
-            #$Disk = New-AzureRmDisk -Disk $DiskConfig -ResourceGroupName $resourceGroupName -DiskName $OSDiskName+'_data'
+            #$Disk = New-AzureRmDisk -Disk $DiskConfig -ResourceGroupName $resourceGroupName -DiskName $VMName+'_data01'
 
             # Attach Data disk to VM
 

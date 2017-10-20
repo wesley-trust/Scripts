@@ -164,7 +164,7 @@ function New-VM() {
                 # List subscriptions
                 Write-Host ""
                 Write-Host "Loading subscriptions this account has access to:"
-                Get-AzureRmSubscription | Select-Object Name,SubscriptionId | Format-List
+                Get-AzureRmSubscription | Select-Object Name, SubscriptionId | Format-List
             
                 # Prompt for subscription ID
                 $SubscriptionId = Read-Host "Enter subscription ID"
@@ -214,8 +214,8 @@ function New-VM() {
                 }
 
                 # Check for valid location
-                if ($Locations.location -notcontains $Location){
-                    throw "Location is invalid or not available in this subscription."
+                while ($Locations.location -notcontains $Location){
+                    $Location = Read-Host "Location is invalid or not available, specify a new location."
                 }
 
                 # Create Resource Group
@@ -240,8 +240,8 @@ function New-VM() {
             }
             
             # Check for invalid size
-            if ($SupportedVMSize.name -notcontains $VMSize){
-                throw "VM size is invalid or not available in that location."
+            while ($SupportedVMSize.name -notcontains $VMSize){
+                $VMSize = Read-Host "VM size is invalid or not available, specify a new size."
             }
 
             # Create public IP
@@ -259,6 +259,7 @@ function New-VM() {
                 # Create virtual network
                 $VNet = New-AzureRmVirtualNetwork -Name $VNetName -ResourceGroupName $ResourceGroupName -Location $Location -AddressPrefix $VNetAddressPrefix -Subnet $SubnetConfig
             }
+            
             # Else if there is more than 1 vnet
             Elseif ($VNet.count -ne "1") {
                 
@@ -273,6 +274,10 @@ function New-VM() {
                     
                     # Continue to prompt for vnet name
                     $VnetName = Read-Host "Specify VNet name to use"
+                }
+
+                while ($Vnet.name -notcontains $VNetName){
+                    $VNetName = Read-Host "Virtual network is invalid or not available, specify a new virtual network."
                 }
 
                 # Set vnet variable to include only the specified vnet object

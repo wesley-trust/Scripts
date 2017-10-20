@@ -304,6 +304,8 @@ function New-VM() {
 
             # Consider Availability group
 
+            # Antivirus
+
             # Create VM Object
             $VirtualMachine = New-AzureRmVMConfig -VMName $VMName -VMSize $VMSize
             $VirtualMachine = Set-AzureRmVMOperatingSystem -VM $VirtualMachine -Windows -ComputerName $VMName -Credential $VMCredential -ProvisionVMAgent -EnableAutoUpdate
@@ -323,16 +325,16 @@ function New-VM() {
                 # Attach Data disk to VM
 
             # If postprovision is true
-
+              
                 # Call Post Provision Function
 
-                # Antivirus
+                    # Configure Drive
 
-                # Bring on domain?
-                
-                    # Enable RDP? (may not be needed if auto-joined to domain)
+                    # Bring on domain?
                     
-                    # Move Public IP to post provision? (may not be needed if auto-joined to domain)
+                        # Enable RDP? (may not be needed if auto-joined to domain)
+                        
+                        # Move Public IP to post provision? (may not be needed if auto-joined to domain)
 
             # Else Deallocate
 

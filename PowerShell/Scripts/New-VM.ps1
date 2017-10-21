@@ -115,7 +115,14 @@ function New-VM() {
             HelpMessage="Enter the virtual network subnet address prefix"
         )]
         [string]
-        $VNetSubnetAddressPrefix
+        $VNetSubnetAddressPrefix,
+
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the number of data disks (if any)"
+        )]
+        [int]
+        $DataDisk
     )
 
     Begin {
@@ -161,9 +168,13 @@ function New-VM() {
     Process {
         try {
 
-            # Prompt for credentials for VM
-            Write-Output "Enter VM Credentials"
-            $VMCredential = Get-Credential
+            # If there are no VM credentials
+            If (!$VMCredential) {
+                
+                # Prompt for credentials
+                Write-Output "Enter VM Credentials"
+                $VMCredential = Get-Credential
+            }
 
             # If the resource group name parameter is not set
             if (!$ResourceGroupName){
@@ -311,18 +322,24 @@ function New-VM() {
             $VirtualMachine = Set-AzureRmVMOperatingSystem -VM $VirtualMachine -Windows -ComputerName $VMName -Credential $VMCredential -ProvisionVMAgent -EnableAutoUpdate
             $VirtualMachine = Set-AzureRmVMSourceImage -VM $VirtualMachine -PublisherName $PublisherName -Offer $Offer -Skus $SKU -Version $latest
             $VirtualMachine = Add-AzureRmVMNetworkInterface -VM $VirtualMachine -Id $Interface.Id
+
+            # If Data disks are required
+            if ($DataDisk){
+
+                # From 1, to the number of data disks required
+                1..$DataDisk | ForEach-Object {
+                    
+                    # Create Managed Data Disk
+                    $DiskConfig = New-AzureRmDiskConfig -AccountType $StorageType -Location $Location -CreateOption Empty -OsType Windows -DiskSizeGB "1024"
+                    $Disk = New-AzureRmDisk -Disk $DiskConfig -ResourceGroupName $resourceGroupName -DiskName $VMName+$_ 
+                    $VirtualMachine = Add-AzureRmVMDataDisk -VM $VirtualMachine -CreateOption Attach -ManagedDiskId $Disk.Id -Lun $_
+                }               
+            }
+
             $VirtualMachine = Set-AzureRmVMOSDisk -VM $VirtualMachine -StorageAccountType $StorageType -CreateOption FromImage -Windows
 
             # Create VM in Azure
             New-AzureRmVM -ResourceGroupName $ResourceGroupName -Location $Location -VM $VirtualMachine
-
-            # If Data disks are required
-
-                # Create Managed Data Disk
-                #$DiskConfig = New-AzureRmDiskConfig -AccountType $StorageType -Location $Location -CreateOption Empty -OsType Windows -DiskSizeGB "1024"
-                #$Disk = New-AzureRmDisk -Disk $DiskConfig -ResourceGroupName $resourceGroupName -DiskName $VMName+'_data01'
-
-                # Attach Data disk to VM
 
             # If postprovision is true
               

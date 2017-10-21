@@ -122,7 +122,14 @@ function New-VM() {
             HelpMessage="Enter the number of data disks (if any)"
         )]
         [int]
-        $DataDisk
+        $DataDisk,
+
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the size of each data disks (if any)"
+        )]
+        [int]
+        $DataDiskSize
     )
 
     Begin {
@@ -311,29 +318,50 @@ function New-VM() {
             # Create VM Network Interface
             $Interface = New-AzureRmNetworkInterface -Name $VMName -ResourceGroupName $ResourceGroupName -Location $Location -SubnetId $VNet.Subnets[0].Id -PublicIpAddressId $PIp.Id
 
+            # Create network security group
+            
             # Enable diagnostics
 
             # Consider Availability group
 
-            # Antivirus
+            # Extensions
+                
+                # Antivirus
+                
+                # Custom Script Extension (for post provisioning)
 
-            # Create VM Object
+            # Create virtual machine configuration object
             $VirtualMachine = New-AzureRmVMConfig -VMName $VMName -VMSize $VMSize
+
+            # Set Operating System settings
             $VirtualMachine = Set-AzureRmVMOperatingSystem -VM $VirtualMachine -Windows -ComputerName $VMName -Credential $VMCredential -ProvisionVMAgent -EnableAutoUpdate
+            
+            # Set image used for operating system
             $VirtualMachine = Set-AzureRmVMSourceImage -VM $VirtualMachine -PublisherName $PublisherName -Offer $Offer -Skus $SKU -Version $latest
+            
+            # Set network interface
             $VirtualMachine = Add-AzureRmVMNetworkInterface -VM $VirtualMachine -Id $Interface.Id
 
             # If Data disks are required
-            if ($DataDisk){
+            if ($DataDisk -ge 1){
+
+                # While no data disk size is set, prompt for size
+                while (!$DataDiskSize){
+                    
+                    # Prompt for data disk size
+                    $DataDiskSize = Read-Host "Enter the data disk size in GB"
+                }
 
                 # From 1, to the number of data disks required
                 1..$DataDisk | ForEach-Object {
                     
                     # Create Managed Data Disk
-                    $DiskConfig = New-AzureRmDiskConfig -AccountType $StorageType -Location $Location -CreateOption Empty -OsType Windows -DiskSizeGB "1024"
-                    $Disk = New-AzureRmDisk -Disk $DiskConfig -ResourceGroupName $resourceGroupName -DiskName $VMName+$_ 
+                    $DiskConfig = New-AzureRmDiskConfig -AccountType $StorageType -Location $Location -CreateOption Empty -OsType Windows -DiskSizeGB $DataDiskSize
+                    $Disk = New-AzureRmDisk -Disk $DiskConfig -ResourceGroupName $resourceGroupName -DiskName $VMName'DataDisk'$_ 
+                    
+                    # Attach to Virtual machine object
                     $VirtualMachine = Add-AzureRmVMDataDisk -VM $VirtualMachine -CreateOption Attach -ManagedDiskId $Disk.Id -Lun $_
-                }               
+                }
             }
 
             $VirtualMachine = Set-AzureRmVMOSDisk -VM $VirtualMachine -StorageAccountType $StorageType -CreateOption FromImage -Windows

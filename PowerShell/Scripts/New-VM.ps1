@@ -319,6 +319,8 @@ function New-VM() {
             $Interface = New-AzureRmNetworkInterface -Name $VMName -ResourceGroupName $ResourceGroupName -Location $Location -SubnetId $VNet.Subnets[0].Id -PublicIpAddressId $PIp.Id
 
             # Create network security group
+
+
             
             # Enable diagnostics
 
@@ -376,6 +378,8 @@ function New-VM() {
                     # Configure Drive
 
                     # Bring on domain?
+
+                    Set-AzureRmVMCustomScriptExtension -ResourceGroupName $ResourceGroupName -Location $Location -VMName $VMName -Name $ScriptName -TypeHandlerVersion "1.1" -StorageAccountName $ScriptStorageAccount -StorageAccountKey $ScriptStorageAccountKey -FileName $ScriptFileName -ContainerName $ScriptContainerName
                     
                         # Enable RDP? (may not be needed if auto-joined to domain)
                         

@@ -129,7 +129,56 @@ function New-VM() {
             HelpMessage="Enter the size of each data disks (if any)"
         )]
         [int]
-        $DataDiskSize
+        $DataDiskSize,
+        
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify whether to provision a public IP address"
+        )]
+        [int]
+        $ProvisionPIP,
+        
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specifies whether the VM should run post provisioning"
+        )]
+        [int]
+        $PostProvision,
+
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the post provision script name"
+        )]
+        [string]
+        $ScriptName,
+
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the post provision script storage account"
+        )]
+        [string]
+        $ScriptStorageAccount,
+
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the post provision script storage account key"
+        )]
+        [string]
+        $ScriptStorageAccountKey,
+
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the post provision script file name"
+        )]
+        [string]
+        $ScriptFileName,
+
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the post provision script storage container name"
+        )]
+        [string]
+        $ScriptContainerName
     )
 
     Begin {
@@ -270,9 +319,6 @@ function New-VM() {
                 $VMSize = Read-Host "VM size is invalid or not available, specify a new size."
             }
 
-            # Create public IP
-            $PIp = New-AzureRmPublicIpAddress -Name $VMName -ResourceGroupName $ResourceGroupName -Location $Location -AllocationMethod Dynamic
-
             # Get existing vNET
             $Vnet = Get-AzureRmVirtualNetwork -ErrorAction SilentlyContinue
 
@@ -315,22 +361,29 @@ function New-VM() {
                 }
             }
 
-            # Create VM Network Interface
-            $Interface = New-AzureRmNetworkInterface -Name $VMName -ResourceGroupName $ResourceGroupName -Location $Location -SubnetId $VNet.Subnets[0].Id -PublicIpAddressId $PIp.Id
+            # If a public IP should be provisioned
+            if ($ProvisionPIP){
+                
+                # Create public IP
+                $PIp = New-AzureRmPublicIpAddress -Name $VMName -ResourceGroupName $ResourceGroupName -Location $Location -AllocationMethod Dynamic
+                
+                # Create VM Network Interface with PIP
+                $Interface = New-AzureRmNetworkInterface -Name $VMName -ResourceGroupName $ResourceGroupName -Location $Location -SubnetId $VNet.Subnets[0].Id -PublicIpAddressId $PIp.Id
+            
+                # Consider creating network security group
 
-            # Create network security group
-
-
+                    # Consider creating RDP access rule
+            
+            }
+            Else {
+                
+                # Create VM Network Interface without a public IP
+                $Interface = New-AzureRmNetworkInterface -Name $VMName -ResourceGroupName $ResourceGroupName -Location $Location -SubnetId $VNet.Subnets[0].Id
+            }
             
             # Enable diagnostics
 
             # Consider Availability group
-
-            # Extensions
-                
-                # Antivirus
-                
-                # Custom Script Extension (for post provisioning)
 
             # Create virtual machine configuration object
             $VirtualMachine = New-AzureRmVMConfig -VMName $VMName -VMSize $VMSize
@@ -372,23 +425,21 @@ function New-VM() {
             New-AzureRmVM -ResourceGroupName $ResourceGroupName -Location $Location -VM $VirtualMachine
 
             # If postprovision is true
-              
-                # Call Post Provision Function
+            if ($PostProvision){
 
-                    # Configure Drive
-
-                    # Bring on domain?
-
-                    Set-AzureRmVMCustomScriptExtension -ResourceGroupName $ResourceGroupName -Location $Location -VMName $VMName -Name $ScriptName -TypeHandlerVersion "1.1" -StorageAccountName $ScriptStorageAccount -StorageAccountKey $ScriptStorageAccountKey -FileName $ScriptFileName -ContainerName $ScriptContainerName
-                    
-                        # Enable RDP? (may not be needed if auto-joined to domain)
-                        
-                        # Move Public IP to post provision? (may not be needed if auto-joined to domain)
-
-            # Else 
+                # Execute post provision custom script
+                Set-AzureRmVMCustomScriptExtension -ResourceGroupName $ResourceGroupName -Location $Location -VMName $VMName -Name $ScriptName -TypeHandlerVersion "1.1" -StorageAccountName $ScriptStorageAccount -StorageAccountKey $ScriptStorageAccountKey -FileName $ScriptFileName -ContainerName $ScriptContainerName
+            }
+            Else {
+                
+                # Deallocate VM until configuration is due to take place
+                Stop-AzureRMVM -ResourceGroupName $ResourceGroupName -Name $VMName -Force
+            }
+        
+            # Extensions
             
-                #Call Deallocate function
-
+                # Antivirus
+        
         }
         Catch {
 

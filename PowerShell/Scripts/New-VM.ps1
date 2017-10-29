@@ -418,7 +418,7 @@ function New-VM() {
                     $DataDiskSize = Read-Host "Enter the data disk size in GB"
                 }
 
-                # From 1, to the number of data disks required
+                # From 1, to the number of data disks required, for each
                 1..$DataDisk | ForEach-Object {
                     
                     # Create Managed Data Disk

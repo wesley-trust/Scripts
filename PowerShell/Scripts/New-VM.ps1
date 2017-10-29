@@ -319,10 +319,17 @@ function New-VM() {
                 $VMSize = Read-Host "VM size is invalid or not available, specify a new size."
             }
 
-            # Get existing vNET
-            $Vnet = Get-AzureRmVirtualNetwork -ErrorAction SilentlyContinue
-
-            # If there are no Vnets
+            # If a Vnet name is specified
+            if ($VNetName){
+                # Get Vnet object
+                $Vnet = Get-AzureRmVirtualNetwork -Name $VNetName -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
+            }
+            Else {
+                # Get all Vnets
+                $Vnet = Get-AzureRmVirtualNetwork -ErrorAction SilentlyContinue
+            }
+          
+            # If there are no Vnet objects
             if (!$Vnet){
                
                 # Create virtual network config
@@ -359,6 +366,10 @@ function New-VM() {
                 if (!$vnet){
                     throw "No valid virtual network specified."
                 }
+            }
+            Else {
+                # Display vnet to be used
+                Write-Host "Using Vnet:"$Vnet.name
             }
 
             # If a public IP should be provisioned

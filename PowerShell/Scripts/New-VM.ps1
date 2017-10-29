@@ -430,6 +430,7 @@ function New-VM() {
                 }
             }
 
+            # Set OS disk to create from Windows image
             $VirtualMachine = Set-AzureRmVMOSDisk -VM $VirtualMachine -StorageAccountType $StorageType -CreateOption FromImage -Windows
 
             # Create VM in Azure

@@ -1,5 +1,5 @@
 <#
-#Script name: Set Bnet
+#Script name: Set Vnet
 #Creator: Wesley Trust
 #Date: 2017-10-30
 #Revision: 1

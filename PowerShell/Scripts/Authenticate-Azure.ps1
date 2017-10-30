@@ -6,7 +6,7 @@
 #References: 
 
 .Synopsis
-    Function to authenticate against Azure
+    Function to authenticate against Azure.
 .Description
     
 .Example

@@ -25,7 +25,6 @@ function Connect-Azure() {
         )]
         [string]
         $SubscriptionID
-
     )
 
     Begin {

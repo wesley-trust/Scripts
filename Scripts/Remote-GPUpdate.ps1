@@ -59,7 +59,7 @@ try {
         # Run command in remote session for server
         Invoke-Command -Session $Session -ScriptBlock {
 
-        gpupdate /force
+            gpupdate /force
 
         }
 

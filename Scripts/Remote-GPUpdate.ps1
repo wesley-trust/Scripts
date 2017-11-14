@@ -27,7 +27,7 @@ Function Invoke-Remote-GPUpdate () {
         
         [Parameter(
             Mandatory=$True,
-            HelpMessage="Enter the OU to select computers"
+            HelpMessage="Enter the OU (in DN format) to select computers"
         )]
         [String]
         $OU

@@ -12,7 +12,7 @@
     if not, checks if the AzureRM module is installed, if not, installs the module.
     Then checks if there is an active connection to Azure, or whether credentials are required, connects to Azure.
     If it is not in Azure Automation, and there is an active connection, checks if a subscription ID is specified,
-    if not, loads subscriptions, prompts for subscription ID, and finally selects subscription.
+    if not, loads subscriptions, prompts for subscription ID, finally selects subscription if not already selected.
 .Example
     Connect-AzureRM -SubscriptionID $SubscriptionID -DifferentCredentials $true 
 .Example

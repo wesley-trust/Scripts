@@ -14,7 +14,7 @@
     If it is not in Azure Automation, and there is an active connection, checks if a subscription ID is specified,
     if not, loads subscriptions, prompts for subscription ID, and finally selects subscription.
 .Example
-
+    Connect-AzureRM -SubscriptionID $SubscriptionID -DifferentCredentials $true 
 .Example
     
 

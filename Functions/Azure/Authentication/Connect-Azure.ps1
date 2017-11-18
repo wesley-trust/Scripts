@@ -6,12 +6,13 @@
 #References: 
 
 .Synopsis
-    Function that connects to an Azure subscription.
+    Function that connects to an Azure subscription via Azure Automation or user Authentication.
 .Description
-    Function that connects to an Azure subscription, firstly by checking if the AzureRM module is installed,
-    if not, installs this, then checks if there is an active connection to Azure, if not, connects to Azure,
-    if a subscription ID is specified, selects that subscription, if not, loads subscriptions,
-    prompts for subscription ID, and selects that subscription.
+    Function that connects to an Azure subscription, firstly by checking whether it is in Azure Automation,
+    if not, checks if the AzureRM module is installed, if not, installs the module.
+    Then checks if there is an active connection to Azure, or whether credentials are required, connects to Azure.
+    If it is not in Azure Automation, and there is an active connection, checks if a subscription ID is specified,
+    if not, loads subscriptions, prompts for subscription ID, and finally selects subscription.
 .Example
 
 .Example
@@ -27,7 +28,13 @@ function Connect-AzureRM() {
             HelpMessage="Enter the subscription ID"
         )]
         [string]
-        $SubscriptionID
+        $SubscriptionID,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify whether to reauthentcate with different credentials"
+        )]
+        [bool]
+        $DifferentCredentials = $false
     )
 
     Begin {
@@ -40,7 +47,7 @@ function Connect-AzureRM() {
             $ServicePrincipalConnection = Get-AutomationConnection -Name $ConnectionName
 
             if ($ServicePrincipalConnection){
-                Write-Host "Authenticating with Azure"
+                "Authenticating with Azure Automation"
                 Add-AzureRmAccount `
                     -ServicePrincipal `
                     -TenantId $servicePrincipalConnection.TenantId `
@@ -53,7 +60,7 @@ function Connect-AzureRM() {
             }
         }
         
-        # Catch when not run in Azure Automation
+        # Catch when Azure Automation command is not found
         catch [System.Management.Automation.CommandNotFoundException] {
             
             # Check if AzureRM module is installed
@@ -66,8 +73,8 @@ function Connect-AzureRM() {
             # Check to see if there is an active connection to Azure
             $AzureConnection = Get-AzureRmContext | Where-Object Name -NE "Default"
 
-            # If not, connect to Azure (will prompt for credentials)
-            if (!$AzureConnection) {
+            # If no active connection, or different credentials are required 
+            if (!$AzureConnection -or $DifferentCredentials) {
                 Write-Host ""
                 Write-Host "Authenticating with Azure, enter credentials when prompted"
                 $AzureConnection = Add-AzureRmAccount
@@ -81,11 +88,10 @@ function Connect-AzureRM() {
     
     Process {
         try {
-
             # If there is no Azure Automation Service Principal
             if (!$ServicePrincipalConnection){
                 
-                # If there is a connection to Azure
+                # But there is a connection to Azure
                 if ($AzureConnection){
 
                     # If there is no subscription ID specified

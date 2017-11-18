@@ -105,11 +105,18 @@ function Connect-AzureRM() {
                         # Prompt for subscription ID
                         $SubscriptionId = Read-Host "Enter subscription ID"
                     }
-        
-                    # Select subscription
-                    Write-Host ""
-                    Write-Host "Selecting subscription"
-                    Select-AzureRmSubscription -SubscriptionId $SubscriptionId
+
+                    # Get the subscription in the current context
+                    $SelectedSubscriptionID = (Get-AzureRmContext).Subscription.id
+
+                    # If the selected subscription is not in the current context
+                    if ($SelectedSubscriptionID -ne $SubscriptionID){
+                        
+                        # Change context to selected subscription
+                        Write-Host ""
+                        Write-Host "Selecting subscription"
+                        Select-AzureRmSubscription -SubscriptionId $SubscriptionId
+                    }
                 }
                 else {
                     $ErrorMessage = "No active Azure connection."

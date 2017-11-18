@@ -19,7 +19,7 @@
 
 #>
 
-function Connect-AzureSubscription() {
+function Connect-AzureRM() {
     #Parameters
     Param(
         [Parameter(
@@ -32,17 +32,26 @@ function Connect-AzureSubscription() {
 
     Begin {
         try {
+            # Connection Variable
+            $connectionName = "AzureRunAsConnection"
             
-        }
-        Catch {
-            Write-Error -Message $_.exception
-            throw $_.exception
-        }
-    }
-    
-    Process {
-        try {
+            # Get the service principal of the connection
+            $ServicePrincipalConnection = Get-AutomationConnection -Name $ConnectionName
 
+            if ($ServicePrincipalConnection){
+                Write-Host "Authenticating with Azure"
+                Add-AzureRmAccount `
+                    -ServicePrincipal `
+                    -TenantId $servicePrincipalConnection.TenantId `
+                    -ApplicationId $servicePrincipalConnection.ApplicationId `
+                    -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint
+            }
+            else {
+                $ErrorMessage = "Connection $ConnectionName not found."
+                throw $ErrorMessage
+            }
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
             # Check if AzureRM module is installed
             if (!(Get-Module -ListAvailable | Where-Object Name -Like "*AzureRM*")){
                 
@@ -50,35 +59,55 @@ function Connect-AzureSubscription() {
                 Install-Module -Name AzureRM -AllowClobber -Force
             }
 
-            # Connect to Azure
-            
             # Check to see if there is an active connection to Azure
             $AzureConnection = Get-AzureRmContext | Where-Object Name -NE "Default"
 
             # If not, connect to Azure (will prompt for credentials)
             if (!$AzureConnection) {
-                Add-AzureRmAccount
-            }
-
-            # If there is no subscription ID specified
-            if (!$SubscriptionID){
-            
-                # List subscriptions
                 Write-Host ""
-                Write-Host "Loading subscriptions this account has access to:"
-                Get-AzureRmSubscription | Select-Object Name, SubscriptionId | Format-List
-            
-                # Prompt for subscription ID
-                $SubscriptionId = Read-Host "Enter subscription ID"
+                Write-Host "Authenticating with Azure, enter credentials when prompted"
+                $AzureConnection = Add-AzureRmAccount
             }
+        }
+        catch {
+            Write-Error -Message $_.Exception
+            throw $_.exception
+        }
+    }
+    
+    Process {
+        try {
+            
+            # If there is no Azure Automation Service Principal
+            if (!$ServicePrincipalConnection){
+                
+                # If there is a connection to Azure
+                if ($AzureConnection){
 
-            # Select subscription
-            Write-Host ""
-            Write-Host "Selecting subscription"
-            Select-AzureRmSubscription -SubscriptionId $SubscriptionId
+                    # If there is no subscription ID specified
+                    if (!$SubscriptionID){
+                        
+                        # List subscriptions
+                        Write-Host ""
+                        Write-Host "Loading subscriptions this account has access to:"
+                        Get-AzureRmSubscription | Select-Object Name, SubscriptionId | Format-List
+                    
+                        # Prompt for subscription ID
+                        $SubscriptionId = Read-Host "Enter subscription ID"
+                    }
+        
+                    # Select subscription
+                    Write-Host ""
+                    Write-Host "Selecting subscription"
+                    Select-AzureRmSubscription -SubscriptionId $SubscriptionId
+                }
+                else {
+                    $ErrorMessage = "No active Azure connection."
+                    throw $ErrorMessage
+                }
+            }
         }
         Catch {
-
             Write-Error -Message $_.exception
             throw $_.exception
         }

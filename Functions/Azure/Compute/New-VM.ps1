@@ -2,7 +2,7 @@
 #Script name: New VM
 #Creator: Wesley Trust
 #Date: 2017-10-19
-#Revision: 1
+#Revision: 3
 #References: https://docs.microsoft.com/en-us/powershell/module/azurerm.compute/new-azurermvm?view=azurermps-4.2.0
 
 .Synopsis

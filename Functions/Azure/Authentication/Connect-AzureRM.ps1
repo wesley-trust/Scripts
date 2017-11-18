@@ -10,11 +10,11 @@
 .Description
     Function that connects to an Azure subscription, firstly by checking whether it is in Azure Automation,
     if not, checks if the AzureRM module is installed, if not, installs the module.
-    Then checks if there is an active connection to Azure, or whether credentials are required, connects to Azure.
+    Then checks if there is an active connection, or whether different credentials are required, connects to Azure.
     If it is not in Azure Automation, and there is an active connection, checks if a subscription ID is specified,
     if not, loads subscriptions, prompts for subscription ID, finally selects subscription if not already selected.
 .Example
-    Connect-AzureRM -SubscriptionID $SubscriptionID -DifferentCredentials $true 
+    Connect-AzureRM -SubscriptionID $SubscriptionID -ReAuthenticate $true 
 .Example
     
 
@@ -31,10 +31,10 @@ function Connect-AzureRM() {
         $SubscriptionID,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify whether to reauthentcate with different credentials"
+            HelpMessage="Specify whether to reauthenticate with different credentials"
         )]
         [bool]
-        $DifferentCredentials = $false
+        $ReAuthenticate = $false
     )
 
     Begin {
@@ -74,8 +74,8 @@ function Connect-AzureRM() {
             # Check to see if there is an active connection to Azure
             $AzureConnection = Get-AzureRmContext | Where-Object Name -NE "Default"
 
-            # If no active connection, or different credentials are required 
-            if (!$AzureConnection -or $DifferentCredentials) {
+            # If no active connection, or reauthentication is required 
+            if (!$AzureConnection -or $ReAuthenticate) {
                 Write-Host ""
                 Write-Host "Authenticating with Azure, enter credentials when prompted"
                 $AzureConnection = Add-AzureRmAccount

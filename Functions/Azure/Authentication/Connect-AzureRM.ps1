@@ -101,10 +101,19 @@ function Connect-AzureRM() {
                         # List subscriptions
                         Write-Host ""
                         Write-Host "Loading subscriptions this account has access to:"
-                        Get-AzureRmSubscription | Select-Object Name, SubscriptionId | Format-List
-                    
-                        # Prompt for subscription ID
-                        $SubscriptionId = Read-Host "Enter subscription ID"
+                        $Subscriptions = Get-AzureRmSubscription
+                        
+                        # If there are subscriptions, display them
+                        if ($Subscriptions){
+                            $Subscriptions | Select-Object Name, SubscriptionId | Format-List
+                            
+                            # Prompt for subscription ID
+                            $SubscriptionId = Read-Host "Enter subscription ID"
+                        }
+                        else {
+                            $ErrorMessage = "Unable to get subscriptions."
+                            throw $ErrorMessage
+                        }
                     }
 
                     # Get the subscription in the current context
@@ -117,6 +126,7 @@ function Connect-AzureRM() {
                         Write-Host ""
                         Write-Host "Selecting subscription"
                         Select-AzureRmSubscription -SubscriptionId $SubscriptionId
+                        
                     }
                 }
                 else {

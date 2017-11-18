@@ -126,7 +126,6 @@ function Connect-AzureRM() {
                         Write-Host ""
                         Write-Host "Selecting subscription"
                         Select-AzureRmSubscription -SubscriptionId $SubscriptionId
-                        
                     }
                 }
                 else {

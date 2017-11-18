@@ -195,14 +195,15 @@ function New-VM() {
             . .\Set-Vnet.ps1
 
             # Set Virtual Network
-            $Vnet = Set-Vnet `
+            Set-Vnet `
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $ResourceGroupName `
                 -Location $Location `
                 -SubnetName $SubnetName `
                 -VNetName $VNetName `
                 -VNetAddressPrefix $VNetAddressPrefix `
-                -VNetSubnetAddressPrefix $VNetSubnetAddressPrefix
+                -VNetSubnetAddressPrefix $VNetSubnetAddressPrefix `
+                | Tee-Object -Variable Vnet
 
             # Display vnet to be used
             Write-Host "Using Vnet:"$Vnet.name

@@ -48,7 +48,12 @@ function Set-ResourceGroup() {
             . .\Connect-AzureRM.ps1
             
             # Authenticate with Azure
-            Connect-AzureRM -SubscriptionID $SubscriptionID
+            Connect-AzureRM -SubscriptionID $SubscriptionID `
+            | Tee-Object -Variable AzureConnection
+
+            # Update subscription Id from Azure Connection
+            $SubscriptionID = $AzureConnection.Subscription.id
+
         }
         Catch {
             Write-Error -Message $_.exception

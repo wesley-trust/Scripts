@@ -111,7 +111,7 @@ function Connect-AzureRM() {
                             $SubscriptionId = Read-Host "Enter subscription ID"
                         }
                         else {
-                            $ErrorMessage = "Unable to get subscriptions."
+                            $ErrorMessage = "Unable to list subscriptions."
                             throw $ErrorMessage
                         }
                     }

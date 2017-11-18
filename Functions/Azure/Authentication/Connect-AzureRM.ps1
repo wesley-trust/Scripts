@@ -46,6 +46,7 @@ function Connect-AzureRM() {
             # Get the service principal of the connection
             $ServicePrincipalConnection = Get-AutomationConnection -Name $ConnectionName
 
+            # If there is a service principal
             if ($ServicePrincipalConnection){
                 "Authenticating with Azure Automation"
                 Add-AzureRmAccount `

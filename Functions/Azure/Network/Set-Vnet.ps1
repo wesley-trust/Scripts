@@ -67,16 +67,14 @@ function Set-Vnet() {
         )]
         [string]
         $VNetSubnetAddressPrefix
-
     )
 
     Begin {
         try {
-            # Include functions
+            # Connect to Azure
             Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\
             . .\Connect-AzureRM.ps1
             
-            # Authenticate with Azure
             if ($SubscriptionID){
                 Connect-AzureRM -SubscriptionID $SubscriptionID
             }
@@ -93,46 +91,32 @@ function Set-Vnet() {
     Process {
         try {
 
-            # If the resource group name parameter is not set
-            if (!$ResourceGroupName){
+            # Set resource group
+            Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
+            . .\Set-ResourceGroup.ps1
 
-                # Get all resource groups
-                Get-AzureRmResourceGroup | Select-Object ResourceGroupName | More
-                $ResourceGroupName = Read-Host "Enter the name of an exisiting or new resource group"
-            }
-                
-            # Check if the resource group exists
-            $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
-
-            # Get Azure regions
-            $Locations = Get-AzureRmLocation
-
-            #If the resource group does not exist
-            if (!$ResourceGroup){
-                
-                # And no location is set
-                if (!$Location){
-                    
-                    # Get Azure region locations
-                    $Locations | Select-Object Location | Format-Table | more
-                    
-                    # Prompt for location
-                    $Location = Read-Host "Enter the location for this VM"
+            $ResourceGroup = {
+                if ($SubscriptionID){
+                    if ($ResourceGroupName){
+                        if ($Location){
+                            Set-ResourceGroup -SubscriptionID $SubscriptionID -ResourceGroupName $ResourceGroupName -Location $Location
+                        }
+                        else {
+                            Set-ResourceGroup -SubscriptionID $SubscriptionID -ResourceGroupName $ResourceGroupName
+                        }
+                    }
+                    else {
+                        Set-ResourceGroup -SubscriptionID $SubscriptionID
+                    }
                 }
-
-                # Check for valid location
-                while ($Locations.location -notcontains $Location){
-                    $Location = Read-Host "Location is invalid or not available, specify a new location."
+                else {
+                    Set-ResourceGroup
                 }
+            }
 
-                # Create Resource Group
-                New-AzureRmResourceGroup -Name $ResourceGroupName -Location $Location
-            }
-            Else {
-                # Set location from resource group
-                $Location = $ResourceGroup.Location
-            }
-            
+            # Update location variable from resource group object
+            $Location = $ResourceGroup.Location
+
             # If a Vnet name is specified
             if ($VNetName){
                 # Get Vnet object
@@ -181,10 +165,7 @@ function Set-Vnet() {
                     throw "No valid virtual network specified."
                 }
             }
-            Else {
-                # Display vnet to be used
-                return $Vnet
-            }
+            return $Vnet
         }
         Catch {
 

@@ -1,14 +1,17 @@
 <#
-#Script name: Connect Azure
+#Script name: Connect Azure Subscription
 #Creator: Wesley Trust
 #Date: 2017-10-30
-#Revision: 1
+#Revision: 2
 #References: 
 
 .Synopsis
-    Function to authenticate against Azure.
+    Function that connects to an Azure subscription.
 .Description
-    
+    Function that connects to an Azure subscription, firstly by checking if the AzureRM module is installed,
+    if not, installs this, then checks if there is an active connection to Azure, if not, connects to Azure,
+    if a subscription ID is specified, selects that subscription, if not, loads subscriptions,
+    prompts for subscription ID, and selects that subscription.
 .Example
 
 .Example
@@ -16,7 +19,7 @@
 
 #>
 
-function Connect-Azure() {
+function Connect-AzureSubscription() {
     #Parameters
     Param(
         [Parameter(
@@ -49,7 +52,7 @@ function Connect-Azure() {
 
             # Connect to Azure
             
-            # Try connecting to see if a session is currently active
+            # Check to see if there is an active connection to Azure
             $AzureConnection = Get-AzureRmContext | Where-Object Name -NE "Default"
 
             # If not, connect to Azure (will prompt for credentials)
@@ -57,7 +60,7 @@ function Connect-Azure() {
                 Add-AzureRmAccount
             }
 
-            # Subscription info
+            # If there is no subscription ID specified
             if (!$SubscriptionID){
             
                 # List subscriptions
@@ -70,6 +73,8 @@ function Connect-Azure() {
             }
 
             # Select subscription
+            Write-Host ""
+            Write-Host "Selecting subscription"
             Select-AzureRmSubscription -SubscriptionId $SubscriptionId
         }
         Catch {

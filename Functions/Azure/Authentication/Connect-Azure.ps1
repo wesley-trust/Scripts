@@ -31,6 +31,7 @@ function Connect-AzureRM() {
     )
 
     Begin {
+        # Try Azure Automation Authentication
         try {
             # Connection Variable
             $connectionName = "AzureRunAsConnection"
@@ -51,7 +52,10 @@ function Connect-AzureRM() {
                 throw $ErrorMessage
             }
         }
+        
+        # Catch when not run in Azure Automation
         catch [System.Management.Automation.CommandNotFoundException] {
+            
             # Check if AzureRM module is installed
             if (!(Get-Module -ListAvailable | Where-Object Name -Like "*AzureRM*")){
                 
@@ -77,7 +81,7 @@ function Connect-AzureRM() {
     
     Process {
         try {
-            
+
             # If there is no Azure Automation Service Principal
             if (!$ServicePrincipalConnection){
                 

@@ -72,37 +72,17 @@ function Set-Vnet() {
 
     Begin {
         try {
-            # Check if AzureRM module is installed
-            if (!(Get-Module -ListAvailable | Where-Object Name -Like "*AzureRM*")){
-                
-                # If not installed, install the module
-                Install-Module -Name AzureRM -AllowClobber -Force
-            }
-
-            # Connect to Azure
+            # Include functions
+            Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\
+            . .\Connect-AzureRM.ps1
             
-            # Try connecting to see if a session is currently active
-            $AzureConnection = Get-AzureRmContext | Where-Object Name -NE "Default"
-
-            # If not, connect to Azure (will prompt for credentials)
-            if (!$AzureConnection) {
-                Add-AzureRmAccount
+            # Authenticate with Azure
+            if ($SubscriptionID){
+                Connect-AzureRM -SubscriptionID $SubscriptionID
             }
-
-            # Subscription info
-            if (!$SubscriptionID){
-            
-                # List subscriptions
-                Write-Host ""
-                Write-Host "Loading subscriptions this account has access to:"
-                Get-AzureRmSubscription | Select-Object Name, SubscriptionId | Format-List
-            
-                # Prompt for subscription ID
-                $SubscriptionId = Read-Host "Enter subscription ID"
+            else {
+                Connect-AzureRM
             }
-
-            # Select subscription
-            Select-AzureRmSubscription -SubscriptionId $SubscriptionId
         }
         Catch {
             Write-Error -Message $_.exception

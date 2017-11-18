@@ -75,12 +75,8 @@ function Set-Vnet() {
             Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\
             . .\Connect-AzureRM.ps1
             
-            if ($SubscriptionID){
-                Connect-AzureRM -SubscriptionID $SubscriptionID
-            }
-            else {
-                Connect-AzureRM
-            }
+            # Authenticate with Azure
+            Connect-AzureRM -SubscriptionID $SubscriptionID
         }
         Catch {
             Write-Error -Message $_.exception
@@ -95,25 +91,11 @@ function Set-Vnet() {
             Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
             . .\Set-ResourceGroup.ps1
 
-            $ResourceGroup = {
-                if ($SubscriptionID){
-                    if ($ResourceGroupName){
-                        if ($Location){
-                            Set-ResourceGroup -SubscriptionID $SubscriptionID -ResourceGroupName $ResourceGroupName -Location $Location
-                        }
-                        else {
-                            Set-ResourceGroup -SubscriptionID $SubscriptionID -ResourceGroupName $ResourceGroupName
-                        }
-                    }
-                    else {
-                        Set-ResourceGroup -SubscriptionID $SubscriptionID
-                    }
-                }
-                else {
-                    Set-ResourceGroup
-                }
-            }
-
+            $ResourceGroup = Set-ResourceGroup `
+                -SubscriptionID $SubscriptionID `
+                -ResourceGroupName $ResourceGroupName `
+                -Location $Location
+            
             # Update location variable from resource group object
             $Location = $ResourceGroup.Location
 

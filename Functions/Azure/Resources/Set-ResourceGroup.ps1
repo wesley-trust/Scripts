@@ -48,12 +48,7 @@ function Set-ResourceGroup() {
             . .\Connect-AzureRM.ps1
             
             # Authenticate with Azure
-            if ($SubscriptionID){
-                Connect-AzureRM -SubscriptionID $SubscriptionID
-            }
-            else {
-                Connect-AzureRM
-            }
+            Connect-AzureRM -SubscriptionID $SubscriptionID
         }
         Catch {
             Write-Error -Message $_.exception

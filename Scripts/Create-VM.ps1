@@ -31,7 +31,7 @@ Process {
         Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Compute\
         . .\New-VM.ps1
 
-        New-VM -VMName "Test-Delete-Me" -StorageType "Standard_LRS" -SubscriptionID
+        New-VM -StorageType "Standard_LRS" -VMSize "Standard_A8"
     }
     Catch {
 

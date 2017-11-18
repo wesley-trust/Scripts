@@ -129,12 +129,11 @@ function Configure-Drive() {
             Write-Output ""
             foreach ($Server in $ServerSuccessGroup) {
                 
-                #Temp commenting out action section, whilst troubleshooting pipeline process
                 Write-Host ""
-                Write-Host "TEST: Successfully configured data drives on"$Server.DNSHostName
+                Write-Host "Configuring: "$Server.DNSHostName
                 Write-Host ""
 
-                <# #Create new session
+                #Create new session
                 $Session = New-PSSession -ComputerName $Server.DNSHostName -Credential $Credential
                     
                 #Run command in remote session for server
@@ -164,7 +163,7 @@ function Configure-Drive() {
                     Write-Host "Successfully configured data drives on "$Server.name
                     Write-Host ""
                         
-                } #>
+                }
             }
         }
         else {  

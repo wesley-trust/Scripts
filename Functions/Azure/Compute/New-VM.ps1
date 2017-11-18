@@ -180,13 +180,15 @@ function New-VM() {
             Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
             . .\Set-ResourceGroup.ps1
 
-            $ResourceGroup = Set-ResourceGroup `
+            Set-ResourceGroup `
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $ResourceGroupName `
-                -Location $Location
-
-            # Update location variable from resource group object
+                -Location $Location `
+                | Tee-Object -Variable ResourceGroup
+            
+            # Update variables from resource group object
             $Location = $ResourceGroup.Location
+            $ResourceGroupName = $ResourceGroup.ResourceGroupName
             
             # Set vnet
             Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Network\

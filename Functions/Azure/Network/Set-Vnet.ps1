@@ -91,16 +91,19 @@ function Set-Vnet() {
             Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
             . .\Set-ResourceGroup.ps1
 
-            $ResourceGroup = Set-ResourceGroup `
+            Set-ResourceGroup `
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $ResourceGroupName `
-                -Location $Location
+                -Location $Location `
+                | Tee-Object -Variable ResourceGroup
             
-            # Update location variable from resource group object
+            # Update variables from resource group object
             $Location = $ResourceGroup.Location
+            $ResourceGroupName = $ResourceGroup.ResourceGroupName
 
             # If a Vnet name is specified
             if ($VNetName){
+               
                 # Get Vnet object
                 $Vnet = Get-AzureRmVirtualNetwork -Name $VNetName -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
             }

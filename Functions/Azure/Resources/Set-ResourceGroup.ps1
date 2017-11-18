@@ -64,7 +64,7 @@ function Set-ResourceGroup() {
 
                 # Get all resource groups
                 Get-AzureRmResourceGroup | Select-Object ResourceGroupName | More
-                $ResourceGroupName = Read-Host "Select an existing group, or enter a name to create a new group"
+                $ResourceGroupName = Read-Host "Enter an existing resource group name, a new name will create a new group"
             }
                 
             # Check if the resource group exists

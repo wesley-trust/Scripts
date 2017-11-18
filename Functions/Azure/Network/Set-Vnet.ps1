@@ -86,42 +86,60 @@ function Set-Vnet() {
     
     Process {
         try {
-
-            # Set resource group
-            Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
-            . .\Set-ResourceGroup.ps1
-
-            Set-ResourceGroup `
-                -SubscriptionID $SubscriptionID `
-                -ResourceGroupName $ResourceGroupName `
-                -Location $Location `
-                | Tee-Object -Variable ResourceGroup
-            
-            # Update variables from resource group object
-            $Location = $ResourceGroup.Location
-            $ResourceGroupName = $ResourceGroup.ResourceGroupName
-
-            # If a Vnet name is specified
-            if ($VNetName){
+            # If no Vnet name is specified
+            if (!$VNetName){
                
-                # Get Vnet object
-                $Vnet = Get-AzureRmVirtualNetwork -Name $VNetName -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
-            }
-            Else {
                 # Get all Vnets
                 $Vnet = Get-AzureRmVirtualNetwork -ErrorAction SilentlyContinue
             }
-          
+
             # If there are no Vnet objects
             if (!$Vnet){
-               
-                # Create virtual network config
-                $SubnetConfig = New-AzureRmVirtualNetworkSubnetConfig -Name $SubnetName -AddressPrefix $VNetSubnetAddressPrefix
                 
-                # Create virtual network
-                $VNet = New-AzureRmVirtualNetwork -Name $VNetName -ResourceGroupName $ResourceGroupName -Location $Location -AddressPrefix $VNetAddressPrefix -Subnet $SubnetConfig
+                # Set resource group
+                Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
+                . .\Set-ResourceGroup.ps1
+
+                Set-ResourceGroup `
+                    -SubscriptionID $SubscriptionID `
+                    -ResourceGroupName $ResourceGroupName `
+                    -Location $Location `
+                    | Tee-Object -Variable ResourceGroup
+                
+                # Update variables from resource group object
+                $Location = $ResourceGroup.Location
+                $ResourceGroupName = $ResourceGroup.ResourceGroupName
+                
+                if (!$VNetName){
+                    
+                    # Request optional vnet variable
+                    $VNetName = Read-Host "Enter an existing vnet name within the resource group, a new name will create a new vnet"
+                    
+                    # Get Vnet object
+                    $Vnet = Get-AzureRmVirtualNetwork -Name $VNetName -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
+                }
+                if (!$Vnet) {
+                    
+                    # Request subnet optional variables
+                    if (!$SubnetName){
+                        $SubnetName = Read-Host "Please enter Subnet name"
+                    }
+                    if (!$VNetSubnetAddressPrefix){
+                        $VNetSubnetAddressPrefix = Read-Host "Please enter Subnet address prefix"
+                    }
+                    
+                    # Create virtual network config
+                    $SubnetConfig = New-AzureRmVirtualNetworkSubnetConfig -Name $SubnetName -AddressPrefix $VNetSubnetAddressPrefix
+                    
+                    # Request vnet address optional variable
+                    if (!$VNetAddressPrefix){
+                        $VNetAddressPrefix = Read-Host "Please enter the vnet address prefix"
+                    }
+                    # Create virtual network
+                    $VNet = New-AzureRmVirtualNetwork -Name $VNetName -ResourceGroupName $ResourceGroupName -Location $Location -AddressPrefix $VNetAddressPrefix -Subnet $SubnetConfig
+                }
             }
-            
+
             # Else if there is more than 1 vnet
             Elseif ($VNet.count -ne "1") {
                 

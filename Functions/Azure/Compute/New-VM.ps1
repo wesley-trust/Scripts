@@ -191,6 +191,8 @@ function New-VM() {
                 -Location $Location `
                 | Tee-Object -Variable ResourceGroup
             
+            $ResourceGroup = $ResourceGroup | Where-Object {$_ -is [Microsoft.Azure.Commands.ResourceManager.Cmdlets.SdkModels.PSResourceGroup]}
+
             # Update variables from resource group object
             $Location = $ResourceGroup.Location
             $ResourceGroupName = $ResourceGroup.ResourceGroupName
@@ -210,6 +212,8 @@ function New-VM() {
                 -VNetSubnetAddressPrefix $VNetSubnetAddressPrefix `
                 | Tee-Object -Variable Vnet
 
+            $Vnet = $Vnet | Where-Object {$_ -is [Microsoft.Azure.Commands.Network.Models.PSVirtualNetwork]}
+                
             # Display vnet to be used
             Write-Host "Using Vnet:"$Vnet.name
 

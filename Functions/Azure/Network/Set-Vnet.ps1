@@ -111,6 +111,8 @@ function Set-Vnet() {
                     -Location $Location `
                     | Tee-Object -Variable ResourceGroup
                 
+                $ResourceGroup = $ResourceGroup | Where-Object {$_ -is [Microsoft.Azure.Commands.ResourceManager.Cmdlets.SdkModels.PSResourceGroup]}
+
                 # Update variables from resource group object
                 $Location = $ResourceGroup.Location
                 $ResourceGroupName = $ResourceGroup.ResourceGroupName

@@ -126,6 +126,7 @@ function Connect-AzureRM() {
                         Write-Host ""
                         Write-Host "Selecting subscription"
                         $AzureConnection = Select-AzureRmSubscription -SubscriptionId $SubscriptionId
+                        return $AzureConnection
                     }
                 }
                 else {
@@ -133,7 +134,6 @@ function Connect-AzureRM() {
                     throw $ErrorMessage
                 }
             }
-            return $AzureConnection
         }
         Catch {
             Write-Error -Message $_.exception

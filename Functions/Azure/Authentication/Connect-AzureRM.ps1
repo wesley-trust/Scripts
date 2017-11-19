@@ -101,7 +101,7 @@ function Connect-AzureRM() {
                         # List subscriptions
                         Write-Host ""
                         Write-Host "Loading subscriptions this account has access to:"
-                        $Subscriptions = Get-AzureRmSubscription
+                        $Subscriptions = Get-AzureRmSubscription 
                         
                         # If there are subscriptions, display them
                         if ($Subscriptions){
@@ -125,7 +125,7 @@ function Connect-AzureRM() {
                         # Change context to selected subscription
                         Write-Host ""
                         Write-Host "Selecting subscription"
-                        Select-AzureRmSubscription -SubscriptionId $SubscriptionId
+                        $AzureConnection = Select-AzureRmSubscription -SubscriptionId $SubscriptionId
                     }
                 }
                 else {
@@ -133,6 +133,7 @@ function Connect-AzureRM() {
                     throw $ErrorMessage
                 }
             }
+            return $AzureConnection
         }
         Catch {
             Write-Error -Message $_.exception

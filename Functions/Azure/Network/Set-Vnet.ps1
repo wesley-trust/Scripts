@@ -151,7 +151,10 @@ function Set-Vnet() {
             Elseif ($VNet.count -ne "1") {
                 
                 # Display vnet names
-                $Vnet | Select-Object Name
+                Write-Host ""
+                Write-Host "Virtual Network Names:"
+                Write-Host ""
+                ($Vnet).name | Write-Host
 
                 # Clear variable
                 $VNetName = $null

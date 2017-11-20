@@ -113,14 +113,12 @@ function New-ResourceGroup() {
         )]
         [string]
         $SubscriptionID,
-        
         [Parameter(
             Mandatory=$false,
             HelpMessage="Enter the resource group name"
         )]
         [string]
         $ResourceGroupName,
-        
         [Parameter(
             Mandatory=$false,
             HelpMessage="Enter the Azure region location"

@@ -68,7 +68,9 @@ function Set-ResourceGroup() {
             if (!$ResourceGroupName){
 
                 # Get all resource groups
-                Get-AzureRmResourceGroup | Select-Object ResourceGroupName | More
+                #Get-AzureRmResourceGroup | Select-Object ResourceGroupName | More
+                $ResourceGroups = Get-AzureRmResourceGroup
+                ($ResourceGroups).ResourceGroupName | Write-Host
                 $ResourceGroupName = Read-Host "Enter an existing resource group name, a new name will create a new group"
             }
                 
@@ -85,7 +87,8 @@ function Set-ResourceGroup() {
                 if (!$Location){
                     
                     # Get Azure region locations
-                    $Locations | Select-Object Location | Format-Table | more
+                    #$Locations | Select-Object Location | Format-Table | more
+                    ($Locations).Location | Write-Host
                     
                     # Prompt for location
                     $Location = Read-Host "Enter the location for this resource"
@@ -97,7 +100,7 @@ function Set-ResourceGroup() {
                 }
 
                 # Create Resource Group
-                New-AzureRmResourceGroup -Name $ResourceGroupName -Location $Location
+                $ResourceGroup = New-AzureRmResourceGroup -Name $ResourceGroupName -Location $Location
             }
             return $ResourceGroup
         }

@@ -154,7 +154,7 @@ function Set-Vnet() {
                 Write-Host ""
                 Write-Host "Virtual Network Names:"
                 Write-Host ""
-                ($Vnet).name | Out-Host -Paging
+                ($Vnet).name, "`n" | Out-Host -Paging
 
                 # Clear variable
                 $VNetName = $null

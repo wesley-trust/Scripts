@@ -111,8 +111,8 @@ function Connect-AzureRM() {
                             # List subscriptions
                             #$Subscriptions | Select-Object Name, SubscriptionId | Format-List
                             foreach ($Subscription in $Subscriptions) {
-                                ($Subscription).name | Out-Host
-                                ($Subscription).SubscriptionId | Out-Host
+                                ($Subscription).name | Write-Host
+                                ($Subscription).SubscriptionId | Write-Host
                                 Write-Host ""
                             }
 

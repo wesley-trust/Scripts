@@ -183,9 +183,9 @@ function New-VM() {
 
             # Set resource group
             Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
-            . .\Set-ResourceGroup.ps1
+            . .\ResourceGroup.ps1
 
-            $ResourceGroup = Set-ResourceGroup `
+            $ResourceGroup = Get-ResourceGroup `
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $ResourceGroupName `
                 -Location $Location #`

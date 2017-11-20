@@ -64,13 +64,13 @@ function Get-ResourceGroup() {
             if (!$ResourceGroupName){
 
                 # Get all resource groups
-                Write-Host "`n Resource Group Names:"
+                Write-Host "`nExisting Resource Group names:"
                 $ResourceGroups = Get-AzureRmResourceGroup
                 "`n",($ResourceGroups).ResourceGroupName,"`n" | Out-Host -Paging
                 
                 # While no resource group name is provided
                 while (!$ResourceGroupName){
-                    $ResourceGroupName = Read-Host "Enter resource group name"
+                    $ResourceGroupName = Read-Host "Enter existing or new resource group name"
                 }
             }
                 
@@ -157,7 +157,7 @@ function New-ResourceGroup() {
             }
 
             # Check if the resource group exists
-            $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName
+            $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
 
             #If the resource group does not exist
             if (!$ResourceGroup){

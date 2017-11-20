@@ -48,8 +48,8 @@ function Set-ResourceGroup() {
             . .\Connect-AzureRM.ps1
             
             # Authenticate with Azure
-            Connect-AzureRM -SubscriptionID $SubscriptionID `
-            | Tee-Object -Variable AzureConnection
+            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID #`
+            #| Tee-Object -Variable AzureConnection
 
             # Update subscription Id from Azure Connection
             $SubscriptionID = $AzureConnection.Subscription.id
@@ -69,7 +69,7 @@ function Set-ResourceGroup() {
 
                 # Get all resource groups
                 #Get-AzureRmResourceGroup | Select-Object ResourceGroupName | More
-                Write-Host "Resource Group Names:"
+                Write-Host "`n Resource Group Names:"
                 $ResourceGroups = Get-AzureRmResourceGroup
                 Write-Host ""
                 ($ResourceGroups).ResourceGroupName | Out-Host -Paging

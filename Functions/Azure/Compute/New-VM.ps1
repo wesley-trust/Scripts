@@ -165,8 +165,8 @@ function New-VM() {
             . .\Connect-AzureRM.ps1
             
             # Authenticate with Azure
-            Connect-AzureRM -SubscriptionID $SubscriptionID `
-            | Tee-Object -Variable AzureConnection
+            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID #`
+            #| Tee-Object -Variable AzureConnection
 
             # Update subscription Id from Azure Connection
             $SubscriptionID = $AzureConnection.Subscription.id
@@ -185,11 +185,11 @@ function New-VM() {
             Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
             . .\Set-ResourceGroup.ps1
 
-            Set-ResourceGroup `
+            $ResourceGroup = Set-ResourceGroup `
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $ResourceGroupName `
-                -Location $Location `
-                | Tee-Object -Variable ResourceGroup
+                -Location $Location #`
+                #| Tee-Object -Variable ResourceGroup
             
             $ResourceGroup = $ResourceGroup | Where-Object {$_ -is [Microsoft.Azure.Commands.ResourceManager.Cmdlets.SdkModels.PSResourceGroup]}
 
@@ -202,15 +202,15 @@ function New-VM() {
             . .\Set-Vnet.ps1
 
             # Set Virtual Network
-            Set-Vnet `
+            $Vnet = Set-Vnet `
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $ResourceGroupName `
                 -Location $Location `
                 -SubnetName $SubnetName `
                 -VNetName $VNetName `
                 -VNetAddressPrefix $VNetAddressPrefix `
-                -VNetSubnetAddressPrefix $VNetSubnetAddressPrefix `
-                | Tee-Object -Variable Vnet
+                -VNetSubnetAddressPrefix $VNetSubnetAddressPrefix #`
+                #| Tee-Object -Variable Vnet
 
             $Vnet = $Vnet | Where-Object {$_ -is [Microsoft.Azure.Commands.Network.Models.PSVirtualNetwork]}
                 

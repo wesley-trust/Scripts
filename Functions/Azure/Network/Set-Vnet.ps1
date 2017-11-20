@@ -76,8 +76,8 @@ function Set-Vnet() {
             . .\Connect-AzureRM.ps1
             
             # Authenticate with Azure
-            Connect-AzureRM -SubscriptionID $SubscriptionID `
-            | Tee-Object -Variable AzureConnection
+            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID #`
+            #| Tee-Object -Variable AzureConnection
 
             # Update subscription Id from Azure Connection
             $SubscriptionID = $AzureConnection.Subscription.id
@@ -105,11 +105,11 @@ function Set-Vnet() {
                 Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
                 . .\Set-ResourceGroup.ps1
 
-                Set-ResourceGroup `
+                $ResourceGroup = Set-ResourceGroup `
                     -SubscriptionID $SubscriptionID `
                     -ResourceGroupName $ResourceGroupName `
-                    -Location $Location `
-                    | Tee-Object -Variable ResourceGroup
+                    -Location $Location #`
+                    #| Tee-Object -Variable ResourceGroup
                 
                 $ResourceGroup = $ResourceGroup | Where-Object {$_ -is [Microsoft.Azure.Commands.ResourceManager.Cmdlets.SdkModels.PSResourceGroup]}
 

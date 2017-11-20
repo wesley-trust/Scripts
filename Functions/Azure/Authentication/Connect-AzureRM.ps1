@@ -95,17 +95,20 @@ function Connect-AzureRM() {
                 # But there is a connection to Azure
                 if ($AzureConnection){
 
+                    # Load subscriptions
+                    $Subscriptions = Get-AzureRmSubscription
+
                     # If there is no subscription ID specified
                     if (!$SubscriptionID){
-                        
-                        # List subscriptions
-                        Write-Host ""
-                        Write-Host "Loading subscriptions this account has access to:"
-                        Write-Host ""
-                        $Subscriptions = Get-AzureRmSubscription 
-                        
-                        # If there are subscriptions, display them
+                                                 
+                        # But there are subscriptions
                         if ($Subscriptions){
+                            
+                            Write-Host ""
+                            Write-Host "Subscriptions you have access to:"
+                            Write-Host ""
+
+                            # List subscriptions
                             #$Subscriptions | Select-Object Name, SubscriptionId | Format-List
                             foreach ($Subscription in $Subscriptions) {
                                 ($Subscription).name | Out-Host
@@ -117,9 +120,14 @@ function Connect-AzureRM() {
                             $SubscriptionId = Read-Host "Enter subscription ID"
                         }
                         else {
-                            $ErrorMessage = "Unable to list subscriptions."
+                            $ErrorMessage = "Unable to list subscriptions, you may not have access to any."
                             throw $ErrorMessage
                         }
+                    }
+
+                    # Check for valid subscription ID
+                    while ($Subscriptions.SubscriptionId -notcontains $SubscriptionID){
+                        $SubscriptionID = Read-Host "Subscription is invalid or you are not authorised to access, specify a new ID"
                     }
 
                     # Get the subscription in the current context

@@ -69,6 +69,7 @@ function Set-ResourceGroup() {
 
                 # Get all resource groups
                 #Get-AzureRmResourceGroup | Select-Object ResourceGroupName | More
+                Write-Host "Resource Group Names:"
                 $ResourceGroups = Get-AzureRmResourceGroup
                 Write-Host ""
                 ($ResourceGroups).ResourceGroupName | Write-Host
@@ -79,17 +80,18 @@ function Set-ResourceGroup() {
             # Check if the resource group exists
             $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
 
-            # Get Azure regions
-            $Locations = Get-AzureRmLocation
-
             #If the resource group does not exist
             if (!$ResourceGroup){
                 
+                # Get Azure regions
+                $Locations = Get-AzureRmLocation
+
                 # And no location is set
                 if (!$Location){
                     
                     # Get Azure region locations
                     #$Locations | Select-Object Location | Format-Table | more
+                    Write-Host "Supported Regions:"
                     Write-Host ""
                     ($Locations).Location | Write-Host
                     Write-Host ""

@@ -138,8 +138,8 @@ function Connect-AzureRM() {
                         Write-Host ""
                         Write-Host "Selecting subscription"
                         $AzureConnection = Select-AzureRmSubscription -SubscriptionId $SubscriptionId
-                        return $AzureConnection
                     }
+                return $AzureConnection
                 }
                 else {
                     $ErrorMessage = "No active Azure connection."

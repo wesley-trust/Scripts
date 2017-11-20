@@ -72,7 +72,7 @@ function Set-ResourceGroup() {
                 Write-Host "Resource Group Names:"
                 $ResourceGroups = Get-AzureRmResourceGroup
                 Write-Host ""
-                ($ResourceGroups).ResourceGroupName | Write-Host
+                ($ResourceGroups).ResourceGroupName | Out-Host -Paging
                 Write-Host ""
                 $ResourceGroupName = Read-Host "Enter an existing resource group name, a new name will create a new group"
             }
@@ -93,7 +93,7 @@ function Set-ResourceGroup() {
                     #$Locations | Select-Object Location | Format-Table | more
                     Write-Host "Supported Regions:"
                     Write-Host ""
-                    ($Locations).Location | Write-Host
+                    ($Locations).Location | Out-Host -Paging
                     Write-Host ""
                     
                     # Prompt for location

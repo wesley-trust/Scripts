@@ -86,6 +86,12 @@ function New-VM() {
         $SubnetName = "default",
         [Parameter(
             Mandatory=$false,
+            HelpMessage="Use exisiting Virtual Network (if one exists)"
+        )]
+        [bool]
+        $SkipVnetCheck = $true,
+        [Parameter(
+            Mandatory=$false,
             HelpMessage="Enter the virtual network name"
         )]
         [string]
@@ -214,9 +220,24 @@ function New-VM() {
 
             $Vnet = $Vnet | Where-Object {$_ -is [Microsoft.Azure.Commands.Network.Models.PSVirtualNetwork]}
                 
-            # Display vnet to be used
-            Write-Host "Using Vnet:"$Vnet.name
-            Write-Host ""
+            if (!$SkipVnetCheck){
+                # Confirm Virtual Network
+                $Choice = $null
+                while ($Choice -notmatch "Y|N"){
+                    $Choice = Read-Host "Use Vnet:"$Vnet.name,"? (Y/N)"
+                }
+                # If user returns no
+                if ($Choice -match "N"){
+                    $ErrorMessage = "User aborted due to virtual network selection"
+                    Write-Error -Message $ErrorMessage
+                    throw $ErrorMessage
+                }
+            }
+            else {
+                # Display vnet to be used
+                Write-Host "`nUsing Vnet:"$Vnet.name,"`n"
+            }
+
 
             # If there are no VM credentials
             If (!$VMCredential) {

@@ -125,7 +125,7 @@ function Connect-AzureRM() {
 
                     # Check for valid subscription ID
                     while ($Subscriptions.SubscriptionId -notcontains $SubscriptionID){
-                        $SubscriptionID = Read-Host "Subscription is invalid or you are not authorised to access, specify a new ID"
+                        $SubscriptionID = Read-Host "Subscription is invalid or you do not have access, specify a new ID"
                     }
 
                     # Get the subscription in the current context

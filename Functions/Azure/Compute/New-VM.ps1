@@ -216,6 +216,7 @@ function New-VM() {
                 
             # Display vnet to be used
             Write-Host "Using Vnet:"$Vnet.name
+            Write-Host ""
 
             # If there are no VM credentials
             If (!$VMCredential) {

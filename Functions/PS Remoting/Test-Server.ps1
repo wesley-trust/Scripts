@@ -20,6 +20,7 @@
 #>
 
 #Include Functions
+Set-Location "C:\Users\wesley.trust\GitHub\Scripts\Functions\Active Directory"
 . .\Get-Server.ps1
 
 function Test-Server () {

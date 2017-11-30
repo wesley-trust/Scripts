@@ -22,6 +22,7 @@
 #>
 
 #Include Functions
+Set-Location "C:\Users\wesley.trust\GitHub\Scripts\Functions\PS Remoting"
 . .\Test-Server.ps1
 
 function Configure-Service() {

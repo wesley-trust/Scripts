@@ -22,6 +22,7 @@
 #>
 
 #Include Functions
+Set-Location "C:\Users\wesley.trust\GitHub\Scripts\Functions\Active Directory"
 . .\Get-DC.ps1
 
 Function Get-Server () {

@@ -2,7 +2,7 @@
 #Script name: Test connection to server
 #Creator: Wesley Trust
 #Date: 2017-08-28
-#Revision: 4
+#Revision: 3
 #References:
 #ToDo
     .Connection progress for server checks
@@ -80,7 +80,7 @@ function Test-Server () {
         }
 
         #Check there are servers in array
-        if (!$ServerGroup){
+        if ($ServerGroup -eq $null){
             
             #If there aren't, and no domain and OU are specified, get servers
             If (!$Domain -or !$ou){
@@ -93,16 +93,18 @@ function Test-Server () {
         }
         
         #Check there are servers in the array
-        if (!$ServerGroup){
+        if ($ServerGroup -eq $null){
             Write-Error 'No servers returned.' -ErrorAction Stop
         }
         
         $ServerGroup = foreach ($Server in $ServerGroup){
             try {
-
-                # Try connecting to WinRM
-                Test-WSMan -ComputerName $Server.DNSHostName -Authentication Default -Credential $Credential -ErrorAction SilentlyContinue
-
+                #Open a remote session
+                $Session = New-PSSession -ComputerName $Server.DNSHostName -Credential $Credential -ErrorAction SilentlyContinue
+                
+                #Remove session
+                Remove-pssession -session $Session
+                
                 #Create object property variable
                 $ObjectProperties = @{
                     DNSHostName = $Server.DNSHostName
@@ -173,7 +175,7 @@ function Get-SuccessServer () {
 
     Begin {
         #If there are no credentials, prompt for credentials
-        if (!$Credential) {
+        if ($Credential -eq $null) {
             Write-Output "Enter credentials for remote computer"
             $Credential = Get-Credential
         }

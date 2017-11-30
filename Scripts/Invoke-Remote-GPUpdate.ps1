@@ -54,6 +54,27 @@ Function Invoke-Remote-GPUpdate () {
         # Remove session
         Remove-PSSession -Session $Session
 
+        $Computers = foreach ($Computer in $Computers){
+            
+            # Try connecting to WinRM
+            $Test = Test-WSMan `
+                        -ComputerName $Computer.DNSHostName `
+                        -Authentication Default `
+                        -Credential $Credential `
+                        -ErrorAction SilentlyContinue
+
+            if ($Test){
+                
+                #Create object property variable
+                $ObjectProperties = @{
+                    DNSHostName = $Server.DNSHostName
+                    Status = "Success"
+                }
+            }
+
+            # Create a new object, with the properties
+            New-Object psobject -Property $ObjectProperties
+        }
         # For each computer in variable
         foreach ($Computer in $Computers){
 

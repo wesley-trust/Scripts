@@ -53,13 +53,21 @@ function Test-Server () {
             ValueFromPipeLineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $DNSHostName
+        $DNSHostName,
+
+
+        [Parameter(
+            Mandatory=$false,
+            ValueFromPipeLineByPropertyName=$true)]
+        [ValidateNotNullOrEmpty()]
+        [PSCredential]
+        $Credential
     )
 
     Begin {
         #If there are no credentials, prompt for credentials
-        if ($Credential -eq $null) {
-            Write-Output "Enter credentials for remote computer"
+        if (!$Credential) {
+            Write-Host "Enter credentials for remote computer"
             $Credential = Get-Credential
         }
 
@@ -98,31 +106,27 @@ function Test-Server () {
         }
         
         $ServerGroup = foreach ($Server in $ServerGroup){
-            try {
 
-                # Try connecting to WinRM
-                Test-WSMan -ComputerName $Server.DNSHostName -Authentication Default -Credential $Credential -ErrorAction SilentlyContinue
+            # Try connecting to WinRM
+            $Test = Test-WSMan -ComputerName $Server.DNSHostName -Authentication Default -Credential $Credential -ErrorAction SilentlyContinue
 
+            if ($Test){
                 #Create object property variable
                 $ObjectProperties = @{
                     DNSHostName = $Server.DNSHostName
                     Status = "Success"
                 }
-                
-                #Create a new object, with the properties
-                New-Object psobject -Property $ObjectProperties
             }
-            catch {
+            else {
                 #Catch failures and create object property variable
                 $ObjectProperties = @{
                     DNSHostName = $Server.DNSHostName
                     Status = "Fail"
                 }
-                
-                #Create a new object, with the properties
-                New-Object psobject -Property $ObjectProperties
             }
-            Continue
+            
+            #Create a new object, with the properties
+            New-Object psobject -Property $ObjectProperties
         }
         Return $ServerGroup
     }

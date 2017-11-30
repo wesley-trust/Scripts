@@ -33,8 +33,18 @@ Function Invoke-Remote-GPUpdate () {
         $OU
     )
 
-    # Authentication Variable
-    $Credential = Get-Credential
+    begin {
+        try {
+            # Authentication Variable
+            $Credential = Get-Credential
+        }
+        catch {
+            Write-Error $_
+            throw $_
+        }
+    }
+
+Process {
 
     try {
         
@@ -53,6 +63,12 @@ Function Invoke-Remote-GPUpdate () {
 
         # Remove session
         Remove-PSSession -Session $Session
+
+        if (!$Computers){
+            $ErrorMessage = "No computers returned"
+            Write-Error $ErrorMessage
+            throw $ErrorMessage
+        }
 
         $Computers = foreach ($Computer in $Computers){
             
@@ -75,6 +91,13 @@ Function Invoke-Remote-GPUpdate () {
             # Create a new object, with the properties
             New-Object psobject -Property $ObjectProperties
         }
+
+        if (!$Computers){
+            $ErrorMessage = "No computers can be connected to"
+            Write-Error $ErrorMessage
+            throw $ErrorMessage
+        }
+
         # For each computer in variable
         foreach ($Computer in $Computers){
 
@@ -100,6 +123,10 @@ Function Invoke-Remote-GPUpdate () {
         Write-Error -Message $_.Exception
         throw $_.Exception
     }
+}
+
+end {
+
 }
 
 # Execute Script, defaults to current user DNS domain

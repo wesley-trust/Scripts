@@ -25,7 +25,7 @@ function Set-AzureAD-UserType() {
         $Credential,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify email address(es) of directory guests"
+            HelpMessage="Specify email address(es) of directory to change"
         )]
         [string[]]
         $Emails,

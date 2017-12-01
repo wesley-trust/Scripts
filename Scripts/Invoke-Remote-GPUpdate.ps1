@@ -83,7 +83,7 @@ Process {
                 
                 #Create object property variable
                 $ObjectProperties = @{
-                    DNSHostName = $Server.DNSHostName
+                    DNSHostName = $Computer.DNSHostName
                     Status = "Success"
                 }
             }

@@ -78,7 +78,6 @@ function Set-AzureAD-UserType() {
                     if ($UserCheck){
                         $ErrorMessage = "User $Email is already a $UserType in the directory."
                         Write-Error $ErrorMessage
-                        throw $ErrorMessage
                     }
                     else {                       
                         # Set user to new user type
@@ -89,7 +88,6 @@ function Set-AzureAD-UserType() {
                 else {
                     $ErrorMessage = "$Email does not exist in the directory"
                     Write-Error $ErrorMessage
-                    throw $ErrorMessage
                 }
             }
         }

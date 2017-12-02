@@ -6,7 +6,7 @@
 #References: 
 
 .Synopsis
-    Function that connects to an Azure AD tenant and sets a directory user type (by default Member is specified).
+    Function that connects to an Azure AD tenant and sets directory user type (by default Member is specified).
 .Description
 
 .Example
@@ -41,6 +41,17 @@ function Set-AzureAD-UserType() {
         try {
             # Connect to directory tenant
             Connect-MsolService -Credential $Credential
+        }
+        # Catch command not found
+        catch [System.Management.Automation.CommandNotFoundException] {
+            
+            # Check if module is installed
+            $ModuleCheck = Get-Module -ListAvailable | Where-Object Name -Like "*MSOnline*"
+            if (!$ModuleCheck){
+                
+                # If not installed, install the module
+                Install-Module -Name MSOnline -AllowClobber -Force
+            }
         }
         catch {
             Write-Error -Message $_.Exception
@@ -82,11 +93,12 @@ function Set-AzureAD-UserType() {
                     else {                       
                         # Set user to new user type
                         $User | Set-MsolUser -UserType $UserType -ErrorAction Stop
-                        Write-Output "User $Email has been changed to $UserType in the directory."
+                        $SuccessMessage = "User $Email has been changed to $UserType in the directory."
+                        Write-Output $SuccessMessage
                     }
                 }
                 else {
-                    $ErrorMessage = "$Email does not exist in the directory"
+                    $ErrorMessage = "$Email does not exist in the directory."
                     Write-Error $ErrorMessage
                 }
             }

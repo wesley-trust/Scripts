@@ -34,7 +34,13 @@ function Set-AzureAD-UserType() {
             HelpMessage="Specify user type to change to (Default: Member)"
         )]
         [string]
-        $UserType = "Member"
+        $UserType = "Member",
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify whether to skip authentication"
+        )]
+        [bool]
+        $SkipAuthentication = $false
     )
 
     Begin {
@@ -51,7 +57,9 @@ function Set-AzureAD-UserType() {
             }
             
             # Connect to directory tenant
-            Connect-MsolService -Credential $Credential
+            if (!$SkipAuthentication) {
+                Connect-MsolService -Credential $Credential
+            } 
         }
         catch {
             Write-Error -Message $_.Exception
@@ -73,8 +81,8 @@ function Set-AzureAD-UserType() {
 
             # If no email address(es) are specified, request email address
             while (!$Emails) {
-                $Emails = Read-Host "Enter email address(es), comma separated, to change to $UserType in $Tenant"
-            }            
+                $Emails = Read-Host "Enter email address(es), comma separated, to change to $UserType"
+            }
 
             # Clean emails and create array
             $Emails = $Emails.Split(",")
@@ -110,7 +118,7 @@ function Set-AzureAD-UserType() {
                     }
                 }
                 else {
-                    $ErrorMessage = "$Email does not exist in the directory."
+                    $ErrorMessage = "User $Email does not exist in the directory."
                     Write-Error $ErrorMessage
                 }
             }

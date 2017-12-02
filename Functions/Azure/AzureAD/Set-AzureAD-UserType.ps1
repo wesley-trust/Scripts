@@ -2,11 +2,11 @@
 #Script name: Sets Azure AD tenant user type for multiple email addresses.
 #Creator: Wesley Trust
 #Date: 2017-12-01
-#Revision: 1
+#Revision: 2
 #References: 
 
 .Synopsis
-    Function that connects to an Azure AD tenant and sets directory user type (by default Member is specified).
+    Function that connects to an Azure AD tenant and sets directory user type (by default to Member).
 .Description
 
 .Example
@@ -47,7 +47,6 @@ function Set-AzureAD-UserType() {
             
             # If not installed, install the module
             if (!$ModuleCheck){
-
                 Install-Module -Name $Module -AllowClobber -Force -ErrorAction Stop
             }
             
@@ -62,15 +61,24 @@ function Set-AzureAD-UserType() {
     
     Process {
         try {
+            # Get Tenant domain
+            $Tenant = Get-MsolCompanyInformation | Select-Object InitialDomain
+            
+            # If no tenant domain
+            if (!$Tenant.InitialDomain){
+                $ErrorMessage = "No tenant domain returned."
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
+            }
+
             # If no email address(es) are specified, request email address
             while (!$Emails) {
-                $Emails = Read-Host "Enter user email address(es), comma separated, to change to $UserType"
-            }
-            
-            # Get Tenant domain
-            if (!$Tenant){
-                $Tenant = Get-MsolCompanyInformation | Select-Object InitialDomain
-            }
+                $Emails = Read-Host "Enter email address(es), comma separated, to change to $UserType in $Tenant"
+            }            
+
+            # Clean emails and create array
+            $Emails = $Emails.Split(",")
+            $Emails = $Emails | ForEach-Object {$_.Trim()}
 
             foreach ($Email in $Emails){
                 

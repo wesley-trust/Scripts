@@ -39,19 +39,20 @@ function Set-AzureAD-UserType() {
 
     Begin {
         try {
-            # Connect to directory tenant
-            Connect-MsolService -Credential $Credential
-        }
-        # Catch command not found
-        catch [System.Management.Automation.CommandNotFoundException] {
+            # Variables
+            $Module = "MSOnline"
             
             # Check if module is installed
-            $ModuleCheck = Get-Module -ListAvailable | Where-Object Name -Like "*MSOnline*"
+            $ModuleCheck = Get-Module -ListAvailable | Where-Object Name -eq $Module
+            
+            # If not installed, install the module
             if (!$ModuleCheck){
-                
-                # If not installed, install the module
-                Install-Module -Name MSOnline -AllowClobber -Force
+
+                Install-Module -Name $Module -AllowClobber -Force -ErrorAction Stop
             }
+            
+            # Connect to directory tenant
+            Connect-MsolService -Credential $Credential
         }
         catch {
             Write-Error -Message $_.Exception
@@ -63,7 +64,7 @@ function Set-AzureAD-UserType() {
         try {
             # If no email address(es) are specified, request email address
             while (!$Emails) {
-                $Emails = Read-Host "Enter email address(es) of directory user(s) to change to $UserType"
+                $Emails = Read-Host "Enter user email address(es), comma separated, to change to $UserType"
             }
             
             # Get Tenant domain
@@ -72,6 +73,7 @@ function Set-AzureAD-UserType() {
             }
 
             foreach ($Email in $Emails){
+                
                 # Get user from email
                 $User = Get-MsolUser | Where-Object {$_.SignInName -EQ $Email}
                 
@@ -84,6 +86,7 @@ function Set-AzureAD-UserType() {
 
                 # If user exists
                 if ($User) {
+                    
                     # Check if user is already the user type to change to
                     $UserCheck = $User | Where-Object  {$_.UserType -EQ $UserType}
                     if ($UserCheck){
@@ -91,6 +94,7 @@ function Set-AzureAD-UserType() {
                         Write-Error $ErrorMessage
                     }
                     else {                       
+                        
                         # Set user to new user type
                         $User | Set-MsolUser -UserType $UserType -ErrorAction Stop
                         $SuccessMessage = "User $Email has been changed to $UserType in the directory."

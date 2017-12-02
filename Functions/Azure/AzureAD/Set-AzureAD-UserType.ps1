@@ -82,7 +82,7 @@ function Set-AzureAD-UserType() {
                     else {                       
                         # Set user to new user type
                         $User | Set-MsolUser -UserType $UserType -ErrorAction Stop
-                        Write-Host "User $Email has been changed to $UserType in the directory."
+                        Write-Output "User $Email has been changed to $UserType in the directory."
                     }
                 }
                 else {

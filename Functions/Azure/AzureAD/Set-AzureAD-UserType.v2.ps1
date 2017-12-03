@@ -91,9 +91,9 @@ function Set-AzureAD-UserType() {
             foreach ($Email in $Emails){
                 
                 # Get user from email
-                $Email = $Email.replace("@","_")
-                $Email = $Email+"#EXT#@"+$Tenant.name
-                $User = Get-AzureADUser -Filter "UserPrincipalName eq '$Email'"
+                $ExternalEmail = $Email.replace("@","_")
+                $ExternalEmail = $ExternalEmail+"#EXT#@"+$Tenant.name
+                $User = Get-AzureADUser -Filter "UserPrincipalName eq '$ExternalEmail'"
 
                 # If user exists
                 if ($User) {

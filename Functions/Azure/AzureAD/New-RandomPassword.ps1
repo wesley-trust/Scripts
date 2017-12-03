@@ -19,7 +19,7 @@ function New-RandomPassword() {
     Param(
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify a PowerShell credential"
+            HelpMessage="Specify the character length"
         )]
         [int]
         $CharacterLength = 8

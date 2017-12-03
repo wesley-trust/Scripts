@@ -1,5 +1,5 @@
 <#
-#Script name: Sets Azure AD tenant user type for multiple email addresses.
+#Script name: Set-MSOLAzureAD-UserType
 #Creator: Wesley Trust
 #Date: 2017-12-01
 #Revision: 2
@@ -10,12 +10,12 @@
 .Description
 
 .Example
-    Set-AzureAD-UserType -Credential $Credential -Emails "wesley.trust@example.com" -UserType $UserType
+    Set-MSOLAzureAD-UserType -Credential $Credential -Emails "wesley.trust@example.com" -UserType $UserType
 .Example
     
 #>
 
-function Set-AzureAD-UserType() {
+function Set-MSOLAzureAD-UserType() {
     Param(
         [Parameter(
             Mandatory=$false,

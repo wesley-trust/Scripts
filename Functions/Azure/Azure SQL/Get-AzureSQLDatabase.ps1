@@ -186,7 +186,7 @@ function Get-AzureSQLDatabase() {
                         -Body $Body
                 }
                 else {
-                    # Return database names
+                    # Display database names
                     $SQLDatabases.DatabaseName
                 }
             }

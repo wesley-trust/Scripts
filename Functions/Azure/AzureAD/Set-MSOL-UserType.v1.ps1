@@ -15,7 +15,7 @@
     
 #>
 
-function Set-MSOLAzureAD-UserType() {
+function Set-MSOL-UserType() {
     Param(
         [Parameter(
             Mandatory=$false,

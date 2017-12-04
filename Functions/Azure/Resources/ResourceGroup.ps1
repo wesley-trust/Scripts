@@ -64,8 +64,8 @@ function Get-ResourceGroup() {
                 # Get all resource groups
                 Write-Host "`nExisting Resource Group names:"
                 $ResourceGroups = Get-AzureRmResourceGroup
-                "`n",($ResourceGroups).ResourceGroupName,"`n" | Out-Host -Paging
-                
+                $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
+
                 # While no exisiting resource group name is provided
                 while ($ResourceGroupName -notcontains $ResourceGroups.ResourceGroupName){
                     $ResourceGroupName = Read-Host "Enter existing or new resource group name"
@@ -145,7 +145,7 @@ function New-ResourceGroup() {
                 
                 # Get Azure region locations
                 Write-Host "Supported Regions:"
-                "`n",($Locations).Location,"`n" | Out-Host -Paging
+                $Locations | Select-Object Location | Format-Table | Out-Host -Paging
                 
                 # Prompt for location
                 $Location = Read-Host "Enter the location for this resource group"

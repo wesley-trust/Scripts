@@ -124,6 +124,7 @@ function Set-AzureAD-UserType() {
         }
     }
     End {
-        
+        # Disconnect
+        Disconnect-AzureAD
     }
 }

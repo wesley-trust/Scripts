@@ -119,6 +119,7 @@ function New-AzureAD-ExternalUser() {
         }
     }
     End {
-        
+        # Disconnect
+        Disconnect-AzureAD 
     }
 }

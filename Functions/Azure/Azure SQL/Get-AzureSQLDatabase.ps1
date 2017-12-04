@@ -114,17 +114,24 @@ function Get-AzureSQLDatabase() {
                 
                 # But no SQL Server is specified
                 if (!$SQLServer){
-                    Write-Host "`nAvailable SQL Servers:`n"
-                    
-                    # List servers
-                    foreach ($SQLServer in $SQLServers) {
-                        Write-Host $SQLServer.ServerName
-                    }
 
-                    # Prompt for SQL Server
-                    while (!$SQLServer){
-                        $SQLServer = Read-Host "Enter SQL Server"
-                    } 
+                    # If there is only 1 server, use by default
+                    if ($SQLServers.count -eq "1"){
+                        $SQLServer = $SQLServers.ServerName
+                    }
+                    else {
+                        Write-Host "`nAvailable SQL Servers:`n"
+                        
+                        # List servers
+                        foreach ($SQLServer in $SQLServers) {
+                            Write-Host $SQLServer.ServerName
+                        }
+
+                        # Prompt for SQL Server
+                        while (!$SQLServer){
+                            $SQLServer = Read-Host "Enter SQL Server"
+                        }
+                    }
                 }
             }
             else {

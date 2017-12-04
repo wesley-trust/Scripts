@@ -88,7 +88,7 @@ function Get-AzureSQLDatabase() {
     Begin {
         try {
             # Load functions
-            Set-Location "C:\Users\wesley.trust\GitHub\Scripts\Functions\Azure\Authentication\"
+            Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\"
             . .\Connect-AzureRM.ps1
             
             # Connect to Azure
@@ -101,8 +101,13 @@ function Get-AzureSQLDatabase() {
     }
     Process {
         try {
-            # Get available SQL Servers
-            $SQLServers = Get-AzureRmSqlServer
+            # Get SQL Servers
+            if ($ResourceGroupName){
+                $SQLServers = Get-AzureRmSqlServer -ResourceGroupName $ResourceGroupName
+            }
+            else {
+                $SQLServers = Get-AzureRmSqlServer
+            }
 
             # If there are servers
             if ($SQLServers){
@@ -133,16 +138,8 @@ function Get-AzureSQLDatabase() {
                 $SQLServer = Read-Host "SQL Server is invalid or you do not have access, specify a new Server name"
             }
 
-            # Select SQL Server
-            $SQLServer = $SQLServers | Where-Object ServerName -eq $SQLServer
-
             # Update resource group name from SQL Server
             $ResourceGroupName = $SQLServer.ResourceGroupName
-
-            # If there is no resource group name, request this
-            while (!$ResourceGroupName) {
-                $ResourceGroupName = Read-Host "Enter Resource Group Name"
-            }
 
             # Get all databases from SQL server
             $SQLDatabases = Get-AzureRmSqlDatabase -ResourceGroupName $ResourceGroupName -ServerName $SQLServer
@@ -156,7 +153,7 @@ function Get-AzureSQLDatabase() {
                 }
             }
 
-            #Exclude master database
+            # Exclude master database
             $SQLDatabases = $SQLDatabases | Where-Object {$_.DatabaseName -notmatch "Master"}
 
             # If there are databases

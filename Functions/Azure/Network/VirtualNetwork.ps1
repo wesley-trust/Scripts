@@ -188,8 +188,7 @@ function New-Vnet() {
             . .\Connect-AzureRM.ps1
             
             # Authenticate with Azure
-            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID #`
-            #| Tee-Object -Variable AzureConnection
+            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID
 
             # Update subscription Id from Azure Connection
             $SubscriptionID = $AzureConnection.Subscription.id

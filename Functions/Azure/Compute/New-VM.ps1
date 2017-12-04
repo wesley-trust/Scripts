@@ -166,19 +166,18 @@ function New-VM() {
 
     Begin {
         try {
-            # Connect to Azure
-            Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\
+            # Load functions
+            Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\"
             . .\Connect-AzureRM.ps1
             
-            # Authenticate with Azure
-            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID
+            # Connect to Azure
+            Connect-AzureRM -SubscriptionID $SubscriptionID
 
             # Update subscription Id from Azure Connection
             $SubscriptionID = $AzureConnection.Subscription.id
-
         }
-        Catch {
-            Write-Error -Message $_.exception
+        catch {
+            Write-Error -Message $_.Exception
             throw $_.exception
         }
     }

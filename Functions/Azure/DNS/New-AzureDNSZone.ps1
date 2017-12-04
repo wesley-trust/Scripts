@@ -40,42 +40,23 @@ function New-AzureDNSZone() {
         [string]
         $SubscriptionID
     )
-
     Begin {
-        
-        #Check if AzureRM module is installed
-        if (!(Get-Module -ListAvailable | Where-Object Name -Like "*AzureRM*")){
+        try {
+            # Load functions
+            Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\"
+            . .\Connect-AzureRM.ps1
             
-            #If not installed, install the module
-            Install-Module -Name AzureRM -AllowClobber -Force
+            # Connect to Azure
+            Connect-AzureRM -SubscriptionID $SubscriptionID
+
+            # Update subscription Id from Azure Connection
+            $SubscriptionID = $AzureConnection.Subscription.id
         }
-
-        #Connect to Azure
-        
-        #Try connecting to see if a session is currently active
-        $AzureConnection = Get-AzureRmContext | Where-Object Name -NE "Default"
-
-        #If not, connect to Azure
-        if (!$AzureConnection) {
-            Add-AzureRmAccount
+        catch {
+            Write-Error -Message $_.Exception
+            throw $_.exception
         }
-
-        #Subscription info
-        if (!$SubscriptionID){
-        
-            #List subscriptions
-            Write-Host ""
-            Write-Host "Loading subscriptions this account has access to:"
-            Get-AzureRmSubscription | Select-Object Name,SubscriptionId | Format-List
-        
-            #Prompt for subscription ID
-            $SubscriptionId = Read-Host "Enter subscription ID"
-        }
-
-        #Select subscription
-        Select-AzureRmSubscription -SubscriptionId $SubscriptionId
     }
-    
     Process {
         try {
             

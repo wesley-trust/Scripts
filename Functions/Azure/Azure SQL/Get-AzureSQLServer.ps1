@@ -43,6 +43,9 @@ function Get-AzureSQLServer() {
             
             # Connect to Azure
             Connect-AzureRM -SubscriptionID $SubscriptionID
+
+            # Update subscription Id from Azure Connection
+            $SubscriptionID = $AzureConnection.Subscription.id
         }
         catch {
             Write-Error -Message $_.Exception

@@ -48,19 +48,18 @@ function Get-Vnet() {
 
     Begin {
         try {
-            # Connect to Azure
-            Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\
+            # Load functions
+            Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\"
             . .\Connect-AzureRM.ps1
             
-            # Authenticate with Azure
+            # Connect to Azure
             $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID
 
             # Update subscription Id from Azure Connection
             $SubscriptionID = $AzureConnection.Subscription.id
-
         }
-        Catch {
-            Write-Error -Message $_.exception
+        catch {
+            Write-Error -Message $_.Exception
             throw $_.exception
         }
     }
@@ -182,23 +181,23 @@ function New-Vnet() {
     )
 
     Begin {
-        try {
-            # Connect to Azure
-            Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\
-            . .\Connect-AzureRM.ps1
-            
-            # Authenticate with Azure
-            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID
-
-            # Update subscription Id from Azure Connection
-            $SubscriptionID = $AzureConnection.Subscription.id
-
+        Begin {
+            try {
+                # Load functions
+                Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\"
+                . .\Connect-AzureRM.ps1
+                
+                # Connect to Azure
+                $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID
+    
+                # Update subscription Id from Azure Connection
+                $SubscriptionID = $AzureConnection.Subscription.id
+            }
+            catch {
+                Write-Error -Message $_.Exception
+                throw $_.exception
+            }
         }
-        Catch {
-            Write-Error -Message $_.exception
-            throw $_.exception
-        }
-    }
     
     Process {
         try {

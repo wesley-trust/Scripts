@@ -92,7 +92,7 @@ function Get-AzureSQLDatabase() {
             . .\Connect-AzureRM.ps1
             
             # Connect to Azure
-            Connect-AzureRM -SubscriptionID $SubscriptionID
+            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID
 
             # Update subscription Id from Azure Connection
             $SubscriptionID = $AzureConnection.Subscription.id

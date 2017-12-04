@@ -40,19 +40,18 @@ function Get-ResourceGroup() {
 
     Begin {
         try {
-            # Include functions
-            Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\
+            # Load functions
+            Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\"
             . .\Connect-AzureRM.ps1
             
-            # Authenticate with Azure
+            # Connect to Azure
             $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID
 
             # Update subscription Id from Azure Connection
             $SubscriptionID = $AzureConnection.Subscription.id
-
         }
-        Catch {
-            Write-Error -Message $_.exception
+        catch {
+            Write-Error -Message $_.Exception
             throw $_.exception
         }
     }

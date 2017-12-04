@@ -87,10 +87,8 @@ function Get-Vnet() {
             if ($VNet.count -ne "1") {
                 
                 # Display vnet names
-                Write-Host ""
-                Write-Host "Virtual Network Names:"
-                Write-Host ""
-                ($Vnet).name, "`n" | Out-Host -Paging
+                Write-Host "`nVirtual Network Names:`n"
+                $Vnet | Select-Object Name | Out-Host -Paging
 
                 # Clear variable
                 $VNetName = $null

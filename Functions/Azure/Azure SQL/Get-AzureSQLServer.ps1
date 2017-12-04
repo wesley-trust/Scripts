@@ -71,15 +71,14 @@ function Get-AzureSQLServer() {
                     # If there is more than one server
                     if ($SQLServers.count -gt "1"){
                         Write-Host "`nAvailable SQL Servers:`n"
-                        
-                        # List servers
-                        foreach ($SQLServer in $SQLServers) {
-                            Write-Host $SQLServer.ServerName
-                        }
+                        $SQLServers | Select-Object ServerName | Out-Host -Paging
 
                         # Prompt for SQL Server
                         while (!$SQLServer){
                             $SQLServer = Read-Host "Enter SQL Server"
+                            while ($SQLServers.ServerName -notcontains $SQLServer){
+                                $SQLServer = Read-Host "Enter valid SQL Server name"
+                            }
                         }
                     }
                 }
@@ -88,11 +87,6 @@ function Get-AzureSQLServer() {
                 $ErrorMessage = "No SQL Servers available in the current subscription"
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
-            }
-            
-            # Check for valid SQL Server
-            while ($SQLServers.ServerName -notcontains $SQLServer){
-                $SQLServer = Read-Host "SQL Server is invalid or you do not have access, specify a new Server name"
             }
 
             # Get SQL Server object

@@ -89,7 +89,7 @@ function New-VM() {
             HelpMessage="Use exisiting Virtual Network (if one exists)"
         )]
         [bool]
-        $SkipVnetCheck = $true,
+        $VnetConfirm = $false,
         [Parameter(
             Mandatory=$false,
             HelpMessage="Enter the virtual network name"
@@ -191,36 +191,54 @@ function New-VM() {
             Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
             . .\ResourceGroup.ps1
 
+            # Get resource group
             $ResourceGroup = Get-ResourceGroup `
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $ResourceGroupName `
-                -Location $Location #`
-                #| Tee-Object -Variable ResourceGroup
+                -Location $Location
             
+            # Create resource group
+            if (!$ResourceGroup){
+            $ResourceGroup = New-ResourceGroup `
+                -SubscriptionID $SubscriptionID `
+                -ResourceGroupName $ResourceGroupName `
+                -Location $Location
+            }
+            
+            # Object check
             $ResourceGroup = $ResourceGroup | Where-Object {$_ -is [Microsoft.Azure.Commands.ResourceManager.Cmdlets.SdkModels.PSResourceGroup]}
 
             # Update variables from resource group object
             $Location = $ResourceGroup.Location
             $ResourceGroupName = $ResourceGroup.ResourceGroupName
             
-            # Set vnet
-            Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Network\
-            . .\Set-Vnet.ps1
-
             # Set Virtual Network
-            $Vnet = Set-Vnet `
+            Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Network\
+            . .\VirtualNetwork.ps1
+
+            # Get exisiting vnet
+            $Vnet = Get-Vnet `
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $ResourceGroupName `
+                -VNetName $VnetName
+            
+            # If no vnet exists, create new network
+            if (!$Vnet){
+                New-Vnet `
+                -SubscriptionID $SubscriptionID `
+                -ResourceGroupName $ResourceGroupName `
+                -VNetName $VnetName `
                 -Location $Location `
                 -SubnetName $SubnetName `
                 -VNetName $VNetName `
                 -VNetAddressPrefix $VNetAddressPrefix `
-                -VNetSubnetAddressPrefix $VNetSubnetAddressPrefix #`
-                #| Tee-Object -Variable Vnet
-
+                -VNetSubnetAddressPrefix $VNetSubnetAddressPrefix
+            }
+            
+            # Object check
             $Vnet = $Vnet | Where-Object {$_ -is [Microsoft.Azure.Commands.Network.Models.PSVirtualNetwork]}
                 
-            if (!$SkipVnetCheck){
+            if ($VnetConfirm){
                 # Confirm Virtual Network
                 $Choice = $null
                 while ($Choice -notmatch "Y|N"){
@@ -237,7 +255,6 @@ function New-VM() {
                 # Display vnet to be used
                 Write-Host "`nUsing Vnet:"$Vnet.name,"`n"
             }
-
 
             # If there are no VM credentials
             If (!$VMCredential) {
@@ -361,7 +378,7 @@ function New-VM() {
                     $DataDiskSize = Read-Host "Enter the data disk size in GB"
                 }
 
-                # From 1, to the number of data disks required, for each
+                # For each disk, from 1, to the number required
                 1..$DataDisk | ForEach-Object {
                     
                     # Create Managed Data Disk

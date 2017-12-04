@@ -2,7 +2,7 @@
 #Name: Resource Group Functions
 #Creator: Wesley Trust
 #Date: 2017-11-20
-#Revision: 1
+#Revision: 2
 #References:
 
 .Synopsis
@@ -45,8 +45,7 @@ function Get-ResourceGroup() {
             . .\Connect-AzureRM.ps1
             
             # Authenticate with Azure
-            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID #`
-            #| Tee-Object -Variable AzureConnection
+            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID
 
             # Update subscription Id from Azure Connection
             $SubscriptionID = $AzureConnection.Subscription.id
@@ -68,29 +67,9 @@ function Get-ResourceGroup() {
                 $ResourceGroups = Get-AzureRmResourceGroup
                 "`n",($ResourceGroups).ResourceGroupName,"`n" | Out-Host -Paging
                 
-                # While no resource group name is provided
-                while (!$ResourceGroupName){
+                # While no exisiting resource group name is provided
+                while ($ResourceGroupName -notcontains $ResourceGroups.ResourceGroupName){
                     $ResourceGroupName = Read-Host "Enter existing or new resource group name"
-                }
-            }
-                
-            # Check if the resource group exists
-            $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
-
-            # If the resource group does not exist
-            if (!$ResourceGroup){
-                $Choice = $null
-                while ($choice -notmatch "Y|N") {
-                    $Choice = Read-Host "Resource group does not exist, do you want to create this group? (Y/N)"
-                }
-                if ($choice -eq "Y"){
-                    # Create resource group
-                    $ResourceGroup = New-ResourceGroup -SubscriptionID $SubscriptionID -ResourceGroupName $ResourceGroupName -Location $Location
-                }
-                else {
-                    $ErrorMessage = "Resource group does not exist, user aborted creation of new group"
-                    Write-Error -Message $ErrorMessage
-                    throw $ErrorMessage
                 }
             }
             return $ResourceGroup
@@ -134,8 +113,7 @@ function New-ResourceGroup() {
             . .\Connect-AzureRM.ps1
             
             # Authenticate with Azure
-            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID #`
-            #| Tee-Object -Variable AzureConnection
+            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID
 
             # Update subscription Id from Azure Connection
             $SubscriptionID = $AzureConnection.Subscription.id
@@ -149,39 +127,42 @@ function New-ResourceGroup() {
     
     Process {
         try {
+            # Get all resource groups
+            $ResourceGroups = Get-AzureRmResourceGroup
+
             # While no resource group name is provided
             while (!$ResourceGroupName){
                 $ResourceGroupName = Read-Host "Enter resource group name"
+                while ($ResourceGroups.ResourceGroupName -contains $ResourceGroupName){
+                    $ResourceGroupName = Read-Host "Resource group name already exists, enter a different name"
+                }
+            }
+            
+            # Get Azure regions
+            $Locations = Get-AzureRmLocation
+
+            # If no location is set
+            if (!$Location){
+                
+                # Get Azure region locations
+                Write-Host "Supported Regions:"
+                "`n",($Locations).Location,"`n" | Out-Host -Paging
+                
+                # Prompt for location
+                $Location = Read-Host "Enter the location for this resource group"
             }
 
-            # Check if the resource group exists
-            $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
-
-            #If the resource group does not exist
-            if (!$ResourceGroup){
-                
-                # Get Azure regions
-                $Locations = Get-AzureRmLocation
-
-                # If no location is set
-                if (!$Location){
-                    
-                    # Get Azure region locations
-                    Write-Host "Supported Regions:"
-                    "`n",($Locations).Location,"`n" | Out-Host -Paging
-                    
-                    # Prompt for location
+            # Check for valid location
+            while ($Locations.location -notcontains $Location){
+                $Location = Read-Host "Location is invalid or not available, specify a new location."
+                while (!$Location){
                     $Location = Read-Host "Enter the location for this resource group"
                 }
-
-                # Check for valid location
-                while ($Locations.location -notcontains $Location){
-                    $Location = Read-Host "Location is invalid or not available, specify a new location."
-                }
-
-                # Create Resource Group
-                $ResourceGroup = New-AzureRmResourceGroup -Name $ResourceGroupName -Location $Location
             }
+
+            # Create Resource Group
+            $ResourceGroup = New-AzureRmResourceGroup -Name $ResourceGroupName -Location $Location
+
             return $ResourceGroup
         }
         Catch {

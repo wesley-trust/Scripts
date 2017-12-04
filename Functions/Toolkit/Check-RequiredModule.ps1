@@ -19,7 +19,7 @@ function Check-RequiredModule() {
     Param(
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify the module"
+            HelpMessage="Specify the module name(s)"
         )]
         [string[]]
         $Modules
@@ -42,7 +42,7 @@ function Check-RequiredModule() {
                 $Modules = Read-Host "Enter module name(s), comma separated, to check or install"
             }
 
-            # Clean input
+            # Clean input and create array
             $Modules = $Modules.Split(",")
             $Modules = $Modules | ForEach-Object {$_.Trim()}
 

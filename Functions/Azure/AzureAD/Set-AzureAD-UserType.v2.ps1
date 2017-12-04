@@ -45,16 +45,13 @@ function Set-AzureAD-UserType() {
 
     Begin {
         try {
-            # Variables
+            # Required Module
             $Module = "AzureAD"
             
-            # Check if module is installed
-            $ModuleCheck = Get-Module -ListAvailable | Where-Object Name -eq $Module
+            Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
+            . .\Check-RequiredModule.ps1
             
-            # If not installed, install the module
-            if (!$ModuleCheck){
-                Install-Module -Name $Module -AllowClobber -Force -ErrorAction Stop
-            }
+            Check-RequiredModule -Modules $Module
             
             # Connect to directory tenant
             if (!$SkipAuthentication) {

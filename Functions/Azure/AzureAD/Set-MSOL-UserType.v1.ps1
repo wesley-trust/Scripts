@@ -8,7 +8,7 @@
 .Synopsis
     Function that connects to an Azure AD tenant and sets directory user type (by default to Member).
 .Description
-
+    FUNCTION NO LONGER MAINTAINED, USE AZUREAD V2.
 .Example
     Set-MSOLAzureAD-UserType -Credential $Credential -Emails "wesley.trust@example.com" -UserType $UserType
 .Example
@@ -45,16 +45,13 @@ function Set-MSOL-UserType() {
 
     Begin {
         try {
-            # Variables
+            # Required Module
             $Module = "MSOnline"
             
-            # Check if module is installed
-            $ModuleCheck = Get-Module -ListAvailable | Where-Object Name -eq $Module
+            Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
+            . .\Check-RequiredModule.ps1
             
-            # If not installed, install the module
-            if (!$ModuleCheck){
-                Install-Module -Name $Module -AllowClobber -Force -ErrorAction Stop
-            }
+            Check-RequiredModule -Modules $Module
             
             # Connect to directory tenant
             if (!$SkipAuthentication) {

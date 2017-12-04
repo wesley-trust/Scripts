@@ -114,7 +114,7 @@ function Get-Vnet() {
                 if (!$vnet){
                     throw "No valid virtual network specified."
                 }
-            }           
+            }
             return $Vnet
         }
         Catch {

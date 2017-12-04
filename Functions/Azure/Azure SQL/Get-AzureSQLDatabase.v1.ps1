@@ -115,11 +115,8 @@ function Get-AzureSQLDatabase() {
                 # But no SQL Server is specified
                 if (!$SQLServer){
 
-                    # If there is only 1 server, use by default
-                    if ($SQLServers.count -eq "1"){
-                        $SQLServer = $SQLServers.ServerName
-                    }
-                    else {
+                    # If there is more than one server
+                    if ($SQLServers.count -gt "1"){
                         Write-Host "`nAvailable SQL Servers:`n"
                         
                         # List servers
@@ -145,11 +142,13 @@ function Get-AzureSQLDatabase() {
                 $SQLServer = Read-Host "SQL Server is invalid or you do not have access, specify a new Server name"
             }
 
-            # Update resource group name from SQL Server
-            $ResourceGroupName = $SQLServer.ResourceGroupName
+            # Get SQL Server object
+            $SQLServer = $SQLServers | Where-Object ServerName -eq $SQLServer
 
             # Get all databases from SQL server
-            $SQLDatabases = Get-AzureRmSqlDatabase -ResourceGroupName $ResourceGroupName -ServerName $SQLServer
+            $SQLDatabases = Get-AzureRmSqlDatabase `
+                -ResourceGroupName $SQLServer.ResourceGroupName `
+                -ServerName $SQLServer.ServerName
 
             # If SQL Pool exclusion is true
             if ($SQLPoolExclusion){
@@ -170,7 +169,7 @@ function Get-AzureSQLDatabase() {
                 If ($Email) {
 
                     # Set subject and body
-                    $Subject =  "Databases not in an Elastic Pool on SQL Server $SQLServer"
+                    $Subject =  "Databases not in an Elastic Pool on SQL Server "+$SQLServer.Servername
                     $Body = $SQLDatabases.DatabaseName
                     $Body = [string]::join("<br/>",$body)
 

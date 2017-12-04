@@ -33,6 +33,7 @@ function New-AzureAD-ExternalUser() {
             Mandatory=$false,
             HelpMessage="Specify user type (Default: Member)"
         )]
+        [ValidateSet("Guest","Member")] 
         [string]
         $UserType = "Member",
         [Parameter(

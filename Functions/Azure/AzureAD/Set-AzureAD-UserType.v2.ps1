@@ -33,6 +33,7 @@ function Set-AzureAD-UserType() {
             Mandatory=$false,
             HelpMessage="Specify user type to change to (Default: Member)"
         )]
+        [ValidateSet("Guest","Member")] 
         [string]
         $UserType = "Member",
         [Parameter(

@@ -104,7 +104,7 @@ function Connect-AzureRM() {
                                                  
                         # But there are subscriptions
                         if ($Subscriptions){
-                            Write-Host "`nSubscriptions you have access to:`n"
+                            Write-Host "Subscriptions you have access to:"
                             $Subscriptions | Select-Object Name, SubscriptionId | Format-List | Out-Host -Paging
 
                             # Prompt for subscription ID

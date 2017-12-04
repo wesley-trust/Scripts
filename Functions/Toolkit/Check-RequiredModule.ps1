@@ -39,7 +39,7 @@ function Check-RequiredModule() {
         try {
             # If no modules are specified
             while (!$Modules) {
-                $Modules = Read-Host "Enter module name(s), comma separated, to check or install"
+                $Modules = Read-Host "Enter module name(s), comma separated, to check to install"
             }
 
             # Clean input and create array

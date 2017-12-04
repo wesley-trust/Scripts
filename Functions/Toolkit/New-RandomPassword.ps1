@@ -6,7 +6,7 @@
 #References: 
 
 .Synopsis
-    Function that creates a random password, with default length of 8 characters.
+    Function that creates a random password, with default length of 12 characters and a max of 92.
 .Description
 
 .Example
@@ -19,10 +19,11 @@ function New-RandomPassword() {
     Param(
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify the character length"
+            HelpMessage="Specify the character length (maximum 92)"
         )]
+        [ValidateRange(1,92)]
         [int]
-        $CharacterLength = 8
+        $CharacterLength = 12
     )
 
     Begin {

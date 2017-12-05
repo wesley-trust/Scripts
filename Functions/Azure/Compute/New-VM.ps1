@@ -89,7 +89,7 @@ function New-VM() {
             HelpMessage="Use exisiting Virtual Network (if one exists)"
         )]
         [bool]
-        $VnetConfirm = $false,
+        $SkipVnetConfirm= $true,
         [Parameter(
             Mandatory=$false,
             HelpMessage="Enter the virtual network name"
@@ -248,7 +248,7 @@ function New-VM() {
             $Vnet = $Vnet | Where-Object {$_ -is [Microsoft.Azure.Commands.Network.Models.PSVirtualNetwork]}
             
             # Confirm Virtual Network if required
-            if ($VnetConfirm){
+            if (!$SkipVnetConfirm){
                 $Choice = $null
                 while ($Choice -notmatch "Y|N"){
                     $Choice = Read-Host "Use Vnet:"$Vnet.name,"? (Y/N)"

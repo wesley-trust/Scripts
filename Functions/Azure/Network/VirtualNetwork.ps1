@@ -93,8 +93,9 @@ function Get-Vnet() {
                 $Vnet = Get-AzureRmVirtualNetwork
             }
 
-            # if there is more than 1 vnet
+            # If there is a vnet
             if ($Vnet){
+                # But there is more than one
                 if ($VNet.count -ne "1"){
                     
                     # Display vnet names
@@ -111,20 +112,27 @@ function Get-Vnet() {
                         $VnetName = Read-Host "Specify virtual network name to use"
                     }
 
-                    while ($Vnet.name -notcontains $VNetName){
-                        $WarningMessage = "Virtual network is invalid or not available"
+                    if ($Vnet.name -notcontains $VNetName){
+                        $WarningMessage = "Virtual network is invalid"
                         Write-Warning $WarningMessage
-                        $VNetName = Read-Host "Specify a new virtual network name"
+                        $VNetName = Read-Host "Specify a valid name, an invalid name will error."
                     }
                     
                     # Set vnet variable to include only the specified vnet object
                     $Vnet = $Vnet | Where-Object Name -eq $VNetName
+                    
+                    # If there is no vnet object
+                    if (!$Vnet){
+                        $ErrorMessage = "No valid virtual network specified."
+                        Write-Error $ErrorMessage
+                        throw $ErrorMessage
+                    }
                 }
                 return $Vnet
             }
             else {
                 # If there is no vnet object
-                $ErrorMessage = "No valid virtual network specified."
+                $ErrorMessage = "No virtual networks accessible in this subscription."
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
             }

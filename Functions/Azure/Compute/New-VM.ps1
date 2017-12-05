@@ -225,10 +225,16 @@ function New-VM() {
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $VnetResourceGroupName `
                 -VNetName $VnetName
-            
+
             # If no vnet exists, create a default network
             if (!$Vnet){
-                New-Vnet `
+                
+                # If no vnet resource group exists, use VM group
+                if ($VnetResourceGroupName){
+                    $VnetResourceGroupName = $ResourceGroupName
+                }
+                
+                $Vnet = New-Vnet `
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $VnetResourceGroupName `
                 -VNetName $VnetName `

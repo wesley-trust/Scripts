@@ -74,17 +74,17 @@ function Connect-AzureRM() {
 
             # Check to see if there is an active connection to Azure
             $AzureConnection = Get-AzureRmContext | Where-Object Name -NE "Default"
-            
-            if ($AzureConnection){
-                # Get the subscription in the current context
-                $SelectedSubscriptionID = $AzureConnection.Subscription.id
-            }
 
             # If no active connection, or reauthentication is required 
             if (!$AzureConnection -or $ReAuthenticate) {
                 Write-Host ""
                 Write-Host "Authenticating with Azure, enter credentials when prompted"
                 $AzureConnection = Add-AzureRmAccount
+            }
+            
+            # Get the subscription in the current context
+            if ($AzureConnection){
+                $SelectedSubscriptionID = $AzureConnection.Subscription.id
             }
         }
         catch {
@@ -101,7 +101,7 @@ function Connect-AzureRM() {
                 # But there is a connection to Azure
                 if ($AzureConnection){
 
-                    # Check whether the subscription is different
+                    # Check whether the subscription is different to current context
                     if ($SelectedSubscriptionID -ne $SubscriptionID){
 
                         # Load subscriptions

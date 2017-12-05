@@ -74,9 +74,11 @@ function Connect-AzureRM() {
 
             # Check to see if there is an active connection to Azure
             $AzureConnection = Get-AzureRmContext | Where-Object Name -NE "Default"
-
-            # Get the subscription in the current context
-            $SelectedSubscriptionID = $AzureConnection.Subscription.id
+            
+            if ($AzureConnection){
+                # Get the subscription in the current context
+                $SelectedSubscriptionID = $AzureConnection.Subscription.id
+            }
 
             # If no active connection, or reauthentication is required 
             if (!$AzureConnection -or $ReAuthenticate) {
@@ -125,10 +127,11 @@ function Connect-AzureRM() {
                             }
                         }
                         
-                        # Warn if invalid subscription id
+                        # Warn if subscription id is not valid for Azure account
                         while ($Subscriptions.id -notcontains $SubscriptionID){
                             $WarningMessage = "Invalid Subscription Id: $SubscriptionID"
                             Write-Warning $WarningMessage
+                            Write-Host "If ID is correct, try reauthenticating with a different account"
                             
                             # Display valid IDs
                             Write-Host "`nValid subscriptions available:"

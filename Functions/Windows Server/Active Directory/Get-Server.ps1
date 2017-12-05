@@ -26,11 +26,8 @@ Set-Location "C:\Users\wesley.trust\GitHub\Scripts\Functions\Active Directory"
 . .\Get-DC.ps1
 
 Function Get-Server () {
-    
-    #Parameters
     Param(
-        
-        #Request Domain
+
         [Parameter(
             Mandatory=$True,
             Position=1,
@@ -40,8 +37,6 @@ Function Get-Server () {
         [ValidateNotNullOrEmpty()]
         [String]
         $Domain,
-        
-        #Request OU
         [Parameter(
             Mandatory=$True,
             Position=2,
@@ -51,7 +46,7 @@ Function Get-Server () {
         [ValidateNotNullOrEmpty()]
         [String]
         $OU
-        )
+    )
     
     Begin {
         #If there are no credentials, prompt for credentials
@@ -60,25 +55,20 @@ Function Get-Server () {
             $Credential = Get-Credential
         }
     }
-
     Process {
-
-        #Get DC and store in variable
+        
+        # Get DC and store in variable
         $DC = Get-DC -Domain $Domain
-    
-        #Attempting conection to domain controller
-        Write-Host "Attempting conection to $DC"
-    
-        #Try pinging domain controller
+        
+        # Try pinging domain controller
         Try {
             Test-Connection $DC -Count 1 | Out-Null
         }
         Catch {
-            Write-Host ""
-            Write-Error "Unable to ping '$DC'" -ErrorAction Stop
+            Write-Error "`nUnable to ping '$DC'" -ErrorAction Stop
         }
         
-        #Try remotely connecting to domain controller
+        # Try remotely connecting to domain controller
         try {
             #Create PowerShell session
             $Session = New-PSSession -ComputerName $DC -Credential $Credential
@@ -87,23 +77,21 @@ Function Get-Server () {
             Write-Error "Failed to remotely connect to $DC" -ErrorAction Stop
         }
     
-        #Write message to host
-        Write-Host ""
-        Write-Host "Getting servers within OU:"
-        Write-Host ""
+        # Write message to host
+        Write-Host "`nGetting servers within OU:`n"
         Write-Host $OU
         
-        #Invoke remote command within open session
+        # Invoke remote command within open session
         $ServerGroup = Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
     
-            #Get Servers within OU
+            # Get Servers within OU
             Get-ADComputer -Filter * -SearchBase $Using:OU
         }
         
-        #Remove session
+        # Remove session
         Remove-pssession -Session $Session
         
-        #Check if servers are returned
+        # Check if servers are returned
         if ($ServerGroup -eq $Null) {
             Write-Host ""
             Write-Error "No servers returned." -ErrorAction Stop
@@ -112,7 +100,6 @@ Function Get-Server () {
             Return $ServerGroup
         }
     }
-
     End {
 
     }

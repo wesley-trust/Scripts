@@ -78,7 +78,7 @@ function Get-ResourceGroup() {
             
             # If no valid resource group name is provided
             if ($ResourceGroups.ResourceGroupName -notcontains $ResourceGroupName){
-                $WarningMessage = "Existing Resource Group name is invalid or not available"
+                $WarningMessage = "Existing Resource Group name is invalid or not specified"
                 Write-Warning $WarningMessage
                 
                 # Display valid resource groups

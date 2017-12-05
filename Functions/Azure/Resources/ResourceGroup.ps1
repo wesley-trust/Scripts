@@ -61,31 +61,22 @@ function Get-ResourceGroup() {
             # Get all resource groups
             $ResourceGroups = Get-AzureRmResourceGroup
 
-            # If the resource group name parameter is not set
+            # While no resource group name is specified
             if (!$ResourceGroupName){
-                $WarningMessage = "No resource group name is specified"
-                Write-Warning $WarningMessage
+                while ($ResourceGroups.ResourceGroupName -notcontains $ResourceGroupName){
+                    $WarningMessage = "No valid resource group name is specified"
+                    Write-Warning $WarningMessage
 
-                # Get all resource groups
-                Write-Host "`nExisting Resource Group names:"
-                $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
-                
-                # Request resource group name
-                $ResourceGroupName = Read-Host "If this is not correct, specify existing resource group name"
+                    # Get all resource groups
+                    Write-Host "`nExisting Resource Group names:"
+                    $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
+                    
+                    # Request resource group name
+                    $ResourceGroupName = Read-Host "If this is not correct, specify existing resource group name"
+                }
             }
-            
-            # If no valid resource group name is provided
-            if ($ResourceGroups.ResourceGroupName -notcontains $ResourceGroupName){
-                $WarningMessage = "Existing Resource Group name is invalid or not specified"
-                Write-Warning $WarningMessage
-                
-                # Display valid resource groups
-                Write-Host "`nValid Resource Group names:"
-                $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
-                $ResourceGroupName = Read-Host "If this is not correct, specify existing resource group name"
-            }
-            
-            # If there is now a resource group name
+
+            # If there is a resource group name
             if ($ResourceGroupName){
                 # Select resource group object
                 $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName
@@ -93,7 +84,7 @@ function Get-ResourceGroup() {
 
             # If no object exists
             if (!$ResourceGroup){
-                $ErrorMessage = "No resource group specified."
+                $ErrorMessage = "Resource group name does not match a valid resource group."
                 Write-Error $ErrorMessage
             }
             return $ResourceGroup

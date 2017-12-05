@@ -235,9 +235,9 @@ function New-VM() {
             
             # Object check
             $Vnet = $Vnet | Where-Object {$_ -is [Microsoft.Azure.Commands.Network.Models.PSVirtualNetwork]}
-                
+            
+            # Confirm Virtual Network if required
             if ($VnetConfirm){
-                # Confirm Virtual Network
                 $Choice = $null
                 while ($Choice -notmatch "Y|N"){
                     $Choice = Read-Host "Use Vnet:"$Vnet.name,"? (Y/N)"
@@ -254,11 +254,9 @@ function New-VM() {
                 Write-Host "`nUsing Vnet:"$Vnet.name,"`n"
             }
 
-            # If there are no VM credentials
-            If (!$VMCredential) {
-                
-                # Prompt for credentials
-                Write-Output "Enter VM Credentials"
+            # While there are no VM credentials
+            while (!$VMCredential) {
+                Write-Host "Enter VM Credentials"
                 $VMCredential = Get-Credential
             }
             
@@ -301,18 +299,27 @@ function New-VM() {
             # If no size is specified
             if (!$VMSize){
                 
-                # Get supported VM sizes and display the name
-                Write-Host ""
-                Write-Host "Getting supported VM sizes in $location"
-                $SupportedVMSize | Select-Object Name | Format-Table | more
+                # Display supported VM sizes
+                Write-Host "`nSupported VM sizes in $location"
+                $SupportedVMSize | Select-Object Name | Format-Table | Out-Host -Paging
 
                 # Prompt for VM size
-                $VMSize = Read-Host "Please enter the name of the VM Size"
+                while (!$VMSize){
+                    $VMSize = Read-Host "Please enter the name of the VM Size"
+                }
             }
             
             # Check for invalid size
-            while ($SupportedVMSize.name -notcontains $VMSize){
-                $VMSize = Read-Host "VM size is invalid or not available, specify a new size."
+            if ($SupportedVMSize.name -notcontains $VMSize){
+                
+                # Display supported VM sizes
+                Write-Host "`nSupported VM sizes in $location"
+                $SupportedVMSize | Select-Object Name | Format-Table | Out-Host -Paging
+                
+                # Prompt for valid size
+                while ($SupportedVMSize.name -notcontains $VMSize){
+                    $VMSize = Read-Host "Please enter a valid VM Size"
+                }
             }
 
             # If a public IP should be provisioned

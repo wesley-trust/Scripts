@@ -44,25 +44,31 @@ function New-RandomString() {
     
     Process {
         try {
-            # Specify character set
+            # Character set variables
+            $LowerCase = ([char[]](97..122))
+            $UpperCase = ([char[]](65..90))
+            $Numbers = ([char[]](48..57))
+            $Special = ([char[]](33..47))
+            
+            # If simplified is specified
             if ($Simplified){
-                $CharacterSet = ([char[]]([char]97..[char]122))
+                $CharacterSet = $LowerCase+$UpperCase
             }
             else {
-                $CharacterSet = ([char[]]([char]33..[char]95)) + ([char[]]([char]97..[char]126))
+                $CharacterSet = $LowerCase+$UpperCase+$Numbers+$Special
             }
 
-            # Randomise
+            # Randomise set
             $RandomisedSet = $CharacterSet | Sort-Object {Get-Random}
             
             # Specify length
-            $Password = $RandomisedSet[1..$CharacterLength]
+            $Object = $RandomisedSet[1..$CharacterLength]
             
-            # Join objects to form password string
-            $Password = $Password -join ""
+            # Join objects to form string
+            $String = $Object -join ""
             
-            # Return password
-            return $Password
+            # Return string
+            return $string
         }
         Catch {
             Write-Error -Message $_.exception

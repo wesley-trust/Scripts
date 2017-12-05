@@ -52,7 +52,7 @@ function Check-RequiredModule() {
                 
                 # If not installed, install the module
                 if (!$ModuleCheck){
-                    Install-Module -Name $Module -AllowClobber -Force
+                    Install-Module -Name $Module -AllowClobber -Force -ErrorAction Stop
                 }
             }
         }

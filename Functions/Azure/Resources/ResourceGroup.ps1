@@ -58,19 +58,35 @@ function Get-ResourceGroup() {
     
     Process {
         try {
+            # Get all resource groups
+            $ResourceGroups = Get-AzureRmResourceGroup
+
             # If the resource group name parameter is not set
             if (!$ResourceGroupName){
 
                 # Get all resource groups
                 Write-Host "`nExisting Resource Group names:"
-                $ResourceGroups = Get-AzureRmResourceGroup
                 $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
-
-                # While no exisiting resource group name is provided
-                while ($ResourceGroupName -notcontains $ResourceGroups.ResourceGroupName){
-                    $ResourceGroupName = Read-Host "Enter existing or new resource group name"
+                
+                # While no valid resource group name is provided
+                while (!$ResourceGroupName){
+                    $ResourceGroupName = Read-Host "Enter resource group name"
                 }
             }
+            
+            # While no valid resource group name is provided
+            while ($ResourceGroups.ResourceGroupName -notcontains $ResourceGroupName){
+                $WarningMessage = "Resource group name is invalid or not available"
+                Write-Warning $WarningMessage
+                
+                # Display valid resource groups
+                Write-Host "`nValid Resource Group names:"
+                $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
+                $ResourceGroupName = Read-Host "Enter valid resource group name"
+            }
+            
+            # Select resource group object
+            $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName
             return $ResourceGroup
         }
         Catch {

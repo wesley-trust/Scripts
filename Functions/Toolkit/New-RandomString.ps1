@@ -1,12 +1,12 @@
 <#
-#Script name: New-RandomPassword
+#Script name: New-RandomString
 #Creator: Wesley Trust
 #Date: 2017-12-03
 #Revision: 1
 #References: 
 
 .Synopsis
-    Function that creates a random password, with default length of 12 characters and a max of 92.
+    Function that creates a random string (potential password), with default length of 12 characters and a max of 92.
 .Description
 
 .Example
@@ -15,7 +15,7 @@
     
 #>
 
-function New-RandomPassword() {
+function New-RandomString() {
     Param(
         [Parameter(
             Mandatory=$false,

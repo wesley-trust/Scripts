@@ -229,8 +229,8 @@ function New-VM() {
             # If no vnet exists, create a default network
             if (!$Vnet){
                 
-                # If no vnet resource group exists, use VM group
-                if ($VnetResourceGroupName){
+                # If no specific vnet resource group is specified, use existing group
+                if (!$VnetResourceGroupName){
                     $VnetResourceGroupName = $ResourceGroupName
                 }
                 

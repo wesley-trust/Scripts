@@ -49,6 +49,9 @@ function New-RandomString() {
             $UpperCase = ([char[]](65..90))
             $Numbers = ([char[]](48..57))
             $Special = ([char[]](33..47))
+
+            # Update length to reflect array start position
+            $CharacterLength = $CharacterLength -1
             
             # If simplified is specified
             if ($Simplified){
@@ -61,8 +64,11 @@ function New-RandomString() {
             # Randomise set
             $RandomisedSet = $CharacterSet | Sort-Object {Get-Random}
             
-            # Specify length
-            $Object = $RandomisedSet[1..$CharacterLength]
+            # Specify length of object from randomised set
+            $Object = $RandomisedSet[0..$CharacterLength]
+
+            # Randomise object
+            $Object = $Object | Sort-Object {Get-Random}
             
             # Join objects to form string
             $String = $Object -join ""

@@ -17,8 +17,6 @@
 #>
 
 Function Get-DC () {
-    
-    # Request Domain name
     Param(
         [Parameter(
             Mandatory=$True,
@@ -28,12 +26,11 @@ Function Get-DC () {
             ValueFromPipeLineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
         [String]
-        $Domain)
-    
+        $Domain
+    )
     Begin {
 
     }
-
     Process {
         
         # Get start of authority of domain
@@ -51,7 +48,6 @@ Function Get-DC () {
         }
         Return $DC
     }
-
     End {
 
     }

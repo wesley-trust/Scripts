@@ -75,7 +75,6 @@ function Get-Vnet() {
                     if (!$Vnet){
                         $ErrorMessage = "No Virtual Network: $VnetName in Resource Group: $ResourceGroupName"
                         Write-Error $ErrorMessage
-                        throw $ErrorMessage
                     }
                 }
                 else {
@@ -84,7 +83,6 @@ function Get-Vnet() {
                     if (!$Vnet){
                         $ErrorMessage = "No Virtual Network in Resource Group: $ResourceGroupName"
                         Write-Error $ErrorMessage
-                        throw $ErrorMessage
                     }
                 }
             }
@@ -135,7 +133,6 @@ function Get-Vnet() {
                     if (!$Vnet){
                         $ErrorMessage = "No valid virtual network specified."
                         Write-Error $ErrorMessage
-                        throw $ErrorMessage
                     }
                 }
                 return $Vnet
@@ -144,11 +141,9 @@ function Get-Vnet() {
                 # If there is no vnet object
                 $ErrorMessage = "No virtual networks accessible in this subscription."
                 Write-Error $ErrorMessage
-                throw $ErrorMessage
             }
         }
         Catch {
-
             Write-Error -Message $_.exception
             throw $_.exception
         }

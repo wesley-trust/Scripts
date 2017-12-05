@@ -84,39 +84,40 @@ function Get-Vnet() {
             }
 
             # if there is more than 1 vnet
-            if ($VNet.count -ne "1") {
-                
-                # Display vnet names
-                Write-Host "`nVirtual Network Names:`n"
-                $Vnet | Select-Object Name | Out-Host -Paging
-
-                # Clear variable
-                $VNetName = $null
-
-                # While no vnet name is specified
-                while (!$VnetName) {
+            if ($Vnet){
+                if ($VNet.count -ne "1"){
                     
-                    # Continue to prompt for vnet name
-                    $VnetName = Read-Host "Specify virtual network name to use"
-                }
+                    # Display vnet names
+                    Write-Host "`nVirtual Network Names:`n"
+                    $Vnet | Select-Object Name | Out-Host -Paging
 
-                while ($Vnet.name -notcontains $VNetName){
-                    $WarningMessage = "Virtual network is invalid or not available"
-                    Write-Warning $WarningMessage
-                    $VNetName = Read-Host "Specify a new virtual network name"
-                }
+                    # Clear variable
+                    $VNetName = $null
 
-                # Set vnet variable to include only the specified vnet object
-                $Vnet = $Vnet | Where-Object Name -eq $VNetName
-                
-                # If there is no vnet object
-                if (!$vnet){
-                    $ErrorMessage = "No valid virtual network specified."
-                    Write-Error $ErrorMessage
-                    throw $ErrorMessage
+                    # While no vnet name is specified
+                    while (!$VnetName) {
+                        
+                        # Continue to prompt for vnet name
+                        $VnetName = Read-Host "Specify virtual network name to use"
+                    }
+
+                    while ($Vnet.name -notcontains $VNetName){
+                        $WarningMessage = "Virtual network is invalid or not available"
+                        Write-Warning $WarningMessage
+                        $VNetName = Read-Host "Specify a new virtual network name"
+                    }
+                    
+                    # Set vnet variable to include only the specified vnet object
+                    $Vnet = $Vnet | Where-Object Name -eq $VNetName
                 }
+                return $Vnet
             }
-            return $Vnet
+            else {
+                # If there is no vnet object
+                $ErrorMessage = "No valid virtual network specified."
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
+            }
         }
         Catch {
 

@@ -203,10 +203,10 @@ function New-VM() {
             
             # Create resource group
             if (!$ResourceGroup){
-            $ResourceGroup = New-ResourceGroup `
-                -SubscriptionID $SubscriptionID `
-                -ResourceGroupName $ResourceGroupName `
-                -Location $Location
+                $ResourceGroup = New-ResourceGroup `
+                    -SubscriptionID $SubscriptionID `
+                    -ResourceGroupName $ResourceGroupName `
+                    -Location $Location
             }
             
             # Object check

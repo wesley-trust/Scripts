@@ -196,6 +196,7 @@ function New-Vnet() {
                 throw $_.exception
             }
         }
+    }
     
     Process {
         try {

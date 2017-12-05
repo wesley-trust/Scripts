@@ -61,6 +61,11 @@ Process {
                     -Location $Location
             }
         }
+        else {
+            $ErrorMessage = "No VMs to create."
+            Write-Error $ErrorMessage
+            throw $ErrorMessage
+        }
     }
     Catch {
         Write-Error -Message $_.exception

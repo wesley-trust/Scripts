@@ -99,7 +99,7 @@ function Get-Vnet() {
                 if ($VNet.count -ne "1"){
                     
                     # Display vnet names
-                    Write-Host "`nVirtual Network Names:`n"
+                    Write-Host "`nExisiting Virtual Network Names:`n"
                     $Vnet | Select-Object Name | Out-Host -Paging
 
                     # Clear variable
@@ -109,13 +109,13 @@ function Get-Vnet() {
                     while (!$VnetName) {
                         
                         # Continue to prompt for vnet name
-                        $VnetName = Read-Host "Specify virtual network name to use"
+                        $VnetName = Read-Host "Specify virtual network name"
                     }
 
                     if ($Vnet.name -notcontains $VNetName){
                         $WarningMessage = "Virtual network is invalid"
                         Write-Warning $WarningMessage
-                        $VNetName = Read-Host "Specify a valid name, an invalid name will error."
+                        $VNetName = Read-Host "Specify virtual network name"
                     }
                     
                     # Set vnet variable to include only the specified vnet object

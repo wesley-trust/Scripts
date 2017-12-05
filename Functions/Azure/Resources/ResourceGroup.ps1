@@ -86,9 +86,10 @@ function Get-ResourceGroup() {
                 $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
                 $ResourceGroupName = Read-Host "If this is not correct, specify existing resource group name"
             }
-            
-            # Select resource group object
-            $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName
+            if ($ResourceGroupName){
+                # Select resource group object
+                $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName
+            }
 
             if (!$ResourceGroup){
                 $ErrorMessage = "No resource group specified."

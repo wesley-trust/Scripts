@@ -63,17 +63,15 @@ function Get-ResourceGroup() {
 
             # If the resource group name parameter is not set
             if (!$ResourceGroupName){
+                $WarningMessage = "No resource group name is specified"
+                Write-Warning $WarningMessage
 
                 # Get all resource groups
                 Write-Host "`nExisting Resource Group names:"
                 $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
                 
-                # If resource group name is not provided
-                if (!$ResourceGroupName){
-                    $WarningMessage = "No resource group name is specified"
-                    Write-Warning $WarningMessage
-                    $ResourceGroupName = Read-Host "If this is not correct, specify existing resource group name"
-                }
+                # Request resource group name
+                $ResourceGroupName = Read-Host "If this is not correct, specify existing resource group name"
             }
             
             # If no valid resource group name is provided
@@ -97,7 +95,6 @@ function Get-ResourceGroup() {
             if (!$ResourceGroup){
                 $ErrorMessage = "No resource group specified."
                 Write-Error $ErrorMessage
-                throw $ErrorMessage
             }
             return $ResourceGroup
         }
@@ -159,6 +156,7 @@ function New-ResourceGroup() {
 
             # While no resource group name is provided
             while (!$ResourceGroupName){
+                Write-Host "`nCreating new resource group`n"
                 $ResourceGroupName = Read-Host "Enter resource group name"
                 while ($ResourceGroups.ResourceGroupName -contains $ResourceGroupName){
                     $ResourceGroupName = Read-Host "Resource group name already exists, enter a different name"
@@ -172,7 +170,7 @@ function New-ResourceGroup() {
             if (!$Location){
                 
                 # Get Azure region locations
-                Write-Host "Supported Regions:"
+                Write-Host "`nSupported Regions:"
                 $Locations | Select-Object Location | Format-Table | Out-Host -Paging
                 
                 # Prompt for location

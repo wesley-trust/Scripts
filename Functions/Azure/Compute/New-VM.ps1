@@ -264,12 +264,6 @@ function New-VM() {
                 # Display vnet to be used
                 Write-Host "`nUsing Vnet:"$Vnet.name,"`n"
             }
-
-            # While there are no VM credentials
-            while (!$VMCredential) {
-                Write-Host "Enter VM Credentials"
-                $VMCredential = Get-Credential
-            }
             
             # Clear the variable
             $VMObject = $null
@@ -287,14 +281,14 @@ function New-VM() {
                 $VMObject = $null
                 
                 # Prompt for new name
-                Write-Host "VM Name $VMName already exists"
+                Write-Host "`nVM Name: $VMName already exists`n"
 
                 # Clear variable
                 $VMName = $null
 
                 # While no name is entered, prompt for name
                 while (!$VMName){
-                    $VMName = Read-Host "Specify a new name"
+                    $VMName = Read-Host "Specify a new VM name"
                 }
                 
                 # Recheck if VM exists with new name
@@ -331,6 +325,12 @@ function New-VM() {
                 while ($SupportedVMSize.name -notcontains $VMSize){
                     $VMSize = Read-Host "Please enter a valid VM Size"
                 }
+            }
+            
+            # While there are no VM credentials
+            while (!$VMCredential) {
+                Write-Host "Enter VM Credentials"
+                $VMCredential = Get-Credential
             }
 
             # If a public IP should be provisioned

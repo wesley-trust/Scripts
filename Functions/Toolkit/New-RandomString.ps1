@@ -23,7 +23,13 @@ function New-RandomString() {
         )]
         [ValidateRange(1,92)]
         [int]
-        $CharacterLength = 12
+        $CharacterLength = 12,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify whether to use lower case characters only"
+        )]
+        [bool]
+        $Simplified = $false
     )
 
     Begin {
@@ -39,8 +45,13 @@ function New-RandomString() {
     Process {
         try {
             # Specify character set
-            $CharacterSet = ([char[]]([char]33..[char]95)) + ([char[]]([char]97..[char]126))
-            
+            if ($Simplified){
+                $CharacterSet = ([char[]]([char]97..[char]122))
+            }
+            else {
+                $CharacterSet = ([char[]]([char]33..[char]95)) + ([char[]]([char]97..[char]126))
+            }
+
             # Randomise
             $RandomisedSet = $CharacterSet | Sort-Object {Get-Random}
             

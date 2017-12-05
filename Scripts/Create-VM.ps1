@@ -31,7 +31,17 @@ Process {
         Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Compute\
         . .\New-VM.ps1
 
-        New-VM -StorageType "StandardLRS" -VMSize "Standard_A1" -VMName "DeleteMe"
+        Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit\
+        . .\New-RandomString.ps1
+        
+        # Variables
+        $CharacterLength = "6"
+        $RandomString = New-RandomString -CharacterLength $CharacterLength -Simplified $true
+        $VMName = "DeleteMe-"+$RandomString
+        $StorageType = "StandardLRS"
+        $VMSize = "Standard_A1"
+
+        New-VM -StorageType $StorageType -VMSize $VMSize -VMName $VMName
     }
     Catch {
 

@@ -18,11 +18,11 @@
 
 Function Get-DC () {
     
-    #Request Domain name
+    # Request Domain name
     Param(
         [Parameter(
             Mandatory=$True,
-            Position=1,
+            Position=0,
             HelpMessage="Enter the FQDN",
             ValueFromPipeLine=$true,
             ValueFromPipeLineByPropertyName=$true)]
@@ -36,24 +36,19 @@ Function Get-DC () {
 
     Process {
         
-        #Get start of authority of domain
+        # Get start of authority of domain
         $DC = Resolve-DnsName $Domain -Type SOA
         
-        #Select primary server, convert to string
-        $DC= $DC.PrimaryServer.ToString()
+        # Update vailable with primary server
+        $DC = $DC.PrimaryServer
         
-        #Write message to host
-        Write-Host ""
-        If ($DC -eq $null){
-            Write-Error "Unable to resolve a domain controller" -ErrorAction Stop
+        # Validate
+        If (!$DC){
+            Write-Error "Unable to resolve a domain controller"
         }
-        Else{
-            Write-Host "Resolve Domain Controller"
-            Write-Host ""
-            
+        Else {
+            Write-Host "`nResolved Domain Controller"
         }
-        
-        #Return domain controller
         Return $DC
     }
 

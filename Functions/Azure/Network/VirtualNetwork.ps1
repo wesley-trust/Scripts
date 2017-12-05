@@ -219,6 +219,7 @@ function New-Vnet() {
                 -ResourceGroupName $ResourceGroupName `
                 -Location $Location
             
+            # Return specific object check
             $ResourceGroup = $ResourceGroup | Where-Object {$_ -is [Microsoft.Azure.Commands.ResourceManager.Cmdlets.SdkModels.PSResourceGroup]}
 
             # Update variables from resource group object

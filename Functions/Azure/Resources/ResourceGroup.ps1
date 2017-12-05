@@ -72,7 +72,7 @@ function Get-ResourceGroup() {
                 if (!$ResourceGroupName){
                     $WarningMessage = "No resource group name is specified"
                     Write-Warning $WarningMessage
-                    $ResourceGroupName = Read-Host "If this is not correct, Specify a resource group name"
+                    $ResourceGroupName = Read-Host "If this is not correct, specify existing resource group name"
                 }
             }
             
@@ -84,7 +84,7 @@ function Get-ResourceGroup() {
                 # Display valid resource groups
                 Write-Host "`nValid Resource Group names:"
                 $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
-                $ResourceGroupName = Read-Host "If this is not correct, specify a resource group name"
+                $ResourceGroupName = Read-Host "If this is not correct, specify existing resource group name"
             }
             
             # Select resource group object

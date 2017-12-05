@@ -69,20 +69,20 @@ function Get-ResourceGroup() {
                 $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
                 
                 # While no valid resource group name is provided
-                while (!$ResourceGroupName){
-                    $ResourceGroupName = Read-Host "Enter resource group name"
+                if (!$ResourceGroupName){
+                    $ResourceGroupName = Read-Host "Specify a resource group name"
                 }
             }
             
             # While no valid resource group name is provided
-            while ($ResourceGroups.ResourceGroupName -notcontains $ResourceGroupName){
+            if ($ResourceGroups.ResourceGroupName -notcontains $ResourceGroupName){
                 $WarningMessage = "Resource group name is invalid or not available"
                 Write-Warning $WarningMessage
                 
                 # Display valid resource groups
                 Write-Host "`nValid Resource Group names:"
                 $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
-                $ResourceGroupName = Read-Host "Enter valid resource group name"
+                $ResourceGroupName = Read-Host "Specify a valid resource group name"
             }
             
             # Select resource group object

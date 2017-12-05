@@ -72,10 +72,20 @@ function Get-Vnet() {
                 if ($VNetName){
                     # Get virtual network name inside resource group
                     $Vnet = Get-AzureRmVirtualNetwork -ResourceGroupName $ResourceGroupName -Name $VNetName
+                    if (!$Vnet){
+                        $ErrorMessage = "No Virtual Network: $VnetName in Resource Group: $ResourceGroupName"
+                        Write-Error $ErrorMessage
+                        throw $ErrorMessage
+                    }
                 }
                 else {
                     # Get all virtual networks inside resource group
                     $Vnet = Get-AzureRmVirtualNetwork -ResourceGroupName $ResourceGroupName
+                    if (!$Vnet){
+                        $ErrorMessage = "No Virtual Network in Resource Group: $ResourceGroupName"
+                        Write-Error $ErrorMessage
+                        throw $ErrorMessage
+                    }
                 }
             }
             else {

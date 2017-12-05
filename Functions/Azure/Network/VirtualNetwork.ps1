@@ -116,7 +116,7 @@ function Get-Vnet() {
                     
                     # check for valid name
                     if ($Vnet.name -notcontains $VNetName){
-                        $WarningMessage = "Existing Virtual network name is invalid"
+                        $WarningMessage = "Existing Virtual network name is invalid or not specified"
                         Write-Warning $WarningMessage
                         
                         # Display valid resource groups

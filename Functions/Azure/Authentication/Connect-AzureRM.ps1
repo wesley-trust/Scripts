@@ -75,6 +75,9 @@ function Connect-AzureRM() {
             # Check to see if there is an active connection to Azure
             $AzureConnection = Get-AzureRmContext | Where-Object Name -NE "Default"
 
+            # Get the subscription in the current context
+            $SelectedSubscriptionID = $AzureConnection.Subscription.id
+
             # If no active connection, or reauthentication is required 
             if (!$AzureConnection -or $ReAuthenticate) {
                 Write-Host ""
@@ -96,42 +99,48 @@ function Connect-AzureRM() {
                 # But there is a connection to Azure
                 if ($AzureConnection){
 
-                    # Load subscriptions
-                    $Subscriptions = Get-AzureRmSubscription
+                    # Check whether the subscription is different
+                    if ($SelectedSubscriptionID -ne $SubscriptionID){
 
-                    # If there is no subscription ID specified
-                    if (!$SubscriptionID){
-                                                 
-                        # But there are subscriptions
-                        if ($Subscriptions){
-                            Write-Host "`nSubscriptions you have access to:"
-                            $Subscriptions | Select-Object Name, SubscriptionId | Format-List | Out-Host -Paging
+                        # Load subscriptions
+                        $Subscriptions = Get-AzureRmSubscription
 
-                            # Prompt for subscription ID
-                            while (!$SubscriptionId) {
-                                $SubscriptionId = Read-Host "Enter subscription ID"
-                                while ($Subscriptions.id -notcontains $SubscriptionID){
-                                    $SubscriptionId = Read-Host "Enter a valid subscription ID"
+                        # If there is no subscription ID specified
+                        if (!$SubscriptionID){
+                                                    
+                            # But there are subscriptions
+                            if ($Subscriptions){
+                                Write-Host "`nSubscriptions you have access to:"
+                                $Subscriptions | Select-Object Name, SubscriptionId | Format-List | Out-Host -Paging
+
+                                # Prompt for subscription ID
+                                while (!$SubscriptionId) {
+                                    $SubscriptionId = Read-Host "Enter subscription ID"
                                 }
                             }
+                            else {
+                                $ErrorMessage = "This account does not have access to any subscriptions."
+                                Write-Error $ErrorMessage
+                                throw $ErrorMessage
+                            }
                         }
-                        else {
-                            $ErrorMessage = "Unable to list subscriptions, you may not have access to any."
-                            throw $ErrorMessage
+                        
+                        # Warn if invalid subscription id
+                        while ($Subscriptions.id -notcontains $SubscriptionID){
+                            $WarningMessage = "Invalid Subscription Id: $SubscriptionID"
+                            Write-Warning $WarningMessage
+                            
+                            # Display valid IDs
+                            Write-Host "`nValid subscriptions available:"
+                            $Subscriptions | Select-Object Name, SubscriptionId | Format-List | Out-Host -Paging
+                            $SubscriptionId = Read-Host "Enter a valid subscription ID"
                         }
-                    }
-
-                    # Get the subscription in the current context
-                    $SelectedSubscriptionID = (Get-AzureRmContext).Subscription.id
-
-                    # If the selected subscription is not in the current context
-                    if ($SelectedSubscriptionID -ne $SubscriptionID){
                         
                         # Change context to selected subscription
                         Write-Host "`nSelecting subscription"
                         $AzureConnection = Select-AzureRmSubscription -SubscriptionId $SubscriptionId
                     }
-                return $AzureConnection
+                    return $AzureConnection
                 }
                 else {
                     $ErrorMessage = "No active Azure connection."

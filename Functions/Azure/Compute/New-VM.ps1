@@ -98,6 +98,12 @@ function New-VM() {
         $VNetName,
         [Parameter(
             Mandatory=$false,
+            HelpMessage="Enter the virtual network resource group name"
+        )]
+        [string]
+        $VnetResourceGroupName,
+        [Parameter(
+            Mandatory=$false,
             HelpMessage="Enter the virtual network address prefix"
         )]
         [string]
@@ -217,18 +223,17 @@ function New-VM() {
             # Get exisiting vnet
             $Vnet = Get-Vnet `
                 -SubscriptionID $SubscriptionID `
-                -ResourceGroupName $ResourceGroupName `
+                -ResourceGroupName $VnetResourceGroupName `
                 -VNetName $VnetName
             
             # If no vnet exists, create a default network
             if (!$Vnet){
                 New-Vnet `
                 -SubscriptionID $SubscriptionID `
-                -ResourceGroupName $ResourceGroupName `
+                -ResourceGroupName $VnetResourceGroupName `
                 -VNetName $VnetName `
                 -Location $Location `
                 -SubnetName $SubnetName `
-                -VNetName $VNetName `
                 -VNetAddressPrefix $VNetAddressPrefix `
                 -VNetSubnetAddressPrefix $VNetSubnetAddressPrefix
             }

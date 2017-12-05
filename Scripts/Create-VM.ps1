@@ -33,18 +33,36 @@ Process {
 
         Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit\
         . .\New-RandomString.ps1
-        
+
         # Variables
         $CharacterLength = "6"
-        $RandomString = New-RandomString -CharacterLength $CharacterLength -Simplified $true
-        $VMName = "DeleteMe-"+$RandomString
         $StorageType = "StandardLRS"
         $VMSize = "Standard_A1"
+        $VMCount = 2
+        $Location = "westeurope"
+        $ResourceGroupName = "WesDev"
 
-        New-VM -StorageType $StorageType -VMSize $VMSize -VMName $VMName
+        # If there are VMs to create
+        if ($VMCount){
+            # From one, to the number required
+            1..$VMCount | ForEach-Object {
+                
+                # Create random string for VM name
+                $RandomString = New-RandomString -CharacterLength $CharacterLength -Simplified $true
+                $VMName = "DeleteMe-"+$RandomString
+                
+                # Create VM
+                New-VM `
+                    -StorageType $StorageType `
+                    -VMSize $VMSize `
+                    -VMName $VMName `
+                    -subscriptionId $SubscriptionId `
+                    -ResourceGroupName $ResourceGroupName `
+                    -Location $Location
+            }
+        }
     }
     Catch {
-
         Write-Error -Message $_.exception
         throw $_.exception
     }

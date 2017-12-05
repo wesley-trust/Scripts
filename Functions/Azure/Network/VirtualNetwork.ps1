@@ -16,7 +16,6 @@
 
 #>
 
-
 function Get-Vnet() {
     #Parameters
     Param(

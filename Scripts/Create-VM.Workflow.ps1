@@ -44,38 +44,50 @@ Process {
                 [string]
                 $SubscriptionID,
                 [Parameter(
+                    Mandatory=$true,
+                    HelpMessage="Enter Azure credentials"
+                )]
+                [pscredential]
+                $credential,
+                [Parameter(
+                    Mandatory=$true,
+                    HelpMessage="Enter VM credentials"
+                )]
+                [pscredential]
+                $VMCredential,
+                [Parameter(
                     Mandatory=$false,
-                    HelpMessage="Enter the subscription ID"
+                    HelpMessage="Enter the character length"
                 )]
                 [string]
                 $CharacterLength = "6",
                 [Parameter(
                     Mandatory=$false,
-                    HelpMessage="Enter the subscription ID"
+                    HelpMessage="Enter the storage type"
                 )]
                 [string]
                 $StorageType = "StandardLRS",
                 [Parameter(
                     Mandatory=$false,
-                    HelpMessage="Enter the subscription ID"
+                    HelpMessage="Enter the VM size"
                 )]
                 [string]
                 $VMSize = "Standard_A1_v2",
                 [Parameter(
                     Mandatory=$false,
-                    HelpMessage="Enter the subscription ID"
+                    HelpMessage="Enter the VM count"
                 )]
                 [string]
                 $VMCount = "2",
                 [Parameter(
                     Mandatory=$false,
-                    HelpMessage="Enter the subscription ID"
+                    HelpMessage="Enter the location"
                 )]
                 [string]
                 $Location = "westeurope",
                 [Parameter(
                     Mandatory=$false,
-                    HelpMessage="Enter the subscription ID"
+                    HelpMessage="Enter the resource group name"
                 )]
                 [string]
                 $ResourceGroupName = "WesDev"
@@ -89,12 +101,14 @@ Process {
                 
                 # Create VM
                 New-VM `
+                    -Credential $Credential `
                     -StorageType $StorageType `
                     -VMSize $VMSize `
                     -VMName $VMName `
                     -subscriptionId $SubscriptionId `
                     -ResourceGroupName $ResourceGroupName `
-                    -Location $Location
+                    -Location $Location `
+                    -VMCredential $VMCredential
             } 
         }
         # Execute Workflow

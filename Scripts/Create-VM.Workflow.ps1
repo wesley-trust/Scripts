@@ -93,7 +93,7 @@ Process {
                 $ResourceGroupName = "WesDev",
                 [Parameter(
                     Mandatory=$false,
-                    HelpMessage="Enter the resource group name"
+                    HelpMessage="Enter the VM name prefix"
                 )]
                 [string]
                 $VMName = "DeleteMe-"

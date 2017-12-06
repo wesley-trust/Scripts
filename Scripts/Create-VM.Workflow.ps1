@@ -35,7 +35,7 @@ Process {
         . .\New-RandomString.ps1
 
         # Define workflow
-        workflow New-parallelVM {
+        workflow New-ParallelVM {
             Param(
                 [Parameter(
                     Mandatory=$true,

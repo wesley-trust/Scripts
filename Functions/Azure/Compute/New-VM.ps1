@@ -167,7 +167,19 @@ function New-VM() {
             HelpMessage="Enter the post provision script storage container name"
         )]
         [string]
-        $ScriptContainerName
+        $ScriptContainerName,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter Azure credentials"
+        )]
+        [pscredential]
+        $Credential,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter VM credentials"
+        )]
+        [pscredential]
+        $VMCredential
     )
 
     Begin {
@@ -177,7 +189,7 @@ function New-VM() {
             . .\Connect-AzureRM.ps1
             
             # Connect to Azure
-            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID
+            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID -Credential $Credential
 
             # Update subscription Id from Azure Connection
             $SubscriptionID = $AzureConnection.Subscription.id

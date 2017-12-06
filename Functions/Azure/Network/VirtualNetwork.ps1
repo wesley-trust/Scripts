@@ -41,7 +41,13 @@ function Get-Vnet() {
             HelpMessage="Enter the virtual network name"
         )]
         [string]
-        $VNetName
+        $VNetName,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter Azure credentials"
+        )]
+        [pscredential]
+        $Credential
     )
 
     Begin {
@@ -51,7 +57,7 @@ function Get-Vnet() {
             . .\Connect-AzureRM.ps1
             
             # Connect to Azure
-            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID
+            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID -Credential $credential
 
             # Update subscription Id from Azure Connection
             $SubscriptionID = $AzureConnection.Subscription.id

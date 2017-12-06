@@ -35,7 +35,13 @@ function Get-ResourceGroup() {
             HelpMessage="Enter the Azure region location"
         )]
         [string]
-        $Location
+        $Location,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter Azure credentials"
+        )]
+        [pscredential]
+        $Credential
     )
 
     Begin {
@@ -45,7 +51,7 @@ function Get-ResourceGroup() {
             . .\Connect-AzureRM.ps1
             
             # Connect to Azure
-            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID
+            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID -Credential $credential
 
             # Update subscription Id from Azure Connection
             $SubscriptionID = $AzureConnection.Subscription.id
@@ -131,7 +137,13 @@ function New-ResourceGroup() {
             HelpMessage="Enter the Azure region location"
         )]
         [string]
-        $Location
+        $Location,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter Azure credentials"
+        )]
+        [pscredential]
+        $Credential
     )
 
     Begin {

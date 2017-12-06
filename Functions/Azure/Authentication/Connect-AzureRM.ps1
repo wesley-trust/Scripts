@@ -84,7 +84,9 @@ function Connect-AzureRM() {
 
             # If no active account, or reauthentication is required 
             if (!$AzureConnection.Account -or $ReAuthenticate) {
-                Write-Host "`nAuthenticating with Azure, enter credentials when prompted"
+                Write-Host "`nAuthenticating with Azure"
+                
+                # If no credentials exist
                 if (!$Credential){
                     $Credential = Get-Credential
                 } 

@@ -1,12 +1,12 @@
 <#
 #Script name: Create VM script
 #Creator: Wesley Trust
-#Date: 2017-11-18
+#Date: 2017-12-06
 #Revision: 1
 #References: 
 
 .Synopsis
-    Script to call function to provision virtual machine in Azure
+    Script to call workflow to provision Azure virtual machines in parallel.
 .Description
 
 .Example
@@ -57,7 +57,7 @@ Process {
                 $VMCredential,
                 [Parameter(
                     Mandatory=$false,
-                    HelpMessage="Enter the character length"
+                    HelpMessage="Enter the character length of random string for VM name"
                 )]
                 [string]
                 $CharacterLength = "6",
@@ -78,7 +78,7 @@ Process {
                     HelpMessage="Enter the VM count"
                 )]
                 [string]
-                $VMCount = "2",
+                $VMCount = "5",
                 [Parameter(
                     Mandatory=$false,
                     HelpMessage="Enter the location"
@@ -90,14 +90,21 @@ Process {
                     HelpMessage="Enter the resource group name"
                 )]
                 [string]
-                $ResourceGroupName = "WesDev"
+                $ResourceGroupName = "WesDev",
+                [Parameter(
+                    Mandatory=$false,
+                    HelpMessage="Enter the resource group name"
+                )]
+                [string]
+                $VMName = "DeleteMe"
             )
 
             # For each VM that needs to be created
             foreach -parallel ($VM in 1..$VMCount) {
+                
                 # Create random string for VM name
                 $RandomString = New-RandomString -CharacterLength $CharacterLength -Simplified $true
-                $VMName = "DeleteMe-"+$RandomString
+                $VMName = $VMName+$RandomString
                 
                 # Create VM
                 New-VM `

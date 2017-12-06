@@ -117,41 +117,43 @@ function Connect-AzureRM() {
                         # Load subscriptions
                         $Subscriptions = Get-AzureRmSubscription
 
-                        # If there is no subscription ID specified
-                        if (!$SubscriptionID){
-                                                    
-                            # But there are subscriptions
-                            if ($Subscriptions){
+                        if ($Subscriptions){
+                            # While there is no subscription ID specified
+                            if (!$SubscriptionID){
+                                $WarningMessage = "No subscription ID is specified"
+                                Write-Warning $WarningMessage
+                                
+                                # Display subscriptions
                                 Write-Host "`nSubscriptions you have access to:"
                                 $Subscriptions | Select-Object Name, Id | Format-List | Out-Host -Paging
 
-                                # Prompt for subscription ID
-                                while (!$SubscriptionId) {
-                                    $SubscriptionId = Read-Host "Enter subscription ID"
+                                # Request resource group name
+                                $SubscriptionID = Read-Host "Enter subscription ID"
+
+                                # While there is no valid subscription ID specified
+                                while ($Subscriptions.id -notcontains $SubscriptionID){
+                                    $WarningMessage = "Invalid Subscription Id $SubscriptionID"
+                                    Write-Warning $WarningMessage
+                                    $SubscriptionId = Read-Host "Enter valid subscription ID"
                                 }
                             }
-                            else {
-                                $ErrorMessage = "This account does not have access to any subscriptions."
+                            
+                            # Error if subscription id specified is not valid for Azure account
+                            if ($Subscriptions.id -notcontains $SubscriptionID){
+                                $ErrorMessage = "Invalid Subscription Id $SubscriptionID"
                                 Write-Error $ErrorMessage
                                 throw $ErrorMessage
                             }
-                        }
-                        
-                        # Warn if subscription id is not valid for Azure account
-                        while ($Subscriptions.id -notcontains $SubscriptionID){
-                            $WarningMessage = "Invalid Subscription Id: $SubscriptionID"
-                            Write-Warning $WarningMessage
-                            Write-Host "If ID is correct, try reauthenticating with a different account"
                             
-                            # Display valid IDs
-                            Write-Host "`nValid subscriptions available:"
-                            $Subscriptions | Select-Object Name, SubscriptionId | Format-List | Out-Host -Paging
-                            $SubscriptionId = Read-Host "Enter a valid subscription ID"
+                            # Change context to selected subscription
+                            Write-Host "`nSelecting subscription"
+                            $AzureConnection = Select-AzureRmSubscription -SubscriptionId $SubscriptionId
                         }
-                        
-                        # Change context to selected subscription
-                        Write-Host "`nSelecting subscription"
-                        $AzureConnection = Select-AzureRmSubscription -SubscriptionId $SubscriptionId
+                        else {
+                            $ErrorMessage = "This account does not have access to any subscriptions."
+                            Write-Error $ErrorMessage
+                            throw $ErrorMessage
+                        }
                     }
                     return $AzureConnection
                 }

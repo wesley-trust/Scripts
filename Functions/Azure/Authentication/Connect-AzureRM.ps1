@@ -85,11 +85,10 @@ function Connect-AzureRM() {
             # If no active account, or reauthentication is required 
             if (!$AzureConnection.Account -or $ReAuthenticate) {
                 Write-Host "`nAuthenticating with Azure, enter credentials when prompted"
-                # Commenting out, AzureRM.NetCore only supports device authentication at this time
-<#                 if (!$Credential){
+                if (!$Credential){
                     $Credential = Get-Credential
-                }  #>
-                $AzureConnection = Add-AzureRmAccount #-Credential $Credential
+                } 
+                $AzureConnection = Add-AzureRmAccount -Credential $Credential
             }
             
             # Get the subscription in the current context

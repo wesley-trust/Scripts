@@ -207,10 +207,12 @@ function New-VM() {
             Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
             . .\ResourceGroup.ps1
 
-            # Check for valid resource group
-            $ResourceGroup = Get-ResourceGroup `
+            # If a resource group name is specified, check for validity
+            if ($ResourceGroupName){
+                $ResourceGroup = Get-ResourceGroup `
                 -SubscriptionID $SubscriptionID `
-                -ResourceGroupName $ResourceGroupName `
+                -ResourceGroupName $ResourceGroupName
+            }
             
             # If no resource group exists, create terminating error
             if (!$ResourceGroup){
@@ -231,10 +233,23 @@ function New-VM() {
             . .\VirtualNetwork.ps1
 
             # Check for valid virtual network
-            $Vnet = Get-Vnet `
+            if ($VnetName){
+                
+                # If no specific resource group is specified, update with VM group
+                if (!$VnetResourceGroupName){
+                    $VnetResourceGroupName = $ResourceGroupName
+                }
+                
+                # Get virtual network
+                $Vnet = Get-Vnet `
+                    -SubscriptionID $SubscriptionID `
+                    -ResourceGroupName $VnetResourceGroupName `
+                    -VNetName $VnetName
+            }
+            elseif ($AllowExistingVnet){
+                $Vnet = Get-Vnet `
                 -SubscriptionID $SubscriptionID `
-                -ResourceGroupName $VnetResourceGroupName `
-                -VNetName $VnetName
+            }
 
             # If no vnet exists, create terminating error
             if (!$Vnet){

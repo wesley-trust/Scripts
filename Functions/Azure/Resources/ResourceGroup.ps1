@@ -66,23 +66,29 @@ function Get-ResourceGroup() {
                 $WarningMessage = "No resource group name is specified"
                 Write-Warning $WarningMessage
                 
-                # Display resource groups
-                Write-Host "`nExisting Resource Group names:"
-                $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
-                
-                # Request resource group name
-                $ResourceGroupName = Read-Host "Specify existing resource group name"
-                
-                # While no valid resource group name is specified
-                while ($ResourceGroups.ResourceGroupName -notcontains $ResourceGroupName){
-                    $WarningMessage = "Invalid Resource group name $ResourceGroupName"
-                    Write-Warning $WarningMessage
+                # If there are resource groups
+                if ($ResourceGroups){
+                    # Display resource groups
+                    Write-Host "`nExisting Resource Group names:"
+                    $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
                     
                     # Request resource group name
-                    $ResourceGroupName = Read-Host "Specify valid resource group name"
+                    $ResourceGroupName = Read-Host "Specify existing resource group name"
+                    
+                    # While no valid resource group name is specified
+                    while ($ResourceGroups.ResourceGroupName -notcontains $ResourceGroupName){
+                        $WarningMessage = "Invalid Resource group name $ResourceGroupName"
+                        Write-Warning $WarningMessage
+                        
+                        # Request resource group name
+                        $ResourceGroupName = Read-Host "Specify valid resource group name"
+                    }
+                }
+                else {
+                    $ErrorMessage = "There are no resource groups accessible"
+                    Write-Error $ErrorMessage
                 }
             }
-
             # If there is a resource group name
             if ($ResourceGroupName){
                 # Check if resource group name is invalid
@@ -94,7 +100,6 @@ function Get-ResourceGroup() {
                     # Select resource group object
                     $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName
                 }
-
             }
             return $ResourceGroup
         }
@@ -154,24 +159,27 @@ function New-ResourceGroup() {
             $ResourceGroups = Get-AzureRmResourceGroup
 
             # While no resource group name is provided
-            if (!$ResourceGroupName){
+            while (!$ResourceGroupName){
                 $WarningMessage = "No resource group name is specified"
                 Write-Warning $WarningMessage
                 $ResourceGroupName = Read-Host "Enter resource group name"
                 
-                # If an invalid name is specified
-                if ($ResourceGroups.ResourceGroupName -contains $ResourceGroupName){
-                    $WarningMessage = "Exisiting Resource group with name $ResourceGroupName"
-                    Write-Warning $WarningMessage
+                # If there are resource groups
+                if ($ResourceGroups){
+                    # If an invalid name is specified
+                    if ($ResourceGroups.ResourceGroupName -contains $ResourceGroupName){
+                        $WarningMessage = "Exisiting Resource group with name $ResourceGroupName"
+                        Write-Warning $WarningMessage
+                        
+                        # Display exisiting resource groups
+                        Write-Host "`nExisting Resource Group names:"
+                        $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
+                    }
                     
-                    # Display exisiting resource groups
-                    Write-Host "`nExisting Resource Group names:"
-                    $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
-                }
-                
-                # while an invalid name is specified
-                while ($ResourceGroups.ResourceGroupName -contains $ResourceGroupName){
-                    $ResourceGroupName = Read-Host "Enter a unique resource group name"
+                    # while an invalid name is specified
+                    while ($ResourceGroups.ResourceGroupName -contains $ResourceGroupName){
+                        $ResourceGroupName = Read-Host "Enter a unique resource group name"
+                    }
                 }
             }
 

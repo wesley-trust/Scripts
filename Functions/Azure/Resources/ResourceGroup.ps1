@@ -2,7 +2,7 @@
 #Name: Resource Group Functions
 #Creator: Wesley Trust
 #Date: 2017-11-20
-#Revision: 2
+#Revision: 3
 #References:
 
 .Synopsis
@@ -61,36 +61,44 @@ function Get-ResourceGroup() {
             # Get all resource groups
             $ResourceGroups = Get-AzureRmResourceGroup
 
-            # While no resource group name is specified
+            # If no resource group name is specified
             if (!$ResourceGroupName){
+                $WarningMessage = "No resource group name is specified"
+                Write-Warning $WarningMessage
+                
+                # Display resource groups
+                Write-Host "`nExisting Resource Group names:"
+                $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
+                
+                # Request resource group name
+                $ResourceGroupName = Read-Host "Specify existing resource group name"
+                
+                # While no valid resource group name is specified
                 while ($ResourceGroups.ResourceGroupName -notcontains $ResourceGroupName){
-                    $WarningMessage = "No valid resource group name is specified"
+                    $WarningMessage = "Invalid Resource group name $ResourceGroupName"
                     Write-Warning $WarningMessage
-
-                    # Get all resource groups
-                    Write-Host "`nExisting Resource Group names:"
-                    $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
                     
                     # Request resource group name
-                    $ResourceGroupName = Read-Host "If this is not correct, specify existing resource group name"
+                    $ResourceGroupName = Read-Host "Specify valid resource group name"
                 }
             }
 
             # If there is a resource group name
             if ($ResourceGroupName){
-                # Select resource group object
-                $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName
-            }
+                # Check if resource group name is invalid
+                if ($ResourceGroups.ResourceGroupName -notcontains $ResourceGroupName){
+                    $ErrorMessage = "Invalid Resource group name $ResourceGroupName"
+                    Write-Error $ErrorMessage
+                }
+                else {
+                    # Select resource group object
+                    $ResourceGroup = Get-AzureRmResourceGroup -ResourceGroupName $ResourceGroupName
+                }
 
-            # If no object exists
-            if (!$ResourceGroup){
-                $ErrorMessage = "Resource group name does not match a valid resource group."
-                Write-Error $ErrorMessage
             }
             return $ResourceGroup
         }
         Catch {
-
             Write-Error -Message $_.exception
             throw $_.exception
         }
@@ -146,39 +154,68 @@ function New-ResourceGroup() {
             $ResourceGroups = Get-AzureRmResourceGroup
 
             # While no resource group name is provided
-            while (!$ResourceGroupName){
-                Write-Host "`nCreating new resource group`n"
+            if (!$ResourceGroupName){
+                $WarningMessage = "No resource group name is specified"
+                Write-Warning $WarningMessage
                 $ResourceGroupName = Read-Host "Enter resource group name"
+                
+                # If an invalid name is specified
+                if ($ResourceGroups.ResourceGroupName -contains $ResourceGroupName){
+                    $WarningMessage = "Exisiting Resource group with name $ResourceGroupName"
+                    Write-Warning $WarningMessage
+                    
+                    # Display exisiting resource groups
+                    Write-Host "`nExisting Resource Group names:"
+                    $ResourceGroups | Select-Object ResourceGroupName | Format-Table | Out-Host -Paging
+                }
+                
+                # while an invalid name is specified
                 while ($ResourceGroups.ResourceGroupName -contains $ResourceGroupName){
-                    $ResourceGroupName = Read-Host "Resource group name already exists, enter a different name"
-                }
-            }
-            
-            # Get Azure regions
-            $Locations = Get-AzureRmLocation
-
-            # If no location is set
-            if (!$Location){
-                
-                # Get Azure region locations
-                Write-Host "`nSupported Regions:"
-                $Locations | Select-Object Location | Format-Table | Out-Host -Paging
-                
-                # Prompt for location
-                $Location = Read-Host "Enter the location for this resource group"
-            }
-
-            # Check for valid location
-            while ($Locations.location -notcontains $Location){
-                $Location = Read-Host "Location is invalid or not available, specify a new location."
-                while (!$Location){
-                    $Location = Read-Host "Enter the location for this resource group"
+                    $ResourceGroupName = Read-Host "Enter a unique resource group name"
                 }
             }
 
-            # Create Resource Group
-            $ResourceGroup = New-AzureRmResourceGroup -Name $ResourceGroupName -Location $Location
+            # Check if resource group name conflict
+            if ($ResourceGroups.ResourceGroupName -contains $ResourceGroupName){
+                $ErrorMessage = "Exisiting Resource group with name $ResourceGroupName"
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
+            }
+            else {
+                # Get Azure regions
+                $Locations = Get-AzureRmLocation
 
+                # If no location is set
+                if (!$Location){
+                    $WarningMessage = "No location is specified"
+                    Write-Warning $WarningMessage
+                    
+                    # Get Azure region locations
+                    Write-Host "`nSupported Locations:"
+                    $Locations | Select-Object Location | Format-Table | Out-Host -Paging
+                    
+                    # Prompt for location
+                    $Location = Read-Host "Enter a location for this resource group"
+
+                    # Check for valid location
+                    while ($Locations.location -notcontains $Location){
+                        $WarningMessage = "Invalid location $Location"
+                        Write-Warning $WarningMessage
+                        $Location = Read-Host "Specify a valid location."
+                    }
+                }
+
+                # Check for valid location
+                if ($Locations.location -notcontains $Location){
+                    $ErrorMessage = "Invalid location $Location"
+                    Write-Error $ErrorMessage
+                    throw $ErrorMessage
+                }
+                else {
+                    # Create Resource Group
+                    $ResourceGroup = New-AzureRmResourceGroup -Name $ResourceGroupName -Location $Location
+                }
+            }
             return $ResourceGroup
         }
         Catch {

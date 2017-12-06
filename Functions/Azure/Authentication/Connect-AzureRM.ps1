@@ -31,6 +31,12 @@ function Connect-AzureRM() {
         $SubscriptionID,
         [Parameter(
             Mandatory=$false,
+            HelpMessage="Specify PowerShell credential object"
+        )]
+        [pscredential]
+        $Credential,
+        [Parameter(
+            Mandatory=$false,
             HelpMessage="Specify whether to reauthenticate with different credentials"
         )]
         [bool]
@@ -71,16 +77,19 @@ function Connect-AzureRM() {
             Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
             . .\Check-RequiredModule.ps1
 
-            Check-RequiredModule -Modules $Module
+            Check-RequiredModule -Modules $Module -ModulesCore $ModuleCore
 
             # Check to see if there is an active connection to Azure
-            $AzureConnection = Get-AzureRmContext | Where-Object Name -NE "Default"
+            $AzureConnection = Get-AzureRmContext
 
-            # If no active connection, or reauthentication is required 
-            if (!$AzureConnection -or $ReAuthenticate) {
-                Write-Host ""
-                Write-Host "Authenticating with Azure, enter credentials when prompted"
-                $AzureConnection = Add-AzureRmAccount
+            # If no active account, or reauthentication is required 
+            if (!$AzureConnection.Account -or $ReAuthenticate) {
+                Write-Host "`nAuthenticating with Azure, enter credentials when prompted"
+                # Commenting out, AzureRM.NetCore only supports device authentication at this time
+<#                 if (!$Credential){
+                    $Credential = Get-Credential
+                }  #>
+                $AzureConnection = Add-AzureRmAccount #-Credential $Credential
             }
             
             # Get the subscription in the current context
@@ -114,7 +123,7 @@ function Connect-AzureRM() {
                             # But there are subscriptions
                             if ($Subscriptions){
                                 Write-Host "`nSubscriptions you have access to:"
-                                $Subscriptions | Select-Object Name, SubscriptionId | Format-List | Out-Host -Paging
+                                $Subscriptions | Select-Object Name, Id | Format-List | Out-Host -Paging
 
                                 # Prompt for subscription ID
                                 while (!$SubscriptionId) {

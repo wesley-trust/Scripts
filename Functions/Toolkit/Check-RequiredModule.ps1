@@ -22,7 +22,13 @@ function Check-RequiredModule() {
             HelpMessage="Specify the module name(s)"
         )]
         [string[]]
-        $Modules
+        $Modules,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify the module name(s)"
+        )]
+        [string[]]
+        $ModulesCore
     )
 
     Begin {
@@ -37,6 +43,13 @@ function Check-RequiredModule() {
     
     Process {
         try {
+
+            # Check for PowerShell Core
+            if ($PSVersionTable.PSEdition -eq "Core"){
+                # If true, update module with core version
+                $Modules = $ModulesCore
+            }
+
             # If no modules are specified
             while (!$Modules) {
                 $Modules = Read-Host "Enter module name(s), comma separated, to check to install"

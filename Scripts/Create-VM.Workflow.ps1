@@ -96,7 +96,7 @@ Process {
                     HelpMessage="Enter the resource group name"
                 )]
                 [string]
-                $VMName = "DeleteMe"
+                $VMName = "DeleteMe-"
             )
 
             # For each VM that needs to be created
@@ -104,14 +104,14 @@ Process {
                 
                 # Create random string for VM name
                 $RandomString = New-RandomString -CharacterLength $CharacterLength -Simplified $true
-                $VMName = $VMName+$RandomString
+                $RandomVMName = $VMName+$RandomString
                 
                 # Create VM
                 New-VM `
                     -Credential $Credential `
                     -StorageType $StorageType `
                     -VMSize $VMSize `
-                    -VMName $VMName `
+                    -VMName $RandomVMName `
                     -subscriptionId $SubscriptionId `
                     -ResourceGroupName $ResourceGroupName `
                     -Location $Location `

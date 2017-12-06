@@ -201,7 +201,7 @@ function New-VM() {
                 -ResourceGroupName $ResourceGroupName `
                 -Location $Location
             
-            # Create resource group
+            # If no resource group exists, create resource group
             if (!$ResourceGroup){
                 $ResourceGroup = New-ResourceGroup `
                     -SubscriptionID $SubscriptionID `

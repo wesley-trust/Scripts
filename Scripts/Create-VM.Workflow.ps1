@@ -110,6 +110,7 @@ Process {
                 $ResourceGroup = Get-ResourceGroup `
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $ResourceGroupName `
+                -Credential $credential
             }
             
             # If no resource group exists, create resource group
@@ -117,14 +118,16 @@ Process {
                 $ResourceGroup = New-ResourceGroup `
                     -SubscriptionID $SubscriptionID `
                     -ResourceGroupName $ResourceGroupName `
-                    -Location $Location
+                    -Location $Location `
+                    -Credential $credential
             }
 
             # Check for valid virtual network
             $Vnet = Get-Vnet `
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $VnetResourceGroupName `
-                -VNetName $VnetName
+                -VNetName $VnetName `
+                -Credential $credential
 
             # If no vnet exists, create a default network
             if (!$Vnet){
@@ -141,7 +144,8 @@ Process {
                 -Location $Location `
                 -SubnetName $SubnetName `
                 -VNetAddressPrefix $VNetAddressPrefix `
-                -VNetSubnetAddressPrefix $VNetSubnetAddressPrefix
+                -VNetSubnetAddressPrefix $VNetSubnetAddressPrefix `
+                -Credential $credential
             }
 
             # For each VM that needs to be created

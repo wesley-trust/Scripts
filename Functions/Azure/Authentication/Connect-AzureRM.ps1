@@ -66,6 +66,7 @@ function Connect-AzureRM() {
             
             # Required Module
             $Module = "AzureRM"
+            $ModuleCore = "AzureRM.Netcore"
 
             Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
             . .\Check-RequiredModule.ps1

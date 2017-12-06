@@ -119,7 +119,7 @@ Process {
             } 
         }
         # Execute Workflow
-        New-parallelVM
+        New-ParallelVM
     }
     Catch {
         Write-Error -Message $_.exception

@@ -41,6 +41,7 @@ Process {
         $VMCount = 2
         $Location = "westeurope"
         $ResourceGroupName = "WesDev"
+        $VMName = "DeleteMe-"
 
         # If there are VMs to create
         if ($VMCount){
@@ -49,13 +50,13 @@ Process {
                 
                 # Create random string for VM name
                 $RandomString = New-RandomString -CharacterLength $CharacterLength -Simplified $true
-                $VMName = "DeleteMe-"+$RandomString
+                $RandomVMName = $VMName+$RandomString
                 
                 # Create VM
                 New-VM `
                     -StorageType $StorageType `
                     -VMSize $VMSize `
-                    -VMName $VMName `
+                    -VMName $RandomVMName `
                     -subscriptionId $SubscriptionId `
                     -ResourceGroupName $ResourceGroupName `
                     -Location $Location

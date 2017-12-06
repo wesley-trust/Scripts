@@ -62,7 +62,7 @@ function Get-ResourceGroup() {
             $ResourceGroups = Get-AzureRmResourceGroup
 
             # If no resource group name is specified
-            if (!$ResourceGroupName){
+            while (!$ResourceGroupName){
                 $WarningMessage = "No resource group name is specified"
                 Write-Warning $WarningMessage
                 
@@ -193,8 +193,8 @@ function New-ResourceGroup() {
                 # Get Azure regions
                 $Locations = Get-AzureRmLocation
 
-                # If no location is set
-                if (!$Location){
+                # While no location is set
+                while (!$Location){
                     $WarningMessage = "No location is specified"
                     Write-Warning $WarningMessage
                     

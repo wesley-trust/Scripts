@@ -34,6 +34,12 @@ Process {
         Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit\
         . .\New-RandomString.ps1
 
+        Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
+        . .\ResourceGroup.ps1
+
+        Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Network\
+        . .\VirtualNetwork.ps1
+
         # Define workflow
         workflow New-ParallelVM {
             Param(
@@ -78,7 +84,7 @@ Process {
                     HelpMessage="Enter the VM count"
                 )]
                 [string]
-                $VMCount = "5",
+                $VMCount = "10",
                 [Parameter(
                     Mandatory=$false,
                     HelpMessage="Enter the location"
@@ -99,6 +105,45 @@ Process {
                 $VMName = "DeleteMe-"
             )
 
+            # Validate resource group
+            if ($ResourceGroupName){
+                $ResourceGroup = Get-ResourceGroup `
+                -SubscriptionID $SubscriptionID `
+                -ResourceGroupName $ResourceGroupName `
+            }
+            
+            # If no resource group exists, create resource group
+            if (!$ResourceGroup){
+                $ResourceGroup = New-ResourceGroup `
+                    -SubscriptionID $SubscriptionID `
+                    -ResourceGroupName $ResourceGroupName `
+                    -Location $Location
+            }
+
+            # Check for valid virtual network
+            $Vnet = Get-Vnet `
+                -SubscriptionID $SubscriptionID `
+                -ResourceGroupName $VnetResourceGroupName `
+                -VNetName $VnetName
+
+            # If no vnet exists, create a default network
+            if (!$Vnet){
+                
+                # If no specific vnet resource group is specified, use existing group
+                if (!$VnetResourceGroupName){
+                    $VnetResourceGroupName = $ResourceGroupName
+                }
+                
+                $Vnet = New-Vnet `
+                -SubscriptionID $SubscriptionID `
+                -ResourceGroupName $VnetResourceGroupName `
+                -VNetName $VnetName `
+                -Location $Location `
+                -SubnetName $SubnetName `
+                -VNetAddressPrefix $VNetAddressPrefix `
+                -VNetSubnetAddressPrefix $VNetSubnetAddressPrefix
+            }
+
             # For each VM that needs to be created
             foreach -parallel ($VM in 1..$VMCount) {
                 
@@ -118,6 +163,7 @@ Process {
                     -VMCredential $VMCredential
             } 
         }
+
         # Execute Workflow
         New-ParallelVM
     }

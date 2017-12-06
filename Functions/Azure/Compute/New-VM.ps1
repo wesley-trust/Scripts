@@ -89,7 +89,7 @@ function New-VM() {
             HelpMessage="Use exisiting Virtual Network (if one exists)"
         )]
         [bool]
-        $SkipVnetConfirm= $true,
+        $AllowExistingVnet = $true,
         [Parameter(
             Mandatory=$false,
             HelpMessage="Enter the virtual network name"
@@ -203,64 +203,51 @@ function New-VM() {
     Process {
         try {
 
-            # Set resource group
+            # Load resource group functions
             Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
             . .\ResourceGroup.ps1
 
-            # Get resource group
+            # Check for valid resource group
             $ResourceGroup = Get-ResourceGroup `
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $ResourceGroupName `
-                -Location $Location
             
-            # If no resource group exists, create resource group
+            # If no resource group exists, create terminating error
             if (!$ResourceGroup){
-                $ResourceGroup = New-ResourceGroup `
-                    -SubscriptionID $SubscriptionID `
-                    -ResourceGroupName $ResourceGroupName `
-                    -Location $Location
+                $ErrorMessage = "Resource Group does not exist, create a group first"
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
             }
             
             # Object check
             $ResourceGroup = $ResourceGroup | Where-Object {$_ -is [Microsoft.Azure.Commands.ResourceManager.Cmdlets.SdkModels.PSResourceGroup]}
 
-            # Update variables from resource group object
+            # Update variables from resource group object to prevent inconsistency
             $Location = $ResourceGroup.Location
             $ResourceGroupName = $ResourceGroup.ResourceGroupName
             
-            # Set Virtual Network
+            # Load virtual network functions
             Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Network\
             . .\VirtualNetwork.ps1
 
-            # Get exisiting vnet
+            # Check for valid virtual network
             $Vnet = Get-Vnet `
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $VnetResourceGroupName `
                 -VNetName $VnetName
 
-            # If no vnet exists, create a default network
+            # If no vnet exists, create terminating error
             if (!$Vnet){
-                
-                # If no specific vnet resource group is specified, use existing group
-                if (!$VnetResourceGroupName){
-                    $VnetResourceGroupName = $ResourceGroupName
-                }
-                
-                $Vnet = New-Vnet `
-                -SubscriptionID $SubscriptionID `
-                -ResourceGroupName $VnetResourceGroupName `
-                -VNetName $VnetName `
-                -Location $Location `
-                -SubnetName $SubnetName `
-                -VNetAddressPrefix $VNetAddressPrefix `
-                -VNetSubnetAddressPrefix $VNetSubnetAddressPrefix
+                $ErrorMessage = "No Virtual network exists, create a network first"
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
             }
             
             # Object check
             $Vnet = $Vnet | Where-Object {$_ -is [Microsoft.Azure.Commands.Network.Models.PSVirtualNetwork]}
             
             # Confirm Virtual Network if required
-            if (!$SkipVnetConfirm){
+            if (!$AllowExistingVnet){
                 $Choice = $null
                 while ($Choice -notmatch "Y|N"){
                     $Choice = Read-Host "Use Vnet:"$Vnet.name,"? (Y/N)"

@@ -84,7 +84,7 @@ Process {
                     HelpMessage="Enter the VM count"
                 )]
                 [string]
-                $VMCount = "5",
+                $VMCount = "2",
                 [Parameter(
                     Mandatory=$false,
                     HelpMessage="Enter the location"
@@ -135,6 +135,7 @@ Process {
                 if (!$VnetResourceGroupName){
                     $VnetResourceGroupName = $ResourceGroupName
                 }
+            }
 
             $Vnet = Get-Vnet `
                 -SubscriptionID $SubscriptionID `

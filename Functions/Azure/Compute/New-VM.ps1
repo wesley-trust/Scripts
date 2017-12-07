@@ -35,12 +35,6 @@ function New-VM() {
             HelpMessage="Enter the publisher name"
         )]
         [string]
-        $OSType = "Windows",
-        [Parameter(
-            Mandatory=$false,
-            HelpMessage="Enter the publisher name"
-        )]
-        [string]
         $PublisherName = "MicrosoftWindowsServer",
         [Parameter(
             Mandatory=$false,
@@ -351,7 +345,7 @@ function New-VM() {
             # Set Operating System settings
             $VirtualMachine = Set-AzureRmVMOperatingSystem `
                 -VM $VirtualMachine `
-                -$OSType `
+                -Windows `
                 -ComputerName $VMName `
                 -Credential $VMCredential `
                 -ProvisionVMAgent `
@@ -386,7 +380,7 @@ function New-VM() {
                         -AccountType $StorageType `
                         -Location $Location `
                         -CreateOption Empty `
-                        -OsType $OSType `
+                        -OsType Windows `
                         -DiskSizeGB $DataDiskSize
 
                     $Disk = New-AzureRmDisk `
@@ -407,7 +401,7 @@ function New-VM() {
                 -VM $VirtualMachine `
                 -StorageAccountType $StorageType `
                 -CreateOption FromImage `
-                -$OSType
+                -Windows
 
             # Create VM in Azure
             New-AzureRmVM -ResourceGroupName $ResourceGroupName -Location $Location -VM $VirtualMachine

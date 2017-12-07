@@ -105,7 +105,7 @@ function Get-Vnet() {
             if ($Vnet){
                 # But there is more than one
                 if ($VNet.count -ne "1"){
-                    # If assume virtual network 
+                    # If assume virtual network is false
                     if (!$AssumeDefaultVnet){
                     
                         # Display vnet names
@@ -116,39 +116,31 @@ function Get-Vnet() {
                         $VNetName = $null
 
                         # If no vnet name is specified
-                        if (!$VnetName) {
+                        while (!$VnetName) {
                             $WarningMessage = "No Virtual Network name is specified"
                             Write-Warning $WarningMessage
-                            
-                            # Continue to prompt for vnet name
-                            $VnetName = Read-Host "If this is not correct, specify existing virtual network name"
-                        }
-                        
-                        # Check for valid name
-                        if ($Vnet.name -notcontains $VNetName){
-                            $WarningMessage = "Existing Virtual network name is invalid or not specified"
-                            Write-Warning $WarningMessage
-                            
-                            # Display valid resource groups
-                            Write-Host "`nValid Exisiting Virtual Network Names:"
+
+                            # Display valid virtual networks
+                            Write-Host "`nExisiting Virtual Network Names:"
                             $Vnet | Select-Object Name | Out-Host -Paging
-                            $VNetName = Read-Host "If this is not correct, specify existing virtual network name"
+                            
+                            # Request virtual network name
+                            $VnetName = Read-Host "Specify existing virtual network name"
+                            
+                            # Check for valid name
+                            while ($Vnet.name -notcontains $VNetName){
+                                $WarningMessage = "Invalid Virtual network name $VNetName"
+                                Write-Warning $WarningMessage
+                                                                
+                                $VNetName = Read-Host "Specify valid virtual network name"
+                            }
                         }
 
-                        # If a valid name is specified
-                        If ($VNetName){
-                            # Set vnet variable to include only the specified vnet object
-                            $Vnet = $Vnet | Where-Object Name -eq $VNetName
-                        }
-                        
-                        # If there is no vnet object
-                        if (!$Vnet){
-                            $ErrorMessage = "No valid virtual network specified."
-                            Write-Error $ErrorMessage
-                        }
+                        # Set vnet variable to include only the specified virtual network name
+                        $Vnet = $Vnet | Where-Object Name -eq $VNetName
+
                     }
                     else {
-                        # If there is no vnet object
                         $ErrorMessage = "Unable to assume which virtual network to use as there is more than one."
                         Write-Error $ErrorMessage
                         throw $ErrorMessage
@@ -249,6 +241,8 @@ function New-Vnet() {
         try {
             # While no virtual network name is provided
             while (!$VNetName){
+                $WarningMessage = "No virtual network name is specified"
+                Write-Warning $WarningMessage
                 $VNetName = Read-Host "Enter Virtual Network name"
             }
             
@@ -276,9 +270,13 @@ function New-Vnet() {
                 
                 # Request subnet optional variables
                 while (!$SubnetName){
+                    $WarningMessage = "No subnet name is specified"
+                    Write-Warning $WarningMessage
                     $SubnetName = Read-Host "Please enter Subnet name"
                 }
                 while (!$VNetSubnetAddressPrefix){
+                    $WarningMessage = "No subnet address prefix is specified"
+                    Write-Warning $WarningMessage
                     $VNetSubnetAddressPrefix = Read-Host "Please enter Subnet address prefix"
                 }
                 
@@ -287,8 +285,11 @@ function New-Vnet() {
                 
                 # Request vnet address optional variable
                 while (!$VNetAddressPrefix){
+                    $WarningMessage = "No virtual network address prefix is specified"
+                    Write-Warning $WarningMessage
                     $VNetAddressPrefix = Read-Host "Please enter the vnet address prefix"
                 }
+                
                 # Create virtual network
                 $VNet = New-AzureRmVirtualNetwork -Name $VNetName -ResourceGroupName $ResourceGroupName -Location $Location -AddressPrefix $VNetAddressPrefix -Subnet $SubnetConfig
             }

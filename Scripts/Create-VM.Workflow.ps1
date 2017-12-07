@@ -102,7 +102,13 @@ Process {
                     HelpMessage="Enter the VM name prefix"
                 )]
                 [string]
-                $VMName = "DeleteMe-"
+                $VMName = "DeleteMe-",
+                [Parameter(
+                    Mandatory=$false,
+                    HelpMessage="Use exisiting Virtual Network (if one exists)"
+                )]
+                [bool]
+                $AssumeDefaultVnet = $true
             )
 
             # Check for valid resource group
@@ -122,13 +128,20 @@ Process {
                     -Credential $credential
             }
 
-            # Check for valid virtual network
+            # If vnet name exists
+            if ($VnetName){
+                
+                # If no specific resource group is specified, update with VM group
+                if (!$VnetResourceGroupName){
+                    $VnetResourceGroupName = $ResourceGroupName
+                }
+
             $Vnet = Get-Vnet `
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $VnetResourceGroupName `
                 -VNetName $VnetName `
                 -Credential $credential `
-                -AssumeDefaultVnet $true
+                -AssumeDefaultVnet $AssumeDefaultVnet
 
             # If no vnet exists, throw exception
             if (!$Vnet){

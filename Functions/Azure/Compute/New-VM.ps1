@@ -35,6 +35,12 @@ function New-VM() {
             HelpMessage="Enter the publisher name"
         )]
         [string]
+        $OSType = "Windows",
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the publisher name"
+        )]
+        [string]
         $PublisherName = "MicrosoftWindowsServer",
         [Parameter(
             Mandatory=$false,
@@ -80,16 +86,10 @@ function New-VM() {
         $StorageType,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Enter the subnet name"
-        )]
-        [string]
-        $SubnetName = "default",
-        [Parameter(
-            Mandatory=$false,
             HelpMessage="Use exisiting Virtual Network (if one exists)"
         )]
         [bool]
-        $AllowExistingVnet = $true,
+        $AssumeDefaultVnet = $true,
         [Parameter(
             Mandatory=$false,
             HelpMessage="Enter the virtual network name"
@@ -102,18 +102,6 @@ function New-VM() {
         )]
         [string]
         $VnetResourceGroupName,
-        [Parameter(
-            Mandatory=$false,
-            HelpMessage="Enter the virtual network address prefix"
-        )]
-        [string]
-        $VNetAddressPrefix,
-        [Parameter(
-            Mandatory=$false,
-            HelpMessage="Enter the virtual network subnet address prefix"
-        )]
-        [string]
-        $VNetSubnetAddressPrefix,
         [Parameter(
             Mandatory=$false,
             HelpMessage="Enter the number of data disks (if any)"
@@ -232,52 +220,34 @@ function New-VM() {
             Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Network\
             . .\VirtualNetwork.ps1
 
-            # Check for valid virtual network
+            # Check for virtual network name
             if ($VnetName){
                 
                 # If no specific resource group is specified, update with VM group
                 if (!$VnetResourceGroupName){
                     $VnetResourceGroupName = $ResourceGroupName
                 }
+            }
                 
-                # Get virtual network
-                $Vnet = Get-Vnet `
-                    -SubscriptionID $SubscriptionID `
-                    -ResourceGroupName $VnetResourceGroupName `
-                    -VNetName $VnetName
-            }
-            elseif ($AllowExistingVnet){
-                $Vnet = Get-Vnet `
+            $Vnet = Get-Vnet `
                 -SubscriptionID $SubscriptionID `
-            }
+                -ResourceGroupName $VnetResourceGroupName `
+                -VNetName $VnetName `
+                -Credential $credential `
+                -AssumeDefaultVnet $AssumeDefaultVnet
 
-            # If no vnet exists, create terminating error
+            # If no vnet exists, throw exception
             if (!$Vnet){
-                $ErrorMessage = "No Virtual network exists, create a network first"
-                Write-Error $ErrorMessage
-                throw $ErrorMessage
-            }
-            
-            # Object check
-            $Vnet = $Vnet | Where-Object {$_ -is [Microsoft.Azure.Commands.Network.Models.PSVirtualNetwork]}
-            
-            # Confirm Virtual Network if required
-            if (!$AllowExistingVnet){
-                $Choice = $null
-                while ($Choice -notmatch "Y|N"){
-                    $Choice = Read-Host "Use Vnet:"$Vnet.name,"? (Y/N)"
-                }
-                # If user returns no
-                if ($Choice -match "N"){
-                    $ErrorMessage = "User aborted due to virtual network selection"
-                    Write-Error -Message $ErrorMessage
-                    throw $ErrorMessage
-                }
+                Write-Error $_.exception
+                throw $_.exception
             }
             else {
                 # Display vnet to be used
                 Write-Host "`nUsing Vnet:"$Vnet.name,"`n"
             }
+            
+            # Object check
+            $Vnet = $Vnet | Where-Object {$_ -is [Microsoft.Azure.Commands.Network.Models.PSVirtualNetwork]}
             
             # Clear the variable
             $VMObject = $null
@@ -381,7 +351,7 @@ function New-VM() {
             # Set Operating System settings
             $VirtualMachine = Set-AzureRmVMOperatingSystem `
                 -VM $VirtualMachine `
-                -Windows `
+                -$OSType `
                 -ComputerName $VMName `
                 -Credential $VMCredential `
                 -ProvisionVMAgent `
@@ -416,7 +386,7 @@ function New-VM() {
                         -AccountType $StorageType `
                         -Location $Location `
                         -CreateOption Empty `
-                        -OsType Windows `
+                        -OsType $OSType `
                         -DiskSizeGB $DataDiskSize
 
                     $Disk = New-AzureRmDisk `
@@ -437,7 +407,7 @@ function New-VM() {
                 -VM $VirtualMachine `
                 -StorageAccountType $StorageType `
                 -CreateOption FromImage `
-                -Windows
+                -$OSType
 
             # Create VM in Azure
             New-AzureRmVM -ResourceGroupName $ResourceGroupName -Location $Location -VM $VirtualMachine

@@ -84,7 +84,7 @@ Process {
                     HelpMessage="Enter the VM count"
                 )]
                 [string]
-                $VMCount = "10",
+                $VMCount = "5",
                 [Parameter(
                     Mandatory=$false,
                     HelpMessage="Enter the location"

@@ -47,7 +47,13 @@ function Get-Vnet() {
             HelpMessage="Enter Azure credentials"
         )]
         [pscredential]
-        $Credential
+        $Credential,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify whether to assume correct vnet, when only one exists"
+        )]
+        [bool]
+        $AssumeDefaultVnet
     )
 
     Begin {

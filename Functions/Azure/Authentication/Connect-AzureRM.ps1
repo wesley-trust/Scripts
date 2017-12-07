@@ -145,9 +145,12 @@ function Connect-AzureRM() {
                                 Write-Error $ErrorMessage
                                 throw $ErrorMessage
                             }
-                            
+
+                            # Get subscription name
+                            $SubscriptionName = ($Subscriptions | Where-Object Id -eq $SubscriptionID).name
+
                             # Change context to selected subscription
-                            Write-Host "`nSelecting subscription"
+                            Write-Host "`nSelecting Subscription: $SubscriptionName"
                             $AzureConnection = Select-AzureRmSubscription -SubscriptionId $SubscriptionId
                         }
                         else {

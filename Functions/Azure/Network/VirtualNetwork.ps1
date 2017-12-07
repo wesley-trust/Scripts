@@ -99,44 +99,53 @@ function Get-Vnet() {
             if ($Vnet){
                 # But there is more than one
                 if ($VNet.count -ne "1"){
+                    # If assume virtual network 
+                    if (!$AssumeDefaultVnet){
                     
-                    # Display vnet names
-                    Write-Host "`nExisiting Virtual Network Names:`n"
-                    $Vnet | Select-Object Name | Out-Host -Paging
-
-                    # Clear variable
-                    $VNetName = $null
-
-                    # If no vnet name is specified
-                    if (!$VnetName) {
-                        $WarningMessage = "No Virtual Network name is specified"
-                        Write-Warning $WarningMessage
-                        
-                        # Continue to prompt for vnet name
-                        $VnetName = Read-Host "If this is not correct, specify existing virtual network name"
-                    }
-                    
-                    # Check for valid name
-                    if ($Vnet.name -notcontains $VNetName){
-                        $WarningMessage = "Existing Virtual network name is invalid or not specified"
-                        Write-Warning $WarningMessage
-                        
-                        # Display valid resource groups
-                        Write-Host "`nValid Exisiting Virtual Network Names:"
+                        # Display vnet names
+                        Write-Host "`nExisiting Virtual Network Names:`n"
                         $Vnet | Select-Object Name | Out-Host -Paging
-                        $VNetName = Read-Host "If this is not correct, specify existing virtual network name"
-                    }
 
-                    # If a valid name is specified
-                    If ($VNetName){
-                        # Set vnet variable to include only the specified vnet object
-                        $Vnet = $Vnet | Where-Object Name -eq $VNetName
+                        # Clear variable
+                        $VNetName = $null
+
+                        # If no vnet name is specified
+                        if (!$VnetName) {
+                            $WarningMessage = "No Virtual Network name is specified"
+                            Write-Warning $WarningMessage
+                            
+                            # Continue to prompt for vnet name
+                            $VnetName = Read-Host "If this is not correct, specify existing virtual network name"
+                        }
+                        
+                        # Check for valid name
+                        if ($Vnet.name -notcontains $VNetName){
+                            $WarningMessage = "Existing Virtual network name is invalid or not specified"
+                            Write-Warning $WarningMessage
+                            
+                            # Display valid resource groups
+                            Write-Host "`nValid Exisiting Virtual Network Names:"
+                            $Vnet | Select-Object Name | Out-Host -Paging
+                            $VNetName = Read-Host "If this is not correct, specify existing virtual network name"
+                        }
+
+                        # If a valid name is specified
+                        If ($VNetName){
+                            # Set vnet variable to include only the specified vnet object
+                            $Vnet = $Vnet | Where-Object Name -eq $VNetName
+                        }
+                        
+                        # If there is no vnet object
+                        if (!$Vnet){
+                            $ErrorMessage = "No valid virtual network specified."
+                            Write-Error $ErrorMessage
+                        }
                     }
-                    
-                    # If there is no vnet object
-                    if (!$Vnet){
-                        $ErrorMessage = "No valid virtual network specified."
+                    else {
+                        # If there is no vnet object
+                        $ErrorMessage = "Unable to assume which virtual network to use as there is more than one."
                         Write-Error $ErrorMessage
+                        throw $ErrorMessage
                     }
                 }
                 return $Vnet

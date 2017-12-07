@@ -129,23 +129,10 @@ Process {
                 -VNetName $VnetName `
                 -Credential $credential
 
-            # If no vnet exists, create a default network
+            # If no vnet exists, throw exception
             if (!$Vnet){
-                
-                # If no specific vnet resource group is specified, use existing group
-                if (!$VnetResourceGroupName){
-                    $VnetResourceGroupName = $ResourceGroupName
-                }
-                
-                $Vnet = New-Vnet `
-                -SubscriptionID $SubscriptionID `
-                -ResourceGroupName $VnetResourceGroupName `
-                -VNetName $VnetName `
-                -Location $Location `
-                -SubnetName $SubnetName `
-                -VNetAddressPrefix $VNetAddressPrefix `
-                -VNetSubnetAddressPrefix $VNetSubnetAddressPrefix `
-                -Credential $credential
+                Write-Error $_.exception
+                throw $_.exception
             }
 
             # For each VM that needs to be created

@@ -6,7 +6,7 @@
 #References: 
 
 .Synopsis
-    Script to call workflow to provision Azure virtual machines in parallel.
+    Script to call workflow to call function that provisions Azure virtual machines in parallel.
 .Description
 
 .Example

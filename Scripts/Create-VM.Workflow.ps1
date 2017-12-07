@@ -105,7 +105,7 @@ Process {
                 $VMName = "DeleteMe-"
             )
 
-            # Validate resource group
+            # Check for valid resource group
             if ($ResourceGroupName){
                 $ResourceGroup = Get-ResourceGroup `
                 -SubscriptionID $SubscriptionID `
@@ -127,7 +127,8 @@ Process {
                 -SubscriptionID $SubscriptionID `
                 -ResourceGroupName $VnetResourceGroupName `
                 -VNetName $VnetName `
-                -Credential $credential
+                -Credential $credential `
+                -AssumeDefaultVnet $true
 
             # If no vnet exists, throw exception
             if (!$Vnet){

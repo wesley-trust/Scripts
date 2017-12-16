@@ -84,7 +84,7 @@ function New-StorageAccountDeploy() {
 
             # Create new  deployment
             New-AzureRmResourceGroupDeployment -Name $DeploymentName -ResourceGroupName $ResourceGroupName `
-                -TemplateFile .\New-StorageAccountDeploy.azuredeploy.json `
+                -TemplateFile .\Storage.azuredeploy.json `
                 -storageAccountName $StorageAccountName
                 -storageAccountType $storageAccountType
         }

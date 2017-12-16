@@ -1,12 +1,12 @@
 <#
-#Name: New function to deploy ARM templates to Azure
+#Name: New function to deploy storage account to Azure using an ARM template
 #Creator: Wesley Trust
 #Date: 2017-12-16
 #Revision: 1
 #References:
 
 .Synopsis
-    New function that authenticates with Azure and deploys an ARM template with specified parameters.
+    
 .Description
 
 .Example
@@ -14,8 +14,7 @@
 .Example
 
 #>
-
-function New-ResourceDeploy() {
+Function New-StorageDeploy (){
     Param(
         [Parameter(
             Mandatory=$false,
@@ -46,13 +45,19 @@ function New-ResourceDeploy() {
             HelpMessage="Specify the template file location"
         )]
         [string]
-        $TemplateFile,
+        $TemplateFile = "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\ARM Template Deployments\Storage\Storage.azuredeploy.json",
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify the parameter file location"
+            HelpMessage="Specify the storage account name"
         )]
         [string]
-        $TemplateParameterFile
+        $StorageAccountName,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify the storage account type"
+        )]
+        [string]
+        $StorageAccountType
     )
 
     Begin {
@@ -72,16 +77,22 @@ function New-ResourceDeploy() {
             throw $_.exception
         }
     }
-    
+
     Process {
         try {
 
-            # Create new deployment
+            # Clean parameter if exists
+            if ($StorageAccountName){
+                $StorageAccountName = $StorageAccountName.ToLower()
+            }
+            
+            # Create new storage deployment
             New-AzureRmResourceGroupDeployment `
                 -Name $DeploymentName `
                 -ResourceGroupName $ResourceGroupName `
                 -TemplateFile $TemplateFile `
-                -TemplateParameterFile $TemplateParameterFile
+                -storageAccountName $StorageAccountName `
+                -storageAccountType $storageAccountType
         }
         Catch {
             Write-Error -Message $_.exception

@@ -1,12 +1,12 @@
 <#
-#Name: New function to deploy storage account template
+#Name: Example script to deploy storage account in Azure
 #Creator: Wesley Trust
 #Date: 2017-12-16
 #Revision: 1
 #References:
 
 .Synopsis
-    
+    The script specifies parameters, including ARM artifacts, and calls a function that connects to Azure
 .Description
 
 .Example

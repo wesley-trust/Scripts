@@ -1,5 +1,5 @@
 <#
-#Name: Example script to deploy storage account in Azure
+#Name: Example script to deploy VM in Azure
 #Creator: Wesley Trust
 #Date: 2017-12-16
 #Revision: 1
@@ -45,7 +45,7 @@ Param(
         HelpMessage="Specify the template file location"
     )]
     [string]
-    $TemplateFile = "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\ARM Template Deployments\Storage\Compute.azuredeploy.json",
+    $TemplateFile = "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\ARM Template Deployments\Compute\Compute.azuredeploy.json",
     [Parameter(
         Mandatory=$false,
         HelpMessage="Specify the parameter file location"

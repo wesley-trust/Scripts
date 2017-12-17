@@ -1,12 +1,12 @@
 <#
 #Name: Example script to deploy VM in Azure
 #Creator: Wesley Trust
-#Date: 2017-12-16
+#Date: 2017-12-17
 #Revision: 1
 #References:
 
 .Synopsis
-    The script specifies parameters, including ARM artifacts, and calls a function that connects to Azure
+    The script specifies parameters, including ARM artifacts, and calls a function to provision deployment.
 .Description
 
 .Example

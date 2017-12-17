@@ -69,6 +69,33 @@ Begin {
 Process {
     try {
 
+        # Load resource group functions
+        Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
+        . .\ResourceGroup.ps1
+
+        # Check for valid resource group
+        if ($ResourceGroupName){
+            $ResourceGroup = Get-ResourceGroup `
+                -SubscriptionID $SubscriptionID `
+                -ResourceGroupName $ResourceGroupName `
+                -Credential $credential
+        }
+        
+        # If no resource group exists, create resource group
+        if (!$ResourceGroup){
+            $WarningMessage = "Resource group does not exist, creating group: $ResourceGroupName"
+            Write-Warning $WarningMessage
+            $ResourceGroup = New-ResourceGroup `
+                -SubscriptionID $SubscriptionID `
+                -ResourceGroupName $ResourceGroupName `
+                -Location $Location `
+                -Credential $credential
+        }
+        else {
+            $HostMessage = "Using existing Resource Group: $ResourceGroupName"
+            Write-Host $HostMessage
+        }
+
         # Create new  deployment
         New-ResourceDeploy `
             -Credential $Credential `

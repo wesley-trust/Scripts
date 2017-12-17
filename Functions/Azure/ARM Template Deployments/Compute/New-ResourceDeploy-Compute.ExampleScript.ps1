@@ -69,6 +69,15 @@ Begin {
 Process {
     try {
 
+        # Create hashtable of custom parameters
+        $CustomParameters = @{
+            adminUsername = "";
+        }
+        
+        # Create password as a secure string
+        $adminPassword = "";
+        $SecureString = ConvertTo-SecureString -String $adminPassword -AsPlainText -Force
+
         # Create new  deployment
         New-ResourceDeploy `
             -Credential $Credential `
@@ -76,7 +85,9 @@ Process {
             -ResourceGroupName $ResourceGroupName `
             -DeploymentName $DeploymentName `
             -TemplateFile $TemplateFile `
-            -TemplateParameterFile $TemplateParameterFile
+            -TemplateParameterFile $TemplateParameterFile `
+            -CustomParameters $CustomParameters `
+            -SecureString $SecureString
     }
     Catch {
         Write-Error -Message $_.exception

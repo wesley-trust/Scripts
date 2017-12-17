@@ -52,7 +52,19 @@ function New-ResourceDeploy() {
             HelpMessage="Specify the parameter file location"
         )]
         [string]
-        $TemplateParameterFile
+        $TemplateParameterFile,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Hashtable of custom parameters"
+        )]
+        [Hashtable]
+        $CustomParameters,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="SecureString"
+        )]
+        [securestring]
+        $SecureString
     )
 
     Begin {
@@ -75,13 +87,27 @@ function New-ResourceDeploy() {
     
     Process {
         try {
-
-            # Create new deployment
-            New-AzureRmResourceGroupDeployment `
+            # If a secure string is required
+            if ($SecureString){
+                # Create new deployment with secure string
+                New-AzureRmResourceGroupDeployment `
+                    -Name $DeploymentName `
+                    -ResourceGroupName $ResourceGroupName `
+                    -TemplateFile $TemplateFile `
+                    -TemplateParameterFile $TemplateParameterFile `
+                    @CustomParameters `
+                    -SecureString $SecureString
+            }
+            Else {
+                # Create new deployment without secure string
+                New-AzureRmResourceGroupDeployment `
                 -Name $DeploymentName `
                 -ResourceGroupName $ResourceGroupName `
                 -TemplateFile $TemplateFile `
-                -TemplateParameterFile $TemplateParameterFile
+                -TemplateParameterFile $TemplateParameterFile `
+                @CustomParameters
+            }
+
         }
         Catch {
             Write-Error -Message $_.exception

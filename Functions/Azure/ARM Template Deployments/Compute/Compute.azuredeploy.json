@@ -8,7 +8,7 @@
         "description": "Username for the Virtual Machine."
       }
     },
-    "adminPassword": {
+    "securestring": {
       "type": "securestring",
       "metadata": {
         "description": "Password for the Virtual Machine."
@@ -111,7 +111,7 @@
         "osProfile": {
           "computerName": "[variables('vmName')]",
           "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminPassword')]"
+          "adminPassword": "[parameters('securestring')]"
         },
         "storageProfile": {
           "imageReference": {

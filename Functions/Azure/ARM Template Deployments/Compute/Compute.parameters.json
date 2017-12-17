@@ -3,10 +3,10 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
       "adminUsername": {
-        "value": "Gen-Username"
+        "value": ""
       },
-      "adminPassword": {
-        "value": "Gen-Password"
+      "securestring": {
+        "value": ""
       }
     }
 }

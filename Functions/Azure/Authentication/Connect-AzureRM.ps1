@@ -39,8 +39,8 @@ function Connect-AzureRM() {
             Mandatory=$false,
             HelpMessage="Specify whether to reauthenticate with different credentials"
         )]
-        [bool]
-        $ReAuthenticate = $false
+        [switch]
+        $ReAuthenticate
     )
 
     Begin {

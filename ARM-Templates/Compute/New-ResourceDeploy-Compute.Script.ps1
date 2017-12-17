@@ -51,13 +51,13 @@ Param(
         HelpMessage="Specify the template file location"
     )]
     [string]
-    $TemplateFile = "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\ARM Template Deployments\Compute\Compute.azuredeploy.json",
+    $TemplateFile = "$ENV:USERPROFILE\GitHub\Scripts\ARM-Templates\Compute\Compute.azuredeploy.json",
     [Parameter(
         Mandatory=$false,
         HelpMessage="Specify the parameter file location"
     )]
     [string]
-    $TemplateParameterFile = "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\ARM Template Deployments\Compute\Compute.parameters.json"
+    $TemplateParameterFile = "$ENV:USERPROFILE\GitHub\Scripts\ARM-Templates\Compute\Compute.parameters.json"
 )
 
 Begin {

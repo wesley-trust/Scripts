@@ -45,13 +45,13 @@ Param(
         HelpMessage="Specify the template file location"
     )]
     [string]
-    $TemplateFile = "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\ARM Template Deployments\Storage\Storage.azuredeploy.json",
+    $TemplateFile = "$ENV:USERPROFILE\GitHub\Scripts\ARM-Templates\Storage\Storage.azuredeploy.json",
     [Parameter(
         Mandatory=$false,
         HelpMessage="Specify the parameter file location"
     )]
     [string]
-    $TemplateParameterFile = "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\ARM Template Deployments\Storage\Storage.parameters.json"
+    $TemplateParameterFile = "$ENV:USERPROFILE\GitHub\Scripts\ARM-Templates\Storage\Storage.parameters.json"
 )
 
 Begin {

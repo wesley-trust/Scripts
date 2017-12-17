@@ -58,7 +58,7 @@ Begin {
     try {
 
         # Load functions
-        Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\ARM Template Deployments\Storage"
+        Set-Location "$ENV:USERPROFILE\GitHub\Scripts\ARM-Templates\Storage"
         . .\New-StorageDeploy.Function.ps1
     }
     catch {

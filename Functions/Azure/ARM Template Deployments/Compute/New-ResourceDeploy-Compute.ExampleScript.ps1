@@ -33,13 +33,19 @@ Param(
         HelpMessage="Specify resource group name"
     )]
     [string]
-    $ResourceGroupName = "Testing",
+    $ResourceGroupName,
+    [Parameter(
+        Mandatory=$false,
+        HelpMessage="Specify deployment location"
+    )]
+    [string]
+    $Location,
     [Parameter(
         Mandatory=$false,
         HelpMessage="Specify the deployment name"
     )]
     [string]
-    $DeploymentName = "TestDeploymentName",
+    $DeploymentName,
     [Parameter(
         Mandatory=$false,
         HelpMessage="Specify the template file location"
@@ -69,13 +75,49 @@ Begin {
 Process {
     try {
 
-        # Create hashtable of custom parameters
-        $CustomParameters = @{
-            adminUsername = "";
+        # Load resource group functions
+        Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
+        . .\ResourceGroup.ps1
+
+        # Check for valid resource group
+        if ($ResourceGroupName){
+            $ResourceGroup = Get-ResourceGroup `
+                -SubscriptionID $SubscriptionID `
+                -ResourceGroupName $ResourceGroupName `
+                -Credential $credential
         }
         
-        # Create password as a secure string
-        $adminPassword = "";
+        # If no resource group exists, create resource group
+        if (!$ResourceGroup){
+            $WarningMessage = "Resource group does not exist, creating group: $ResourceGroupName"
+            Write-Warning $WarningMessage
+            $ResourceGroup = New-ResourceGroup `
+                -SubscriptionID $SubscriptionID `
+                -ResourceGroupName $ResourceGroupName `
+                -Location $Location `
+                -Credential $credential
+        }
+        else {
+            $HostMessage = "Using existing Resource Group: $ResourceGroupName"
+            Write-Host $HostMessage
+        }
+        
+        # Sensitive Variables
+        $adminUsername = ""
+        $adminPassword = ""
+        $vmName = "Test"
+        $virtualNetworkName = "Test"
+        $subnetName = "Test"
+
+        # Create hashtable of custom parameters
+        $CustomParameters = @{
+            adminUsername = $adminUsername;
+            vmName = $vmName;
+            virtualNetworkName = $virtualNetworkName;
+            subnetName = $subnetName;
+        }
+        
+        # Convert password to secure string
         $SecureString = ConvertTo-SecureString -String $adminPassword -AsPlainText -Force
 
         # Create new  deployment

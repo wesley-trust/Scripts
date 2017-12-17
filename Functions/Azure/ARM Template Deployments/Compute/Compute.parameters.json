@@ -7,6 +7,27 @@
       },
       "securestring": {
         "value": ""
+      },
+      "windowsOSVersion": {
+        "value": "2012-R2-Datacenter"
+      },
+      "virtualNetworkName": {
+        "value": "VNET"
+      },
+      "addressPrefix": {
+        "value": "10.0.0.0/20"
+      },
+      "subnetName": {
+        "value": ""
+      },
+      "subnetPrefix": {
+        "value": "10.0.0.0/20"
+      },
+      "vmName": {
+        "value": ""
+      },
+      "vmSize": {
+        "value": "Standard_E2_v3"
       }
     }
 }

@@ -61,7 +61,7 @@ function New-ResourceDeploy() {
         $CustomParameters,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="SecureString"
+            HelpMessage="Specify a SecureString if required for deployment"
         )]
         [securestring]
         $SecureString
@@ -87,6 +87,44 @@ function New-ResourceDeploy() {
     
     Process {
         try {
+            
+            # Load resource group functions
+            Set-Location $ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Resources\
+            . .\ResourceGroup.ps1
+
+            # If a resource group name is specified, check for validity
+            if ($ResourceGroupName){
+                $ResourceGroup = Get-ResourceGroup `
+                    -SubscriptionID $SubscriptionID `
+                    -Credential $Credential `
+                    -ResourceGroupName $ResourceGroupName
+            }
+            
+            # If no resource group exists, create terminating error
+            if (!$ResourceGroup){
+                $ErrorMessage = "Resource Group does not exist, create a group first"
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
+            }
+
+            # While no deployment name is provided
+            while (!$DeploymentName){
+                $WarningMessage = "No deployment name is specified"
+                Write-Warning $WarningMessage
+                $DeploymentName = Read-Host "Enter Deployment name"
+            }
+
+            # While no template file is provided
+            while (!$TemplateFile){
+                $WarningMessage = "No template file is specified"
+                Write-Warning $WarningMessage
+                $TemplateFile = Read-Host "Enter location of template file"
+            }
+
+            # Start deployment
+            $HostMessage = "Starting Deployment: $DeploymentName"
+            Write-Host $HostMessage
+
             # If a secure string is required
             if ($SecureString){
                 # Create new deployment with secure string
@@ -101,11 +139,11 @@ function New-ResourceDeploy() {
             Else {
                 # Create new deployment without secure string
                 New-AzureRmResourceGroupDeployment `
-                -Name $DeploymentName `
-                -ResourceGroupName $ResourceGroupName `
-                -TemplateFile $TemplateFile `
-                -TemplateParameterFile $TemplateParameterFile `
-                @CustomParameters
+                    -Name $DeploymentName `
+                    -ResourceGroupName $ResourceGroupName `
+                    -TemplateFile $TemplateFile `
+                    -TemplateParameterFile $TemplateParameterFile `
+                    @CustomParameters
             }
 
         }

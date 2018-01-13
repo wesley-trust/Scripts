@@ -15,8 +15,12 @@ Configuration WebServer {
     # Node configuration
     Node RequiresIIS {
         # Features
-        WindowsFeature WebServerRoles {
+        WindowsFeature WebServerRole {
             Name = $FeatureName
+            Ensure = "Present"
+        }
+        WindowsFeature ASPNET45 {
+            Name = "Web-Asp-Net45"
             Ensure = "Present"
         }
     }

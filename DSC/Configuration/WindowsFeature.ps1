@@ -38,14 +38,18 @@ Configuration WindowsFeature {
         }
         Script MapShare {
             SetScript = {
+                # Map drive
                 New-PSDrive -Name Z -PSProvider FileSystem -root $ShareSource -Credential $StorageCredential -Persist
             }
             TestScript = {
+                # Check if drive is mapped
                 Test-Path -path "Z:"
             }
             GetScript = {
-                $Status = @{}
-                $Status['Present'] = Test-Path -path "Z:"
+                # Create hash table for mapping status
+                @{
+                    "Present" = Test-Path -path "Z:"
+                }
             }
         }
     }

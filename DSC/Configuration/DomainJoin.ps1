@@ -2,13 +2,13 @@
 Configuration DomainJoin {
     Param(
         [Parameter(
-            Mandatory = $true,
+            Mandatory = $false,
             HelpMessage="Enter the domain name"
         )]
         [string]
         $DomainName,
         [Parameter(
-            Mandatory = $true,
+            Mandatory = $false,
             HelpMessage="Enter the credentials used to join to domain"
         )]
         [pscredential]
@@ -24,7 +24,15 @@ Configuration DomainJoin {
     # Import modules
     Import-DscResource -ModuleName 'PSDesiredStateConfiguration'
     Import-DscResource -ModuleName "xDSCDomainjoin"
-    
+
+    # Automation Variables
+    if (!$DomainName){
+        $DomainName = Get-AzureRmAutomationVariable -Name "DomainName"
+    }
+    if (!$DomainCredential){
+        $DomainCredential = Get-AzureRmAutomationCredential -Name "DomainCredential"
+    }
+
     # Node configuration
     Node RequireDomainJoin {
         # Join to domain

@@ -25,14 +25,6 @@ Configuration DomainJoin {
     Import-DscResource -ModuleName 'PSDesiredStateConfiguration'
     Import-DscResource -ModuleName "xDSCDomainjoin"
 
-    # Automation Variables
-    if (!$DomainName){
-        $DomainName = Get-AzureRmAutomationVariable -Name "DomainName"
-    }
-    if (!$DomainCredential){
-        $DomainCredential = Get-AzureRmAutomationCredential -Name "DomainCredential"
-    }
-
     # Node configuration
     Node RequireDomainJoin {
         # Join to domain

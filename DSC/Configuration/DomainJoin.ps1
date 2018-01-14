@@ -15,13 +15,14 @@ Configuration DomainJoin {
         $DomainCredential,
         [Parameter(
             Mandatory = $false,
-            HelpMessage="Enter the OU name to place the computer object"
+            HelpMessage="Enter the name of the OU to place the computer object (in DN notation)"
         )]
-        [pscredential]
+        [string]
         $OU
     )
 
-    # Import module
+    # Import modules
+    Import-DscResource -ModuleName 'PSDesiredStateConfiguration'
     Import-DscResource -ModuleName "xDSCDomainjoin"
     
     # Node configuration

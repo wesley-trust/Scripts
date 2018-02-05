@@ -79,7 +79,7 @@ function New-AzureAD-ExternalUser() {
 
             # If no email address(es) are specified, request email address
             while (!$Emails) {
-                $Emails = Read-Host "Enter email address(es), comma separated, to change to $UserType"
+                $Emails = Read-Host "Enter email address(es), comma separated, to add as $UserType"
             }
 
             # Clean emails and create array

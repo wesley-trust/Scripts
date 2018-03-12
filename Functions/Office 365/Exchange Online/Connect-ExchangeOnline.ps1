@@ -14,7 +14,7 @@
 .Example
     Connect-ExchangeOnline -Credential $Credential
 .Example
-    Connect-ExchangeOnline -Credential $Credential -ReAuthenticate
+    Connect-ExchangeOnline -Credential $Credential -ReAuthenticate -Force
 
 #>
 
@@ -32,7 +32,13 @@ function Connect-ExchangeOnline() {
             HelpMessage="Specify whether to reauthenticate with different credentials"
         )]
         [switch]
-        $ReAuthenticate
+        $ReAuthenticate,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify whether to force reauthentication"
+        )]
+        [switch]
+        $Force
     )
 
     Begin {
@@ -42,14 +48,28 @@ function Connect-ExchangeOnline() {
 
             # If no active connection, or reauthentication is required 
             if (!$ExchangeConnection -or $ReAuthenticate) {
-                Write-Host "`nEnter credentials for Exchange Online"
-                
-                # Clear variable
-                $ExchangeConnection = $null
-                
+                                
                 # If no credentials exist
-                if (!$Credential){
+                if (!$Credential){               
+                    Write-Host "`nEnter credentials for Exchange Online"
                     $Credential = Get-Credential
+                }
+                # If a connection exists
+                if ($ExchangeConnection){
+                    If (!$Force){
+                        $choice = $null
+                        Write-Host "`nActive connection to Exchange Online`n"
+                        while ($choice -notmatch "[y|n]"){
+                            $choice = Read-Host "Do you want to disconnect from existing Exchange Online session?"
+                        }
+                        if ($choice -eq "Y"){
+                            $Force = $true
+                        }
+                    }
+                    if ($Force) {
+                        Write-Host "`nDisconnecting exisiting Exchange Online session`n"
+                        $ExchangeConnection = $ExchangeConnection | Remove-PSSession
+                    }
                 }
             }
         }
@@ -62,7 +82,7 @@ function Connect-ExchangeOnline() {
     Process {
         try {
             # Variables
-            $ReminderMessage = "`nREMEMBER: Disconnect session after use, limited connections available"
+            $ReminderMessage = "`nREMEMBER: Disconnect session after use, limited connections available:"
             $ReminderCommand = "`nGet-PSSession | Where-Object ComputerName -EQ outlook.office365.com | Remove-PSSession`n"
             
             # If there is no connection
@@ -79,10 +99,9 @@ function Connect-ExchangeOnline() {
                 # Import Session
                 Import-PSSession $Session
             }
-
+            
+            # Display connection messages
             Write-Host "`nConnected to Exchange Online"
-
-            # Display reminder
             Write-Host $ReminderMessage -ForegroundColor Yellow -BackgroundColor Black
             Write-Host $ReminderCommand -ForegroundColor Yellow
         }

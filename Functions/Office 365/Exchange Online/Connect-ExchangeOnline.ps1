@@ -54,6 +54,7 @@ function Connect-ExchangeOnline() {
                     Write-Host "`nEnter credentials for Exchange Online"
                     $Credential = Get-Credential
                 }
+                
                 # If a connection exists
                 if ($ExchangeConnection){
                     If (!$Force){

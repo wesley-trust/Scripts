@@ -8,11 +8,13 @@
 .Synopsis
     Function that connects to Exchange Online
 .Description
-    Function that connects to Exchange Online, prompts for credentials.
+    Function that connects to Exchange Online, checks for active session, prompts for credentials if needed, or if reauthentication is required.
+.Example
+    Connect-ExchangeOnline
 .Example
     Connect-ExchangeOnline -Credential $Credential
 .Example
-    
+    Connect-ExchangeOnline -Credential $Credential -ReAuthenticate
 
 #>
 
@@ -24,11 +26,32 @@ function Connect-ExchangeOnline() {
             HelpMessage="Specify PowerShell credential object"
         )]
         [pscredential]
-        $Credential
+        $Credential,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify whether to reauthenticate with different credentials"
+        )]
+        [switch]
+        $ReAuthenticate
     )
 
     Begin {
         try {
+            # Check for active connection to Exchange Online
+            $ExchangeConnection = Get-PSSession | Where-Object ComputerName -EQ outlook.office365.com
+
+            # If no active connection, or reauthentication is required 
+            if (!$ExchangeConnection -or $ReAuthenticate) {
+                Write-Host "`nEnter credentials for Exchange Online"
+                
+                # Clear variable
+                $ExchangeConnection = $null
+                
+                # If no credentials exist
+                if (!$Credential){
+                    $Credential = Get-Credential
+                }
+            }
         }
         catch {
             Write-Error -Message $_.Exception
@@ -38,23 +61,30 @@ function Connect-ExchangeOnline() {
     
     Process {
         try {
-            # If no credentials exist, prompt for credentials
-            if (!$Credential){
-                Write-Host "Enter Exchange Online credentials"
-                $Credential = Get-Credential
-            }
-
-            # Create new session
-            $Session = New-PSSession `
+            # Variables
+            $ReminderMessage = "`nREMEMBER: Disconnect session after use, limited connections available"
+            $ReminderCommand = "`nGet-PSSession | Where-Object ComputerName -EQ outlook.office365.com | Remove-PSSession`n"
+            
+            # If there is no connection
+            if (!$ExchangeConnection) {
+                Write-Host "`nConnecting to Exchange Online`n"
+                
+                # Create new session
+                $Session = New-PSSession `
                 -ConfigurationName Microsoft.Exchange `
                 -ConnectionUri https://outlook.office365.com/powershell-liveid/ `
                 -Credential $Credential `
                 -Authentication Basic -AllowRedirection
-            
-            # Import Session
-            Import-PSSession $Session
-            Write-Host "Remember to disconnect session after use with:" -ForegroundColor Yellow -BackgroundColor Black
-            Write-Host 'Remove-PSSession $Session' -ForegroundColor Yellow -BackgroundColor Black
+
+                # Import Session
+                Import-PSSession $Session
+            }
+
+            Write-Host "`nConnected to Exchange Online"
+
+            # Display reminder
+            Write-Host $ReminderMessage -ForegroundColor Yellow -BackgroundColor Black
+            Write-Host $ReminderCommand -ForegroundColor Yellow
         }
         Catch {
             Write-Error -Message $_.exception

@@ -87,9 +87,9 @@ function Connect-AzureRM() {
                 Write-Host "`nAuthenticating with Azure"
                 
                 # If no credentials exist
-                if (!$Credential){
+<#                 if (!$Credential){
                     $Credential = Get-Credential
-                } 
+                }  #>
                 $AzureConnection = Add-AzureRmAccount -Credential $Credential
             }
             

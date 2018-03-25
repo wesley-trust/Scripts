@@ -8,7 +8,7 @@
 .Synopsis
     Function that connects to Exchange Online
 .Description
-    Function that connects to Exchange Online, checks for active session, prompts for credentials if needed, or if reauthentication is required.
+    Checks for active session, prompts for credentials if needed, or if reauthentication is required.
 .Example
     Connect-ExchangeOnline
 .Example

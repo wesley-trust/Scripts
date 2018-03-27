@@ -86,11 +86,13 @@ function Connect-AzureRM() {
             if (!$AzureConnection.Account -or $ReAuthenticate) {
                 Write-Host "`nAuthenticating with Azure"
                 
-                # If no credentials exist
-<#                 if (!$Credential){
-                    $Credential = Get-Credential
-                }  #>
-                $AzureConnection = Add-AzureRmAccount -Credential $Credential
+                # If credential exist
+                if ($Credential){
+                    $AzureConnection = Add-AzureRmAccount -Credential $Credential
+                }
+                else {
+                    $AzureConnection = Add-AzureRmAccount
+                }
             }
             
             # Get the subscription in the current context

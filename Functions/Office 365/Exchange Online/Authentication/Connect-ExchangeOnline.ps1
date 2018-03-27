@@ -50,9 +50,8 @@ function Connect-ExchangeOnline() {
             if (!$ExchangeConnection -or $ReAuthenticate) {
                                 
                 # If no credentials exist
-                if (!$Credential){               
-                    Write-Host "`nEnter credentials for Exchange Online"
-                    $Credential = Get-Credential
+                if (!$Credential){
+                    $Credential = Get-Credential -Message "Enter credentials for Exchange Online"
                 }
                 
                 # If a connection exists

@@ -3,15 +3,16 @@
 # Revision: 1
 # Date: 2018-03-23
 
-# Variables
+## Variables
 $CASRuleName = "Block MAPI except from Trusted IPs"
+# Array of trusted IPs
 $TrustedIPs = @(
     "",
     "",
     "",
     "",
     ""
-    )
+)
 $Force = $true
 
 try {

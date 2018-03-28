@@ -50,35 +50,23 @@ function Connect-ExchangeOnline() {
             # If a connection exists
             if ($ExchangeConnection){
 
-                # Get Accepted Domains
-                $AcceptedDomain = Get-AcceptedDomain
-
                 # Get tenant identity
                 $Tenant = Get-OrganizationConfig
-                $TenantIdentity = $Tenant.Identity
+                if (!$Tenant){
+                    Write-Warning "Error detecting tenant, forcing reauthentication"
+                    $ReAuthenticate = $True
+                    $Force = $True
+                }
+                else {
+                    $TenantIdentity = $Tenant.Identity
+                }
+                
+                # Get Accepted Domains
+                $AcceptedDomain = Get-AcceptedDomain
                 
                 # Get default domain
                 $DefaultAcceptedDomain = $AcceptedDomain | Where-Object Default -EQ $true
                 $DefaultDomainName = $DefaultAcceptedDomain.DomainName
-                
-                # If reauthentication is not true
-                If (!$ReAuthenticate){
-                    # If force is true
-                    if ($Force){
-                        $choice = "Y"
-                    }
-                    else {
-                        $choice = $null
-                    }
-                    Write-Host "`nActive connection to Exchange Online`n"
-                    Write-Host "Tenant: $TenantIdentity, DefaultDomain: $DefaultDomainName`n"
-                    while ($choice -notmatch "[y|n]"){
-                        $choice = Read-Host "Do you want to disconnect from existing Exchange Online session? (Y/N)"
-                    }
-                    if ($choice -eq "Y"){
-                        $ReAuthenticate = $true
-                    }
-                }
             }
 
             # If no active connection, or reauthentication is required 
@@ -94,15 +82,26 @@ function Connect-ExchangeOnline() {
                     
                     # Get domain from credential username
                     $UserDomain = ($Credential.UserName).Split("@")[1]
-                
+                                    
                     # Check if already connected to same Exchange domain
                     if ($UserDomain -in $AcceptedDomain.DomainName){
-                        Write-Host "`nActive connection for domain: $UserDomain"
+                        Write-Host "`nActive connection for domain: $UserDomain`n"
+                        # If force is not true, prompt user
+                        if (!$Force){
+                            $Choice = $null
+                            while ($Choice -notmatch "[Y|N]"){
+                            $Choice = Read-Host "Do you want to force reauthentication? (Y/N)"
+                            }
+                            if ($choice -eq "Y"){
+                                $force = $True
+                            }
+                        }
                     }
                     else {
-                        Write-Host "`nDisconnecting exisiting Exchange Online session"
-                        $ExchangeConnection = $ExchangeConnection | Remove-PSSession
+                        # Force reauthentication
+                        $Force = $true
                     }
+                    # If force is true
                     if ($Force){
                         Write-Host "`nDisconnecting exisiting Exchange Online session"
                         $ExchangeConnection = $ExchangeConnection | Remove-PSSession

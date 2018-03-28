@@ -69,16 +69,16 @@ function Connect-ExchangeOnline() {
 
                         # Get Accepted Domains
                         $AcceptedDomain = Get-AcceptedDomain
-                        
+
                         # Get default domain
                         $DefaultAcceptedDomain = $AcceptedDomain | Where-Object Default -EQ $true
                         $DefaultDomainName = $DefaultAcceptedDomain.DomainName
-                        
+
                         # If a credential exists
                         if ($Credential){
                             # Get domain from credential username
                             $UserDomain = ($Credential.UserName).Split("@")[1]
-                        
+
                             # Check if already connected to same Exchange domain
                             if ($UserDomain -in $AcceptedDomain.DomainName){
                                 Write-Host "`nActive connection for domain: $UserDomain"

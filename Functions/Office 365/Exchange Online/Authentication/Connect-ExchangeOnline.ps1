@@ -30,16 +30,16 @@ function Connect-ExchangeOnline() {
         $Credential,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify whether to reauthenticate connection"
+            HelpMessage="Specify whether to force reauthentication"
         )]
         [switch]
         $ReAuthenticate,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify whether to force reauthentication, even when connected to same tenant"
+            HelpMessage="Specify whether to confirm disconnection of active session"
         )]
         [switch]
-        $Force
+        $Confirm
     )
 
     Begin {
@@ -47,65 +47,78 @@ function Connect-ExchangeOnline() {
             # Check for active connection to Exchange Online
             $ExchangeConnection = Get-PSSession | Where-Object ComputerName -EQ outlook.office365.com
 
-            # If a connection exists
-            if ($ExchangeConnection){
+            # If force reauthentication is not required
+            if (!$ReAuthenticate){
+                # If a connection exists
+                if ($ExchangeConnection){
 
-                # Get tenant identity
-                $Tenant = Get-OrganizationConfig
-                if (!$Tenant){
-                    Write-Warning "Error detecting tenant, forcing reauthentication"
-                    $ReAuthenticate = $True
-                    $Force = $True
+                    # Import active session
+                    Import-PSSession $ExchangeConnection `
+                        -DisableNameChecking `
+                        -AllowClobber
+                    
+                    # Get tenant identity
+                    $Tenant = Get-OrganizationConfig
+                    if (!$Tenant){
+                        Write-Warning "Error detecting tenant, forcing reauthentication"
+                        $ReAuthenticate = $True
+                    }
+                    else {
+                        # Set tenant identity
+                        $TenantIdentity = $Tenant.Identity
+
+                        # Get Accepted Domains
+                        $AcceptedDomain = Get-AcceptedDomain
+                        
+                        # Get default domain
+                        $DefaultAcceptedDomain = $AcceptedDomain | Where-Object Default -EQ $true
+                        $DefaultDomainName = $DefaultAcceptedDomain.DomainName
+                        
+                        # If a credential exists
+                        if ($Credential){
+                            # Get domain from credential username
+                            $UserDomain = ($Credential.UserName).Split("@")[1]
+                        
+                            # Check if already connected to same Exchange domain
+                            if ($UserDomain -in $AcceptedDomain.DomainName){
+                                Write-Host "`nActive connection for domain: $UserDomain"
+                            }
+                            else {
+                                Write-Host "`nActive connection for domain: $DefaultDomainName"
+                                Write-Host "`nConnection request for domain: $UserDomain`n"
+                                
+                                # If confirm is true, prompt user
+                                if ($Confirm){
+                                    $Choice = $null
+                                    while ($Choice -notmatch "[Y|N]"){
+                                        $Choice = Read-Host "Are you sure you want to disconnect from active session? (Y/N)"
+                                    }
+                                    if ($Choice -eq "Y"){
+                                        $Confirm = $false
+                                    }
+                                }
+                                if (!$Confirm){
+                                    # Set reauthentication flag
+                                    $ReAuthenticate = $True
+                                }
+                            }
+                        }
+                    }            
                 }
-                else {
-                    $TenantIdentity = $Tenant.Identity
-                }
-                
-                # Get Accepted Domains
-                $AcceptedDomain = Get-AcceptedDomain
-                
-                # Get default domain
-                $DefaultAcceptedDomain = $AcceptedDomain | Where-Object Default -EQ $true
-                $DefaultDomainName = $DefaultAcceptedDomain.DomainName
             }
 
-            # If no active connection, or reauthentication is required 
+            # If no active connection, or forced reauthentication is required 
             if (!$ExchangeConnection -or $ReAuthenticate) {
 
-                # If no credentials exist
+                # Get credentials if none exist
                 if (!$Credential){
                     $Credential = Get-Credential -Message "Enter credentials for Exchange Online"
                 }
 
-                # If there is an exisiting session
+                # If there is an exisiting session, disconnect
                 if ($ExchangeConnection){
-                    
-                    # Get domain from credential username
-                    $UserDomain = ($Credential.UserName).Split("@")[1]
-                                    
-                    # Check if already connected to same Exchange domain
-                    if ($UserDomain -in $AcceptedDomain.DomainName){
-                        Write-Host "`nActive connection for domain: $UserDomain`n"
-                        # If force is not true, prompt user
-                        if (!$Force){
-                            $Choice = $null
-                            while ($Choice -notmatch "[Y|N]"){
-                            $Choice = Read-Host "Do you want to force reauthentication? (Y/N)"
-                            }
-                            if ($choice -eq "Y"){
-                                $force = $True
-                            }
-                        }
-                    }
-                    else {
-                        # Force reauthentication
-                        $Force = $true
-                    }
-                    # If force is true
-                    if ($Force){
-                        Write-Host "`nDisconnecting exisiting Exchange Online session"
-                        $ExchangeConnection = $ExchangeConnection | Remove-PSSession
-                    }
+                    Write-Host "`nDisconnecting exisiting Exchange Online session"
+                    $ExchangeConnection = $ExchangeConnection | Remove-PSSession
                 }
             }
         }
@@ -134,7 +147,9 @@ function Connect-ExchangeOnline() {
                     -AllowRedirection
 
                 # Import Session
-                Import-PSSession $Session
+                Import-PSSession $Session `
+                    -DisableNameChecking `
+                    -AllowClobber
             }
 
             # Get Accepted Domains

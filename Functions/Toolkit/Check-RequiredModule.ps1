@@ -19,16 +19,22 @@ function Check-RequiredModule() {
     Param(
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify the module name(s)"
+            HelpMessage="Specify the PSDesktop module name(s)"
         )]
         [string[]]
         $Modules,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify the module name(s)"
+            HelpMessage="Specify the PSCore module name(s)"
         )]
         [string[]]
-        $ModulesCore
+        $ModulesCore,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify whether to skip module update"
+        )]
+        [switch]
+        $SkipUpdate
     )
 
     Begin {
@@ -79,12 +85,14 @@ function Check-RequiredModule() {
                 
                 # If not installed, install the module
                 if (!$ModuleCheck){
-                    write-Host "Installing required module $Module for $Scope`n"
+                    write-Host "Installing required module $Module for $Scope"
                     Install-Module -Name $Module -AllowClobber -Force -Scope $Scope -ErrorAction Stop
                 }
                 else {
-                    write-Host "Updating required module $Module`n"
-                    Update-Module -Name $Module -AllowClobber -Force -ErrorAction Stop
+                    if (!$SkipUpdate){
+                        write-Host "Updating required module $Module`n"
+                        Update-Module -Name $Module -AllowClobber -Force -ErrorAction Stop
+                    } 
                 }
             }
         }

@@ -44,8 +44,14 @@ function Connect-ExchangeOnline() {
 
     Begin {
         try {
-            # Check for active connection to Exchange Online
-            $ExchangeConnection = Get-PSSession | Where-Object ComputerName -EQ outlook.office365.com
+            # Check for connections to Exchange Online
+            $ExchangeConnection = Get-PSSession | Where-Object {$_.Computername -EQ "outlook.office365.com"}
+            
+            # Clean up broken/closed sessions
+            $ExchangeConnection | Where-Object {$_.state -ne "Opened"} | Remove-PSSession
+            
+            # Check for opened sessions
+            $ExchangeConnection = $ExchangeConnection | Where-Object {$_.state -eq "Opened"}
 
             # If force reauthentication is not required
             if (!$ReAuthenticate){

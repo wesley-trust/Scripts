@@ -61,13 +61,17 @@ function Check-RequiredModule() {
 
             foreach ($Module in $Modules){
                 # Check if module is installed
-                Write-Host "Checking if required module $Module is instaled"
+                Write-Host "`nChecking if required module $Module is installed`n"
                 $ModuleCheck = Get-Module -ListAvailable | Where-Object Name -eq $Module
                 
                 # If not installed, install the module
                 if (!$ModuleCheck){
-                    write-Host "Installing required module $Module"
+                    write-Host "Installing required module $Module`n"
                     Install-Module -Name $Module -AllowClobber -Force -ErrorAction Stop
+                }
+                else {
+                    write-Host "Updating required module $Module`n"
+                    Update-Module -Name $Module -AllowClobber -Force -ErrorAction Stop
                 }
             }
         }

@@ -2,7 +2,7 @@
 #Script name: Connect Exchange Online
 #Creator: Wesley Trust
 #Date: 2018-03-12
-#Revision: 2
+#Revision: 3
 #References: 
 
 .Synopsis

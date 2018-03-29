@@ -51,7 +51,7 @@ function Connect-ExchangeOnline() {
             $NonOpenedSessions = $ExchangeConnection | Where-Object {$_.state -ne "Opened"}
             if ($NonOpenedSessions){
                 $NonOpenedSessions | Remove-PSSession
-                Write-Verbose "Detected non-opened session, cleaning up by removing"
+                Write-Verbose "Detected non-opened sessions, cleaning up by removing any stale sessions"
             }
 
             # Check for opened sessions that are available
@@ -69,7 +69,7 @@ function Connect-ExchangeOnline() {
                 # If a connection exists
                 if ($ExchangeConnection){
 
-                    # Import active session
+                    # Attempt to import active session
                     Import-PSSession $ExchangeConnection `
                         -DisableNameChecking `
                         -AllowClobber
@@ -77,7 +77,8 @@ function Connect-ExchangeOnline() {
                     # Get tenant identity
                     $Tenant = Get-OrganizationConfig
                     if (!$Tenant){
-                        Write-Warning "Error detecting tenant, forcing reauthentication"
+                        Write-Verbose "Error detecting tenant, forcing reauthentication"
+                        Write-Warning "Connection will be reauthenticated as tenant has not been detected"
                         $ReAuthenticate = $True
                     }
                     else {
@@ -116,6 +117,7 @@ function Connect-ExchangeOnline() {
                                 }
                                 if (!$Confirm){
                                     # Set reauthentication flag
+                                    Write-Verbose "Credentials do not match active connection, forcing reauthentication"
                                     $ReAuthenticate = $True
                                 }
                             }

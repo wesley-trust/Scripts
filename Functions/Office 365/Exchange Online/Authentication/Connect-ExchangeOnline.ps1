@@ -51,7 +51,7 @@ function Connect-ExchangeOnline() {
             $NonOpenedSessions = $ExchangeConnection | Where-Object {$_.state -ne "Opened"}
             if ($NonOpenedSessions){
                 $NonOpenedSessions | Remove-PSSession
-                Write-Verbose "Removing broken sessions"
+                Write-Verbose "Detected non-opened session, cleaning up by removing"
             }
 
             # Check for opened sessions that are available
@@ -59,7 +59,8 @@ function Connect-ExchangeOnline() {
 
             # Check for multiple connections
             if ($ExchangeConnection.count -gt 1){
-                Write-Warning "This function does not support more than one connection, forcing reauthentication"
+                Write-Verbose "Function does not support more than one open connection, forcing reauthentication"
+                Write-Warning "Connection will be reauthenticated as there is more than one active connection"
                     $ReAuthenticate = $True
             }
 

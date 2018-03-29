@@ -8,8 +8,8 @@
 .Synopsis
     Function that connects to Exchange Online
 .Description
-    Checks for active session, prompts for credentials if needed, or if reauthentication is required,
-    includes logic to prevent redundant connections.
+    Clears broken sessions, imports active session if available, prompts for credentials if needed, or if reauthentication is required,
+    includes logic to prevent reauthenticating active sessions (unless confirm switch is set).
 .Example
     Connect-ExchangeOnline
 .Example
@@ -20,7 +20,7 @@
 #>
 
 function Connect-ExchangeOnline() {
-    #Parameters
+    [cmdletbinding()]
     Param(
         [Parameter(
             Mandatory=$false,
@@ -36,7 +36,7 @@ function Connect-ExchangeOnline() {
         $ReAuthenticate,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify whether to confirm disconnection of active session"
+            HelpMessage="Specify whether to confirm disconnection/reauthentication of active session"
         )]
         [switch]
         $Confirm
@@ -46,12 +46,22 @@ function Connect-ExchangeOnline() {
         try {
             # Check for connections to Exchange Online
             $ExchangeConnection = Get-PSSession | Where-Object {$_.Computername -EQ "outlook.office365.com"}
-            
-            # Clean up broken/closed sessions
-            $ExchangeConnection | Where-Object {$_.state -ne "Opened"} | Remove-PSSession
-            
-            # Check for opened sessions
-            $ExchangeConnection = $ExchangeConnection | Where-Object {$_.state -eq "Opened"}
+
+            # Clean up broken sessions
+            $NonOpenedSessions = $ExchangeConnection | Where-Object {$_.state -ne "Opened"}
+            if ($NonOpenedSessions){
+                $NonOpenedSessions | Remove-PSSession
+                Write-Verbose "Removing broken sessions"
+            }
+
+            # Check for opened sessions that are available
+            $ExchangeConnection = $ExchangeConnection | Where-Object {$_.state -eq "Opened" -and $_.Availability -eq "Available"}
+
+            # Check for multiple connections
+            if ($ExchangeConnection.count -gt 1){
+                Write-Warning "This function does not support more than one connection, forcing reauthentication"
+                    $ReAuthenticate = $True
+            }
 
             # If force reauthentication is not required
             if (!$ReAuthenticate){

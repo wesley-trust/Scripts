@@ -90,9 +90,18 @@ function Check-RequiredModule() {
                 }
                 else {
                     if (!$SkipUpdate){
-                        write-Host "Updating required module $Module`n"
-                        Update-Module -Name $Module -Force -ErrorAction Stop
-                    } 
+                        if (!$Elevated){
+                            if ($ModuleCheck.path -like "*Program Files*"){
+                                $SkipModule = $true
+                                $WarningMessage = "Skipping module update, rerun as an administrator to update this module"
+                                Write-Warning $WarningMessage
+                            }
+                        }
+                        if (!$SkipModule){
+                            write-Host "Updating module $Module`n"
+                            Update-Module -Name $Module -Force
+                        }
+                    }
                 }
             }
         }

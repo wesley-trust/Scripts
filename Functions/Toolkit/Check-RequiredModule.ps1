@@ -19,16 +19,22 @@ function Check-RequiredModule() {
     Param(
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify the module name(s)"
+            HelpMessage="Specify the PSDesktop module name(s)"
         )]
         [string[]]
         $Modules,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify the module name(s)"
+            HelpMessage="Specify the PSCore module name(s)"
         )]
         [string[]]
-        $ModulesCore
+        $ModulesCore,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify whether to skip module update"
+        )]
+        [switch]
+        $SkipUpdate
     )
 
     Begin {
@@ -50,6 +56,19 @@ function Check-RequiredModule() {
                 $Modules = $ModulesCore
             }
 
+            # Check if session is elevated
+            $Elevated = ([Security.Principal.WindowsPrincipal] `
+                [Security.Principal.WindowsIdentity]::GetCurrent() `
+                ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+            
+            # If Elevated, install for all users, otherwise, current user.
+            if ($Elevated){
+                $Scope = "AllUsers"
+            }
+            else {
+                $Scope = "CurrentUser"
+            }
+
             # If no modules are specified
             while (!$Modules) {
                 $Modules = Read-Host "Enter module name(s), comma separated, to check to install"
@@ -61,11 +80,19 @@ function Check-RequiredModule() {
 
             foreach ($Module in $Modules){
                 # Check if module is installed
+                Write-Host "`nChecking if required module $Module is installed`n"
                 $ModuleCheck = Get-Module -ListAvailable | Where-Object Name -eq $Module
                 
                 # If not installed, install the module
                 if (!$ModuleCheck){
-                    Install-Module -Name $Module -AllowClobber -Force -ErrorAction Stop
+                    write-Host "Installing required module $Module for $Scope"
+                    Install-Module -Name $Module -AllowClobber -Force -Scope $Scope -ErrorAction Stop
+                }
+                else {
+                    if (!$SkipUpdate){
+                        write-Host "Updating required module $Module`n"
+                        Update-Module -Name $Module -AllowClobber -Force -ErrorAction Stop
+                    } 
                 }
             }
         }

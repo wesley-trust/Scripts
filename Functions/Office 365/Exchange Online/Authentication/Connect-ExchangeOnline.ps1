@@ -2,13 +2,14 @@
 #Script name: Connect Exchange Online
 #Creator: Wesley Trust
 #Date: 2018-03-12
-#Revision: 1
+#Revision: 3
 #References: 
 
 .Synopsis
     Function that connects to Exchange Online
 .Description
-    Checks for active session, prompts for credentials if needed, or if reauthentication is required.
+    Clears broken sessions, imports active session if available, prompts for credentials if needed, or if reauthentication is required,
+    includes logic to prevent reauthenticating active sessions (unless confirm switch is set).
 .Example
     Connect-ExchangeOnline
 .Example
@@ -19,7 +20,7 @@
 #>
 
 function Connect-ExchangeOnline() {
-    #Parameters
+    [cmdletbinding()]
     Param(
         [Parameter(
             Mandatory=$false,
@@ -29,51 +30,118 @@ function Connect-ExchangeOnline() {
         $Credential,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify whether to reauthenticate with different credentials"
+            HelpMessage="Specify whether to force reauthentication"
         )]
         [switch]
         $ReAuthenticate,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify whether to force reauthentication"
+            HelpMessage="Specify whether to confirm disconnection/reauthentication of active session"
         )]
         [switch]
-        $Force
+        $Confirm
     )
 
     Begin {
         try {
-            # Check for active connection to Exchange Online
-            $ExchangeConnection = Get-PSSession | Where-Object ComputerName -EQ outlook.office365.com
+            # Check for connections to Exchange Online
+            $ExchangeConnection = Get-PSSession | Where-Object {$_.Computername -EQ "outlook.office365.com"}
 
-            # If no active connection, or reauthentication is required 
-            if (!$ExchangeConnection -or $ReAuthenticate) {
+            # Clean up broken sessions
+            $NonOpenedSessions = $ExchangeConnection | Where-Object {$_.state -ne "Opened"}
+            if ($NonOpenedSessions){
+                $NonOpenedSessions | Remove-PSSession
+                Write-Verbose "Detected non-opened sessions, cleaning up by removing any stale sessions"
+            }
+
+            # Check for opened sessions that are available
+            $ExchangeConnection = $ExchangeConnection | Where-Object {$_.state -eq "Opened" -and $_.Availability -eq "Available"}
+
+            # Check for multiple connections
+            if ($ExchangeConnection.count -gt 1){
+                Write-Verbose "Function does not support more than one open connection, forcing reauthentication"
+                Write-Warning "Connection will be reauthenticated as there is more than one active connection"
+                    $ReAuthenticate = $True
+            }
+
+            # If force reauthentication is not required
+            if (!$ReAuthenticate){
+                # If a connection exists
+                if ($ExchangeConnection){
+
+                    # Attempt to import active session
+                    Import-PSSession $ExchangeConnection `
+                        -DisableNameChecking `
+                        -AllowClobber
+                    
+                    # Get tenant identity
+                    $Tenant = Get-OrganizationConfig
+                    if (!$Tenant){
+                        Write-Verbose "Error detecting tenant, forcing reauthentication"
+                        Write-Warning "Connection will be reauthenticated as tenant has not been detected"
+                        $ReAuthenticate = $True
+                    }
+                    else {
+                        # Set tenant identity
+                        $TenantIdentity = $Tenant.Identity
+
+                        # Get Accepted Domains
+                        $AcceptedDomain = Get-AcceptedDomain
+
+                        # Get default domain
+                        $DefaultAcceptedDomain = $AcceptedDomain | Where-Object Default -EQ $true
+                        $DefaultDomainName = $DefaultAcceptedDomain.DomainName
+
+                        # If a credential exists
+                        if ($Credential){
+                            # Get domain from credential username
+                            $UserDomain = ($Credential.UserName).Split("@")[1]
+
+                            # Check if already connected to same Exchange domain
+                            if ($UserDomain -in $AcceptedDomain.DomainName){
+                                Write-Host "`nActive connection for domain: $UserDomain"
+                            }
+                            else {
+                                Write-Host "`nActive connection for domain: $DefaultDomainName"
+                                Write-Host "`nConnection request for domain: $UserDomain`n"
                                 
-                # If no credentials exist
+                                # If confirm is true, prompt user
+                                if ($Confirm){
+                                    $Choice = $null
+                                    while ($Choice -notmatch "[Y|N]"){
+                                        $Choice = Read-Host "Are you sure you want to disconnect from active session? (Y/N)"
+                                    }
+                                    if ($Choice -eq "Y"){
+                                        $Confirm = $false
+                                    }
+                                }
+                                if (!$Confirm){
+                                    # Set reauthentication flag
+                                    Write-Verbose "Credentials do not match active connection, forcing reauthentication"
+                                    $ReAuthenticate = $True
+                                }
+                            }
+                        }
+                    }            
+                }
+            }
+
+            # If no active connection, or forced reauthentication is required 
+            if (!$ExchangeConnection -or $ReAuthenticate) {
+
+                # Get credentials if none exist
                 if (!$Credential){
                     $Credential = Get-Credential -Message "Enter credentials for Exchange Online"
                 }
-                
-                # If a connection exists
+
+                # If there is an exisiting session, disconnect
                 if ($ExchangeConnection){
-                    If (!$Force){
-                        $choice = $null
-                        Write-Host "`nActive connection to Exchange Online`n"
-                        while ($choice -notmatch "[y|n]"){
-                            $choice = Read-Host "Do you want to disconnect from existing Exchange Online session?"
-                        }
-                        if ($choice -eq "Y"){
-                            $Force = $true
-                        }
-                    }
-                    if ($Force) {
-                        Write-Host "`nDisconnecting exisiting Exchange Online session`n"
-                        $ExchangeConnection = $ExchangeConnection | Remove-PSSession
-                    }
+                    Write-Host "`nDisconnecting exisiting Exchange Online session"
+                    $ExchangeConnection = $ExchangeConnection | Remove-PSSession
                 }
             }
         }
-        catch {
+        catch  {
             Write-Error -Message $_.Exception
             throw $_.exception
         }
@@ -91,17 +159,32 @@ function Connect-ExchangeOnline() {
                 
                 # Create new session
                 $Session = New-PSSession `
-                -ConfigurationName Microsoft.Exchange `
-                -ConnectionUri https://outlook.office365.com/powershell-liveid/ `
-                -Credential $Credential `
-                -Authentication Basic -AllowRedirection
+                    -ConfigurationName Microsoft.Exchange `
+                    -ConnectionUri https://outlook.office365.com/powershell-liveid/ `
+                    -Credential $Credential `
+                    -Authentication Basic `
+                    -AllowRedirection
 
                 # Import Session
-                Import-PSSession $Session
+                Import-PSSession $Session `
+                    -DisableNameChecking `
+                    -AllowClobber
             }
+
+            # Get Accepted Domains
+            $AcceptedDomain = Get-AcceptedDomain
+
+            # Get tenant identity
+            $Tenant = Get-OrganizationConfig
+            $TenantIdentity = $Tenant.Identity
+            
+            # Get default domain
+            $DefaultAcceptedDomain = $AcceptedDomain | Where-Object Default -EQ $true
+            $DefaultDomainName = $DefaultAcceptedDomain.DomainName
             
             # Display connection messages
-            Write-Host "`nConnected to Exchange Online"
+            Write-Host "`nConnected to Exchange Online`n"
+            Write-Host "Tenant: $TenantIdentity, DefaultDomain: $DefaultDomainName"
             Write-Host $ReminderMessage -ForegroundColor Yellow -BackgroundColor Black
             Write-Host $ReminderCommand -ForegroundColor Yellow
         }

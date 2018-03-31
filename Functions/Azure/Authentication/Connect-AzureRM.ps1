@@ -21,7 +21,7 @@
 #>
 
 function Connect-AzureRM() {
-    #Parameters
+    [CmdletBinding()]
     Param(
         [Parameter(
             Mandatory=$false,
@@ -29,6 +29,12 @@ function Connect-AzureRM() {
         )]
         [string]
         $SubscriptionID,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter a subscription name"
+        )]
+        [string]
+        $SubscriptionName,
         [Parameter(
             Mandatory=$false,
             HelpMessage="Specify PowerShell credential object"
@@ -126,18 +132,34 @@ function Connect-AzureRM() {
                                 $WarningMessage = "No subscription ID is specified"
                                 Write-Warning $WarningMessage
                                 
-                                # Display subscriptions
-                                Write-Host "`nSubscriptions you have access to:"
-                                $Subscriptions | Select-Object Name, Id | Format-List | Out-Host -Paging
+                                # If a subscription name is provided
+                                if ($SubscriptionName){
+                                    $Subscriptions = $Subscriptions | Where-Object Name -Like "*$SubscriptionName*"
+                                }
 
-                                # Request resource group name
-                                $SubscriptionID = Read-Host "Enter subscription ID"
+                                # If multiple subscriptions are returned
+                                if ($Subscriptions.count -gt 1){
+                                    # Display subscriptions
+                                    Write-Host "`nSubscriptions you have access to:"
+                                    $Subscriptions | Select-Object Name, Id | Format-List | Out-Host -Paging
 
-                                # While there is no valid subscription ID specified
-                                while ($Subscriptions.id -notcontains $SubscriptionID){
-                                    $WarningMessage = "Invalid Subscription Id $SubscriptionID"
-                                    Write-Warning $WarningMessage
-                                    $SubscriptionId = Read-Host "Enter valid subscription ID"
+                                    # Request subscription ID
+                                    $SubscriptionID = Read-Host "Enter subscription ID"
+
+                                    # While there is no valid subscription ID specified
+                                    while ($Subscriptions.id -notcontains $SubscriptionID){
+                                        $WarningMessage = "Invalid Subscription Id $SubscriptionID"
+                                        Write-Warning $WarningMessage
+                                        $SubscriptionId = Read-Host "Enter valid subscription ID"
+                                    }
+                                }
+                                elseif ($Subscriptions.count -eq 1)  {
+                                    $SubscriptionID = $Subscriptions.SubscriptionId
+                                }
+                                else {
+                                    $ErrorMessage = "No subscriptions match the subscription name: $SubscriptionName"
+                                    Write-Error $ErrorMessage
+                                    throw $ErrorMessage
                                 }
                             }
                             
@@ -148,7 +170,7 @@ function Connect-AzureRM() {
                                 throw $ErrorMessage
                             }
 
-                            # Get subscription name
+                            # Get full subscription name
                             $SubscriptionName = ($Subscriptions | Where-Object Id -eq $SubscriptionID).name
 
                             # Change context to selected subscription

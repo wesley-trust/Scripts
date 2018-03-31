@@ -91,7 +91,7 @@ function Check-RequiredModule() {
                 else {
                     if (!$SkipUpdate){
                         write-Host "Updating required module $Module`n"
-                        Update-Module -Name $Module -AllowClobber -Force -ErrorAction Stop
+                        Update-Module -Name $Module -Force -ErrorAction Stop
                     } 
                 }
             }

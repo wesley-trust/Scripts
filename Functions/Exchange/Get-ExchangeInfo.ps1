@@ -40,7 +40,7 @@ function Get-ExchangeDirectoryInfo() {
     Process {
         try {
             # Check if CSVPath exists
-            $PathExists = Get-item -Path $CSVPath -ErrorAction SilentlyContinue
+            $PathExists = Test-Path -Path $CSVPath
             if (!$PathExists){
                 $PathExists = New-item -ItemType Directory -Path $CSVPath
             }
@@ -104,7 +104,7 @@ function Get-ExchangeOrganisationInfo() {
     Process {
         try {
             # Check if CSVPath exists
-            $PathExists = Get-item -Path $CSVPath -ErrorAction SilentlyContinue
+            $PathExists = Test-Path -Path $CSVPath
             if (!$PathExists){
                 $PathExists = New-item -ItemType Directory -Path $CSVPath
             }
@@ -165,7 +165,7 @@ function Get-ExchangeMailboxInfo() {
     Process {
         try {
             # Check if CSVPath exists
-            $PathExists = Get-item -Path $CSVPath -ErrorAction SilentlyContinue
+            $PathExists = Test-Path -Path $CSVPath
             if (!$PathExists){
                 $PathExists = New-item -ItemType Directory -Path $CSVPath
             }

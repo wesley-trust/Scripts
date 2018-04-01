@@ -98,8 +98,8 @@ function Check-RequiredModule() {
                             }
                         }
                         if (!$SkipModule){
-                            write-Host "Updating module $Module`n"
-                            Update-Module -Name $Module -Force
+                            write-Host "Checking for update to module $Module`n"
+                            Update-Module -Name $Module
                         }
                     }
                 }

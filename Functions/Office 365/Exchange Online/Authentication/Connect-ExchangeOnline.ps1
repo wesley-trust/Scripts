@@ -51,7 +51,7 @@ function Connect-ExchangeOnline() {
             $NonOpenedSessions = $ExchangeConnection | Where-Object {$_.state -ne "Opened"}
             if ($NonOpenedSessions){
                 $NonOpenedSessions | Remove-PSSession
-                Write-Verbose "Detected non-opened sessions, cleaning up by removing any stale sessions"
+                Write-Verbose "Detected non-opened sessions, cleaning up by removing stale sessions"
             }
 
             # Check for opened sessions that are available

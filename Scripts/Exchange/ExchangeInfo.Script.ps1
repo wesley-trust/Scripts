@@ -37,9 +37,9 @@ try {
     . .\Get-ExchangeInfo.ps1
 
     # Execute
-    Get-ExchangeDirectoryInfo -CSVPath $CSVPath
-    Get-ExchangeOrganisationInfo -CSVPath $CSVPath
-    Get-ExchangeMailboxInfo -CSVPath $CSVPath
+    Get-ExchangeDirectoryInfo -CSVPath $CSVPath | Out-Host -Paging
+    Get-ExchangeOrganisationInfo -CSVPath $CSVPath | Out-Host -Paging
+    Get-ExchangeMailboxInfo -CSVPath $CSVPath | Out-Host -Paging
 
 }
 Catch {

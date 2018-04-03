@@ -202,3 +202,55 @@ function Get-ExchangeMailboxInfo() {
         
     }
 }
+function Get-ExchangePublicFolderInfo() {
+    Param(
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify path for CSV export"
+        )]
+        [string]
+        $CSVPath
+    )
+
+    Begin {
+        try {
+
+        }
+        catch {
+            Write-Error -Message $_.Exception
+            throw $_.exception
+        }
+    }
+    
+    Process {
+        try {
+            # Check if CSVPath exists
+            $PathExists = Test-Path -Path $CSVPath
+            if (!$PathExists){
+                $PathExists = New-item -ItemType Directory -Path $CSVPath
+            }
+            
+            # Get Public Folders
+            $Output = Get-PublicFolder -ErrorAction SilentlyContinue
+
+            if (!$Output){
+                $Output = "No public folder databases"
+            }
+            
+            # If a CSV path exists, export to CSV
+            if ($CSVPath){
+                $Output | Export-CSV $CSVPath"\Get-PublicFolder.csv"
+            }
+            else {
+                $Output
+            }
+        }
+        Catch {
+            Write-Error -Message $_.exception
+            throw $_.exception
+        }
+    }
+    End {
+        
+    }
+}

@@ -40,6 +40,7 @@ try {
     Get-ExchangeDirectoryInfo -CSVPath $CSVPath | Out-Host -Paging
     Get-ExchangeOrganisationInfo -CSVPath $CSVPath | Out-Host -Paging
     Get-ExchangeMailboxInfo -CSVPath $CSVPath | Out-Host -Paging
+    Get-ExchangePublicFolderInfo -CSVPath $CSVPath | Out-Host -Paging
 
 }
 Catch {

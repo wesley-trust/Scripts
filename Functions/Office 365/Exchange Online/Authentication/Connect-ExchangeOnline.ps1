@@ -15,7 +15,7 @@
 .Example
     Connect-ExchangeOnline -Credential $Credential
 .Example
-    Connect-ExchangeOnline -Credential $Credential -ReAuthenticate -Force
+    Connect-ExchangeOnline -Credential $Credential -ReAuthenticate -Confirm
 
 #>
 

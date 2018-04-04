@@ -26,7 +26,7 @@ function New-RandomString() {
         $CharacterLength = 12,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify whether to use lower case characters only"
+            HelpMessage="Specify whether to use lower/upper case characters only"
         )]
         [bool]
         $Simplified = $false

@@ -16,6 +16,7 @@
 #>
 
 function FunctionName() {
+    [cmdletbinding()]
     Param(
         [Parameter(
             Mandatory=$false,
@@ -25,7 +26,7 @@ function FunctionName() {
         [pscredential]
         $Credential
     )
-pscredential
+
     Begin {
         try {
 

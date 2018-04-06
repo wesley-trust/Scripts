@@ -20,7 +20,7 @@ using module PartnerCenterModule
 
 Param(
     [Parameter(
-        Mandatory=$true,
+        Mandatory=$false,
         Position = 0,
         HelpMessage="Specify a PowerShell credential object"
     )]
@@ -34,12 +34,12 @@ Param(
     [string]
     $friendlyName = "Microsoft Azure",
     [Parameter(
-        Mandatory=$false
+        Mandatory=$true
     )]
     [int]
-    $Quantity = 1,
+    $Quantity,
     [Parameter(
-        Mandatory=$false
+        Mandatory=$true
     )]
     [string]
     $cspAppID,
@@ -49,7 +49,7 @@ Param(
     [string]
     $cspDomain,
     [Parameter(
-        Mandatory=$false
+        Mandatory=$true
     )]
     [string]
     $tenantid,
@@ -67,7 +67,14 @@ Param(
 
 Begin {
     try {
+        
+        # Required Module
+        $Module = "PartnerCenterModule"
 
+        Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
+        . .\Check-RequiredModule.ps1
+
+        Check-RequiredModule -Modules $Module
     }
     catch {
         Write-Error -Message $_.Exception
@@ -77,8 +84,15 @@ Begin {
 
 Process {
     try {
+        # If there are no credentials, request these
+        if (!$Credential){
+            $Credential = Get-Credential -Message "Enter Partner Center credentials"
+        }
 
-
+        # If no CSP Domain is specified, get domain from credential username (and assume is correct)
+        if (!$cspDomain){
+            $cspDomain = ($Credential.UserName).Split("@")[1]
+        }
 
         # Add Authentication
         Add-PCAuthentication -cspAppID $cspAppID -credential $credential -cspDomain $cspDomain

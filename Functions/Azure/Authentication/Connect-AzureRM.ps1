@@ -46,7 +46,13 @@ function Connect-AzureRM() {
             HelpMessage="Specify whether to reauthenticate with different credentials"
         )]
         [switch]
-        $ReAuthenticate
+        $ReAuthenticate,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify whether to confirm disconnection/reauthentication of active session"
+        )]
+        [switch]
+        $Confirm
     )
 
     Begin {
@@ -94,7 +100,7 @@ function Connect-AzureRM() {
                 Write-Host "Active Connection for account directory $Tenant"
                 if ($Credential){
                     if ($Credential.UserName -ne $AzureConnection.account.id){
-                        Write-Host "Account credentials do not match active account"
+                        Write-Host "Account credentials do not match active account, reauthenticating"
                         # If confirm is true, prompt user
                         if ($Confirm){
                             $Choice = $null

@@ -6,9 +6,9 @@
 #References: 
 
 .Synopsis
-    Function to display all customer names and tenant IDs
+    Function to return Partner Center customer object.
 .Description
-
+    Query by Tenant ID, Company Name or Tenant Domain, when multiple results are returned, user is prompted to select.
 .Example
     
 .Example
@@ -92,7 +92,7 @@ function Get-PCCustomerQuery() {
                         }
                         $PCCustomer = $PCCustomer | Where-Object id -EQ $TenantID
                     }
-                    # Get specific customer information
+                    # Get specific customer object
                     $PCCustomer = Get-PCCustomer -tenantid $PCCustomer.id
                 }
                 else {

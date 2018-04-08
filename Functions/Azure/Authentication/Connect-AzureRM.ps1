@@ -88,6 +88,32 @@ function Connect-AzureRM() {
             # Check to see if there is an active connection to Azure
             $AzureConnection = Get-AzureRmContext
 
+            # If there is a connection and credential, check to see if these match
+            if ($AzureConnection.account.id){
+                $Tenant = $AzureConnection.Account.Id.Split("@")[1]
+                Write-Host "Active Connection for account directory $Tenant"
+                if ($Credential){
+                    if ($Credential.UserName -ne $AzureConnection.account.id){
+                        Write-Host "Account credentials do not match active account"
+                        # If confirm is true, prompt user
+                        if ($Confirm){
+                            $Choice = $null
+                            while ($Choice -notmatch "[Y|N]"){
+                                $Choice = Read-Host "Are you sure you want to disconnect from active session? (Y/N)"
+                            }
+                            if ($Choice -eq "Y"){
+                                $Confirm = $false
+                            }
+                        }
+                        if (!$Confirm){
+                            # Set reauthentication flag
+                            Write-Verbose "Account credentials do not match active account, forcing reauthentication"
+                            $ReAuthenticate = $True
+                        }
+                    }
+                }
+            }
+
             # If no active account, or reauthentication is required 
             if (!$AzureConnection.Account -or $ReAuthenticate) {
                 Write-Host "`nAuthenticating with Azure"

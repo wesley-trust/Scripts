@@ -59,7 +59,7 @@ Begin {
         Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\PartnerCenter\Authentication"
         . .\Connect-PartnerCenter.ps1
 
-        Connect-PartnerCenter -Credential $Credential
+        Connect-PartnerCenter -Credential $Credential | Out-Null
 
         # Required Module Classes
         $Module = "PartnerCenterModule"

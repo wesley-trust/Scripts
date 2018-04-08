@@ -169,13 +169,15 @@ function Connect-AzureRM() {
                                 Write-Error $ErrorMessage
                                 throw $ErrorMessage
                             }
-
-                            # Get full subscription name
-                            $SubscriptionName = ($Subscriptions | Where-Object Id -eq $SubscriptionID).name
-
-                            # Change context to selected subscription
-                            Write-Host "`nSelecting Subscription: $SubscriptionName"
-                            $AzureConnection = Select-AzureRmSubscription -SubscriptionId $SubscriptionId
+                            
+                            # If the currently selected subscription is not equal to the inputted subscription
+                            if ($SelectedSubscriptionID -ne $SubscriptionID){
+                                # Get full subscription name
+                                $SubscriptionName = ($Subscriptions | Where-Object Id -eq $SubscriptionID).name
+                                # Change context to selected subscription
+                                Write-Host "`nSelecting Subscription: $SubscriptionName"
+                                $AzureConnection = Select-AzureRmSubscription -SubscriptionId $SubscriptionId
+                            }
                         }
                         else {
                             $ErrorMessage = "This account does not have access to any subscriptions."

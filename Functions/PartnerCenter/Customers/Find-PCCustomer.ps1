@@ -2,7 +2,7 @@
 #Script name: Get All Partner Center Customers
 #Creator: Wesley Trust
 #Date: 2018-04-08
-#Revision: 1
+#Revision: 2
 #References: 
 
 .Synopsis
@@ -15,7 +15,7 @@
     
 #>
 
-function Get-PCCustomerQuery() {
+function Find-PCCustomerQuery() {
     [cmdletbinding()]
     Param(
         [Parameter(

@@ -96,10 +96,10 @@ function Connect-AzureRM() {
 
             # If there is a connection and credential, check to see if these match
             if ($AzureConnection.account.id){
-                $Tenant = $AzureConnection.Account.Id.Split("@")[1]
-                Write-Host "Active Connection for account directory $Tenant"
+                $ActiveAccountID = $AzureConnection.Account.Id
+                Write-Host "Active Connection for $ActiveAccountID"
                 if ($Credential){
-                    if ($Credential.UserName -ne $AzureConnection.account.id){
+                    if ($Credential.UserName -ne $ActiveAccountID){
                         Write-Host "Account credentials do not match active account, reauthenticating"
                         # If confirm is true, prompt user
                         if ($Confirm){

@@ -35,7 +35,7 @@ function Get-PCCustomerQuery() {
         [Parameter(
             Mandatory=$false,
             Position = 0,
-            HelpMessage="Specify a customer domain name"
+            HelpMessage="Specify a customer tenant domain"
         )]
         [string]
         $Domain

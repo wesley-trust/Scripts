@@ -46,7 +46,13 @@ function Connect-AzureRM() {
             HelpMessage="Specify whether to reauthenticate with different credentials"
         )]
         [switch]
-        $ReAuthenticate
+        $ReAuthenticate,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify whether to confirm disconnection/reauthentication of active session"
+        )]
+        [switch]
+        $Confirm
     )
 
     Begin {
@@ -87,6 +93,32 @@ function Connect-AzureRM() {
 
             # Check to see if there is an active connection to Azure
             $AzureConnection = Get-AzureRmContext
+
+            # If there is a connection and credential, check to see if these match
+            if ($AzureConnection.account.id){
+                $ActiveAccountID = $AzureConnection.Account.Id
+                Write-Host "Active Connection for $ActiveAccountID"
+                if ($Credential){
+                    if ($Credential.UserName -ne $ActiveAccountID){
+                        Write-Host "Account credentials do not match active account, reauthenticating"
+                        # If confirm is true, prompt user
+                        if ($Confirm){
+                            $Choice = $null
+                            while ($Choice -notmatch "[Y|N]"){
+                                $Choice = Read-Host "Are you sure you want to disconnect from active session? (Y/N)"
+                            }
+                            if ($Choice -eq "Y"){
+                                $Confirm = $false
+                            }
+                        }
+                        if (!$Confirm){
+                            # Set reauthentication flag
+                            Write-Verbose "Account credentials do not match active account, forcing reauthentication"
+                            $ReAuthenticate = $True
+                        }
+                    }
+                }
+            }
 
             # If no active account, or reauthentication is required 
             if (!$AzureConnection.Account -or $ReAuthenticate) {
@@ -129,8 +161,7 @@ function Connect-AzureRM() {
                         if ($Subscriptions){
                             # While there is no subscription ID specified
                             if (!$SubscriptionID){
-                                $WarningMessage = "No subscription ID is specified"
-                                Write-Warning $WarningMessage
+                                Write-Verbose = "No subscription ID is specified"
                                 
                                 # If a subscription name is provided
                                 if ($SubscriptionName){
@@ -169,13 +200,15 @@ function Connect-AzureRM() {
                                 Write-Error $ErrorMessage
                                 throw $ErrorMessage
                             }
-
-                            # Get full subscription name
-                            $SubscriptionName = ($Subscriptions | Where-Object Id -eq $SubscriptionID).name
-
-                            # Change context to selected subscription
-                            Write-Host "`nSelecting Subscription: $SubscriptionName"
-                            $AzureConnection = Select-AzureRmSubscription -SubscriptionId $SubscriptionId
+                            
+                            # If the currently selected subscription is not equal to the inputted subscription
+                            if ($SelectedSubscriptionID -ne $SubscriptionID){
+                                # Get full subscription name
+                                $SubscriptionName = ($Subscriptions | Where-Object Id -eq $SubscriptionID).name
+                                # Change context to selected subscription
+                                Write-Host "`nSelecting Subscription: $SubscriptionName"
+                                $AzureConnection = Select-AzureRmSubscription -SubscriptionId $SubscriptionId
+                            }
                         }
                         else {
                             $ErrorMessage = "This account does not have access to any subscriptions."

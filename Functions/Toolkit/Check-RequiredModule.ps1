@@ -16,6 +16,7 @@
 #>
 
 function Check-RequiredModule() {
+    [CmdletBinding()]
     Param(
         [Parameter(
             Mandatory=$false,

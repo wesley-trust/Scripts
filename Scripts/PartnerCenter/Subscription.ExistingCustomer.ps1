@@ -87,9 +87,12 @@ Begin {
         $Module = "PartnerCenterModule,AzureAD"
         
         Check-RequiredModule -Modules $Module
-
+        
+        # Required Module Classes
+        $Module = "PartnerCenterModule"
+        
         # Import Module Classes
-        $scriptBody = "using module $Module"
+        $scriptBody = "using module $ModuleClasses"
         $script = [ScriptBlock]::Create($scriptBody)
         . $script
         

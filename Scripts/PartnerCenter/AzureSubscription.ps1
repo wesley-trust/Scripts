@@ -2,7 +2,7 @@
 #Script name: Create Microsoft Azure CSP offer
 #Creator: Wesley Trust
 #Date: 2018-04-05
-#Revision: 1
+#Revision: 2
 #References: 
 
 .Synopsis
@@ -14,9 +14,6 @@
 .Example
     
 #>
-
-# Load class
-using module PartnerCenterModule
 
 Param(
     [Parameter(
@@ -34,20 +31,10 @@ Param(
     [string]
     $friendlyName = "Microsoft Azure",
     [Parameter(
-        Mandatory=$true
-    )]
-    [int]
-    $Quantity,
-    [Parameter(
-        Mandatory=$true
-    )]
-    [string]
-    $cspAppID,
-    [Parameter(
         Mandatory=$false
     )]
-    [string]
-    $cspDomain,
+    [int]
+    $Quantity = 3,
     [Parameter(
         Mandatory=$true
     )]
@@ -67,14 +54,21 @@ Param(
 
 Begin {
     try {
-        
-        # Required Module
+
+        # Connect to Partner Center
+        Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\PartnerCenter\Authentication"
+        . .\Connect-PartnerCenter.ps1
+
+        Connect-PartnerCenter -Credential $Credential | Out-Null
+
+        # Required Module Classes
         $Module = "PartnerCenterModule"
 
-        Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
-        . .\Check-RequiredModule.ps1
+        # Import Module Classes
+        $scriptBody = "using module $Module"
+        $script = [ScriptBlock]::Create($scriptBody)
+        . $script
 
-        Check-RequiredModule -Modules $Module
     }
     catch {
         Write-Error -Message $_.Exception
@@ -84,19 +78,7 @@ Begin {
 
 Process {
     try {
-        # If there are no credentials, request these
-        if (!$Credential){
-            $Credential = Get-Credential -Message "Enter Partner Center credentials"
-        }
 
-        # If no CSP Domain is specified, get domain from credential username (and assume is correct)
-        if (!$cspDomain){
-            $cspDomain = ($Credential.UserName).Split("@")[1]
-        }
-
-        # Add Authentication
-        Add-PCAuthentication -cspAppID $cspAppID -credential $credential -cspDomain $cspDomain
-        
         # Get Customer
         $customer = Get-PCCustomer -tenantid $tenantid
 

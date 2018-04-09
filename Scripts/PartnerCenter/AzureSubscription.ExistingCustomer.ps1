@@ -89,7 +89,7 @@ Begin {
         Check-RequiredModule -Modules $Module
         
         # Required Module Classes
-        $Module = "PartnerCenterModule"
+        $ModuleClasses = "PartnerCenterModule"
         
         # Import Module Classes
         $scriptBody = "using module $ModuleClasses"

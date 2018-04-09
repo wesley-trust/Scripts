@@ -43,8 +43,8 @@ Begin {
         Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\PartnerCenter\Authentication"
         . .\Connect-PartnerCenter.ps1
         
-        # Required Module
-        $Module = "PartnerCenterModule"
+        # Required Modules
+        $Module = "PartnerCenterModule,AzureAD"
         
         Check-RequiredModule -Modules $Module
         

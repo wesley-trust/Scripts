@@ -68,7 +68,7 @@ function Connect-PartnerCenter() {
                         # Get domain from credential username
                         $UserDomain = ($Credential.UserName).Split("@")[1]
 
-                        # Check if already connected to same Exchange domain
+                        # Check if already connected to same domain
                         if ($UserDomain -eq $PCOrganizationActiveDomain){
                             Write-Host "`nActive connection for domain: $UserDomain"
                         }

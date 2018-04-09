@@ -2,13 +2,14 @@
 #Script name: Connect to Partner Center
 #Creator: Wesley Trust
 #Date: 2018-04-08
-#Revision: 1
+#Revision: 2
 #References: 
 
 .Synopsis
     Function that connects to Partner Center.
 .Description
     Prompts for credentials if needed or if reauthentication is required, checks for active connection and matches against credentials.
+    Optionally specify a CSP App ID, if not, an Azure AD lookup will be attempted with Partner Center credentials.
 .Example
     Connect-PartnerCenter -Credential $Credential
 .Example
@@ -38,7 +39,13 @@ function Connect-PartnerCenter() {
             HelpMessage="Specify whether to confirm disconnection/reauthentication of active session"
         )]
         [switch]
-        $Confirm
+        $Confirm,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Optionally specify a CSP App ID, if no ID is specified, an Azure AD lookup will be attemted"
+        )]
+        [switch]
+        $CSPAppID
     )
 
     Begin {
@@ -106,16 +113,22 @@ function Connect-PartnerCenter() {
                     $Credential = Get-Credential -Message "Enter Partner Center Credentials"
                 }
                 
-                # Retrieve CSP App ID from AzureAD
-                Connect-AzureAD -Credential $Credential | Out-Null
-                $CSPApp = Get-AzureADApplication | Where-Object DisplayName -eq "Partner Center Native App"
-                Disconnect-AzureAD
-                
-                # Check for ID
-                if (!$CSPApp){
-                    $ErrorMessage = "Unable to retrieve Azure AD App ID for Partner Center"
-                    Write-Error $ErrorMessage
-                    throw $ErrorMessage
+                if (!$CSPAppID){
+                    # Retrieve CSP App ID from AzureAD
+                    Connect-AzureAD -Credential $Credential | Out-Null
+                    $CSPApp = Get-AzureADApplication | Where-Object DisplayName -eq "Partner Center Native App"
+                    Disconnect-AzureAD
+                    
+                    # Check for ID
+                    if (!$CSPApp){
+                        $ErrorMessage = "No Partner Center App Id is specified and an Azure AD lookup failed"
+                        Write-Error $ErrorMessage
+                        throw $ErrorMessage
+                    }
+                    else {
+                        # Update variable from Azure AD lookup (if successful)
+                        $CSPAppID = $CSPApp.AppID
+                    }
                 }
             }
         }
@@ -136,7 +149,7 @@ function Connect-PartnerCenter() {
                     
                     Write-Host "`nAuthenticating with Partner Center"
                     Add-PCAuthentication `
-                        -cspAppID $CSPApp.AppID `
+                        -cspAppID $CSPAppID `
                         -cspDomain $CSPDomain `
                         -Credential $Credential `
                         | Out-Null

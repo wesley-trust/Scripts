@@ -36,17 +36,17 @@ Param(
     [int]
     $Quantity,
     [Parameter(
-        Mandatory=$true
+        Mandatory=$false
     )]
     [string]
     $tenantid,
     [Parameter(
-        Mandatory=$true
+        Mandatory=$false
     )]
     [string]
     $CustomerName,
     [Parameter(
-        Mandatory=$true
+        Mandatory=$false
     )]
     [string]
     $TenantDomain,
@@ -123,7 +123,7 @@ Process {
                 # Send order
                 if (!$Force){
                     $Choice = $Null
-                    $Choice = Read-Host "Do you want to order $Quantity of $friendlyName? (Y/N)"
+                    $Choice = Read-Host "Do you want to order $Quantity of $friendlyName ? (Y/N)"
                     if ($Choice -eq "Y"){
                         $Force = $True
                     }

@@ -44,7 +44,7 @@ function Connect-PartnerCenter() {
             Mandatory=$false,
             HelpMessage="Optionally specify a CSP App ID, if no ID is specified, an Azure AD lookup will be attemted"
         )]
-        [switch]
+        [string]
         $CSPAppID
     )
 

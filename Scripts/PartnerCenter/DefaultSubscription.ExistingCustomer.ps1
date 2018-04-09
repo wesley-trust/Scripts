@@ -118,7 +118,7 @@ Process {
             # Provision Orders
             New-PCOrderItem `
                 -TenantID $customer.id `
-                -friendlyName = "Microsoft 365 E5" `
+                -friendlyName "Microsoft 365 E5" `
                 -Quantity "25" `
                 -OfferID "8BDBB60B-E526-43E9-92EF-AB760C8E0B72" `
                 -countryId "US" `
@@ -126,8 +126,8 @@ Process {
 
             New-PCOrderItem `
                 -TenantID $customer.id `
-                -friendlyName = "Microsoft Azure" `
-                -Quantity "4" `
+                -friendlyName "Microsoft Azure" `
+                -Quantity "1" `
                 -OfferID "MS-AZR-0146P" `
                 -countryId "US" `
                 -Force

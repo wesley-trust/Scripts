@@ -14,7 +14,6 @@
 .Example
     
 #>
-
 function New-PCOrderItem() {
     [CmdletBinding()]
     Param(

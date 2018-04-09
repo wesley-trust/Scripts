@@ -146,7 +146,6 @@ function Connect-PartnerCenter() {
                         | Out-Null
                     # Update Active Profile
                     $PCOrganizationProfile = Get-PCOrganizationProfile
-
                 }
                 else {
                     $ErrorMessage = "No credentials specified"
@@ -157,6 +156,18 @@ function Connect-PartnerCenter() {
             else {
                 Write-Host "Active Connection to Partner Center"
             }
+            return $PCOrganizationProfile
+        }
+        # If exception occurs, retry authentication a second time before terminating
+        catch [System.Management.Automation.RuntimeException] {
+            Write-Host "`nAttempting second authentication attempt with Partner Center"
+            Add-PCAuthentication `
+                -cspAppID $CSPAppID `
+                -cspDomain $CSPDomain `
+                -Credential $Credential `
+                | Out-Null
+            # Update Active Profile
+            $PCOrganizationProfile = Get-PCOrganizationProfile
             return $PCOrganizationProfile
         }
         Catch {

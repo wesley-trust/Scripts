@@ -15,7 +15,7 @@
     
 #>
 
-function Find-PCCustomerQuery() {
+function Find-PCCustomer() {
     [cmdletbinding()]
     Param(
         [Parameter(

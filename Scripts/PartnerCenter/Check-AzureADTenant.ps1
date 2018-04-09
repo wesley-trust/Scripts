@@ -36,12 +36,20 @@ Param(
 Begin {
     try {
 
-        # Connect to Partner Center
+        # Load functions
+        Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
+        . .\Check-RequiredModule.ps1
+
         Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\PartnerCenter\Authentication"
         . .\Connect-PartnerCenter.ps1
-
+        
+        # Required Module
+        $Module = "PartnerCenterModule"
+        
+        Check-RequiredModule -Modules $Module
+        
+        # Connect to Partner Center
         Connect-PartnerCenter -Credential $Credential | Out-Null
-
     }
     catch {
         Write-Error -Message $_.Exception

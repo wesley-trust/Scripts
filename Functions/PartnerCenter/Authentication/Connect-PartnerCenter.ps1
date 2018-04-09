@@ -50,14 +50,6 @@ function Connect-PartnerCenter() {
 
     Begin {
         try {
-            # Required Module
-            $Module = "PartnerCenterModule"
-
-            Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
-            . .\Check-RequiredModule.ps1
-
-            Check-RequiredModule -Modules $Module
-
             # Check to see if there is an active connection
             $PCOrganizationProfile = Get-PCOrganizationProfile
             $PCOrganizationActiveDomain = $PCOrganizationProfile.domain
@@ -67,7 +59,6 @@ function Connect-PartnerCenter() {
             $ReAuthenticate = $true
         }
         try {
-
             # If force reauthentication is not required
             if (!$ReAuthenticate){
                 # If a connection exists

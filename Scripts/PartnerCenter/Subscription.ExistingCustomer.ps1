@@ -1,8 +1,8 @@
 <#
-#Script name: Create default subscription orders
+#Script name: Create Microsoft Azure CSP offer
 #Creator: Wesley Trust
-#Date: 2018-04-08
-#Revision: 1
+#Date: 2018-04-05
+#Revision: 3
 #References: 
 
 .Synopsis
@@ -24,7 +24,7 @@ Param(
     [pscredential]
     $Credential,
     [Parameter(
-        Mandatory=$false,
+        Mandatory=$true,
         Position = 0,
         HelpMessage="Subscription name"
     )]
@@ -51,12 +51,12 @@ Param(
     [string]
     $TenantDomain,
     [Parameter(
-        Mandatory=$false
+        Mandatory=$true
     )]
     [string]
     $OfferID,
     [Parameter(
-        Mandatory=$false
+        Mandatory=$true
     )]
     [string]
     $CountryID,
@@ -69,7 +69,7 @@ Param(
 
 Begin {
     try {
-
+        
         # Load functions
         Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
         . .\Check-RequiredModule.ps1
@@ -107,21 +107,50 @@ Process {
     try {
 
         # Get Customer
-        if (!$TenantID){
-            $customer = Get-PCCustomer -Tenantid $tenantid
+        if ($TenantID){
+            $customer = Get-PCCustomer -tenantid $tenantid
         }
         else {
             $customer = Find-PCCustomer -Name $CustomerName -Domain $TenantDomain
         }
+
         if ($customer){
 
-            New-PCOrderItem `
-                -TenantID $customer.id `
-                -friendlyName = "Microsoft Azure" `
-                -Quantity "3" `
-                -OfferID "MS-AZR-0146P" `
-                -countryId "US" `
-                -Force
+            # Get Offer
+            $offer = Get-PCOffer -countryid $CountryID -offerid $OfferID
+
+            if ($offer){
+
+                # Create the OrderLineItem
+                $lineItems = @()
+                $lineItems += [OrderLineItem]::new()
+                $lineItems[0].LineItemNumber = 0
+                $lineItems[0].FriendlyName = $FriendlyName
+                $lineItems[0].OfferId = $offer.id
+                $lineItems[0].Quantity = $Quantity
+
+                # Send order
+                if (!$Force){
+                    $Choice = $Null
+                    $Choice = Read-Host "Do you want to order $Quantity of $friendlyName ? (Y/N)"
+                    if ($Choice -eq "Y"){
+                        $Force = $True
+                    }
+                }
+                if ($Force){
+                    New-PCOrder -tenantid $customer.id -LineItems $lineItems
+                }
+                else {
+                    $ErrorMessage = "Unable to order, confirmation was not received, or Force was not specified"
+                    Write-Error $ErrorMessage
+                    throw $ErrorMessage
+                }
+            }
+            else {
+                $ErrorMessage = "No Parnter Center offer that matches $OfferId in country $CountryID"
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
+            }
         }
         else {
             $ErrorMessage = "No customer returned, unable to order without a customer"

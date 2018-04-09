@@ -14,7 +14,6 @@
 .Example
     
 #>
-
 function Find-PCCustomer() {
     [cmdletbinding()]
     Param(
@@ -44,12 +43,6 @@ function Find-PCCustomer() {
     Begin {
         try {
 
-        # Connect to Partner Center
-        Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\PartnerCenter\Authentication"
-        . .\Connect-PartnerCenter.ps1
-
-        Connect-PartnerCenter -Credential $Credential | Out-Null
-        
         }
         catch {
             Write-Error -Message $_.Exception

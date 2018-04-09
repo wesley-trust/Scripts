@@ -115,10 +115,19 @@ Process {
         }
         if ($customer){
 
+            # Provision Orders
+            New-PCOrderItem `
+                -TenantID $customer.id `
+                -friendlyName = "Microsoft 365 E5" `
+                -Quantity "25" `
+                -OfferID "8BDBB60B-E526-43E9-92EF-AB760C8E0B72" `
+                -countryId "US" `
+                -Force
+
             New-PCOrderItem `
                 -TenantID $customer.id `
                 -friendlyName = "Microsoft Azure" `
-                -Quantity "3" `
+                -Quantity "4" `
                 -OfferID "MS-AZR-0146P" `
                 -countryId "US" `
                 -Force

@@ -158,9 +158,9 @@ function Connect-PartnerCenter() {
             }
             return $PCOrganizationProfile
         }
-        # If exception occurs, retry authentication a second time before terminating
+        # If exception occurs, retry authentication a second time
         catch [System.Management.Automation.RuntimeException] {
-            Write-Host "`nAttempting second authentication attempt with Partner Center"
+            Write-Host "`nAuthentication attempt failed, retrying with same credentials"
             Add-PCAuthentication `
                 -cspAppID $CSPAppID `
                 -cspDomain $CSPDomain `
@@ -169,6 +169,11 @@ function Connect-PartnerCenter() {
             # Update Active Profile
             $PCOrganizationProfile = Get-PCOrganizationProfile
             return $PCOrganizationProfile
+        }
+        catch [System.Net.WebException]{
+            $ErrorMessage = "Bad Request, try authenticating with new credentials"
+            Write-Error -Message $ErrorMessage
+            throw $_.exception
         }
         Catch {
             Write-Error -Message $_.exception

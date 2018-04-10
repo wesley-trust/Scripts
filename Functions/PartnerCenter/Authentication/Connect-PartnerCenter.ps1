@@ -8,8 +8,8 @@
 .Synopsis
     Function that connects to Partner Center.
 .Description
-    Prompts for credentials if needed or if reauthentication is required, checks for active connection and matches against credentials.
-    Optionally specify a CSP App ID, if not, an Azure AD lookup will be attempted with Partner Center credentials.
+    Prompts for credentials if needed or if reauthentication is required, checks for active connection
+    and matches against credentials. Optionally specify a CSP App ID, if not, an Azure AD lookup will be attempted.
 .Example
     Connect-PartnerCenter -Credential $Credential
 .Example

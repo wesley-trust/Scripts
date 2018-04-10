@@ -82,15 +82,6 @@ function Connect-AzureRM() {
         # Catch when Azure Automation command is not found
         catch [System.Management.Automation.CommandNotFoundException] {
             
-            # Required Module
-            $Module = "AzureRM"
-            $ModuleCore = "AzureRM.Netcore"
-
-            Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
-            . .\Check-RequiredModule.ps1
-
-            Check-RequiredModule -Modules $Module -ModulesCore $ModuleCore
-
             # Check to see if there is an active connection to Azure
             $AzureConnection = Get-AzureRmContext
 

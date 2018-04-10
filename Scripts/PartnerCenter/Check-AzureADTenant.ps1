@@ -36,20 +36,25 @@ Param(
 Begin {
     try {
 
-        # Load functions
-        Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
-        . .\Check-RequiredModule.ps1
-
-        Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\PartnerCenter\Authentication"
-        . .\Connect-PartnerCenter.ps1
+        # Function definitions
+        $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
+        $Functions = @(
+            "$FunctionLocation\PartnerCenter\Authentication\Connect-PartnerCenter.ps1",
+            "$FunctionLocation\Toolkit\Check-RequiredModule.ps1"
+        )
+        # Function dot source
+        foreach ($Function in $Functions){
+            . $Function
+        }
         
-        # Required Modules
+        # Required Module
         $Module = "PartnerCenterModule,AzureAD"
         
         Check-RequiredModule -Modules $Module
         
         # Connect to Partner Center
         Connect-PartnerCenter -Credential $Credential | Out-Null
+
     }
     catch {
         Write-Error -Message $_.Exception

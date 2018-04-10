@@ -64,8 +64,9 @@ Begin {
         
         # Required Module
         $Module = "AzureRM"
+        $ModuleCore = "AzureRM.Netcore"
         
-        Check-RequiredModule -Modules $Module
+        Check-RequiredModule -Modules $Module -ModulesCore $ModuleCore
 
     }
     catch {

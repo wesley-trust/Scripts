@@ -161,7 +161,7 @@ function Connect-AzureRM() {
                         if ($Subscriptions){
                             # While there is no subscription ID specified
                             if (!$SubscriptionID){
-                                Write-Verbose = "No subscription ID is specified"
+                                Write-Verbose "No subscription ID is specified"
                                 
                                 # If a subscription name is provided
                                 if ($SubscriptionName){

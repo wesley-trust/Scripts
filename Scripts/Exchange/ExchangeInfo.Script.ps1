@@ -32,9 +32,15 @@ try {
         $PathExists = New-item -ItemType Directory -Path $CSVPath
     }
 
-    # Dot source functions
-    Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Exchange"
-    . .\Get-ExchangeInfo.ps1
+    # Function definitions
+    $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
+    $Functions = @(
+        "$FunctionLocation\Exchange\Get-ExchangeInfo.ps1"
+    )
+    # Function dot source
+    foreach ($Function in $Functions){
+        . $Function
+    }
 
     # Execute
     Get-ExchangeDirectoryInfo -CSVPath $CSVPath | Out-Host -Paging

@@ -40,7 +40,7 @@ Begin {
         # Function definitions
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
-            "$FunctionLocation\Office 365\Exchange Online\Authentication\Connect-ExchangeOnline.ps1"
+            "$FunctionLocation\Office365\ExchangeOnline\Authentication\Connect-ExchangeOnline.ps1"
         )
         # Function dot source
         foreach ($Function in $Functions){

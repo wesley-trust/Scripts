@@ -2,7 +2,7 @@
 #Script name: Connect AzureRM Subscription
 #Creator: Wesley Trust
 #Date: 2017-10-30
-#Revision: 3
+#Revision: 4
 #References: 
 
 .Synopsis
@@ -65,12 +65,22 @@ function Connect-AzureRMSubscription() {
 
             # If there is a service principal
             if ($ServicePrincipalConnection){
+                # Create hash table of custom parameters
+                $CustomParameters = @{}
+                $CustomParameters += @{
+                    ServicePrincipal = $True
+                    TenantId = $servicePrincipalConnection.TenantId
+                    ApplicationId = $servicePrincipalConnection.ApplicationId
+                    CertificateThumbprint = $servicePrincipalConnection.CertificateThumbprint
+                }
+                if ($SubscriptionID){
+                    $CustomParameters += @{
+                        Subscription = $SubscriptionID
+                    }
+                }
+
                 "Authenticating with Azure Automation"
-                Add-AzureRmAccount `
-                    -ServicePrincipal `
-                    -TenantId $servicePrincipalConnection.TenantId `
-                    -ApplicationId $servicePrincipalConnection.ApplicationId `
-                    -CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint
+                Connect-AzureRmAccount @CustomParameters
             }
             else {
                 $ErrorMessage = "Connection $ConnectionName not found."
@@ -112,15 +122,28 @@ function Connect-AzureRMSubscription() {
 
             # If no active account, or reauthentication is required 
             if (!$AzureConnection.Account -or $ReAuthenticate) {
-                Write-Host "`nAuthenticating with Azure"
-                
-                # If credential exist
+                # Create hash table of custom parameters
+                $CustomParameters = @{}
+                if ($SubscriptionID){
+                    $CustomParameters += @{
+                        Subscription = $SubscriptionID
+                    }
+                }
+                if ($TenantID){
+                    $CustomParameters += @{
+                        TenantID = $TenantID
+                    }
+                }
                 if ($Credential){
-                    $AzureConnection = Add-AzureRmAccount -Credential $Credential
+                    $CustomParameters += @{
+                        Credential = $Credential
+                    }
                 }
-                else {
-                    $AzureConnection = Add-AzureRmAccount
-                }
+                Write-Host "`nAuthenticating with Azure"
+                Connect-AzureRmAccount @CustomParameters | Out-Null
+                # Update context
+                $AzureConnection = Get-AzureRmContext
+
             }
             
             # Get the subscription in the current context

@@ -2,7 +2,7 @@
 #Script name: Check-RequiredModule
 #Creator: Wesley Trust
 #Date: 2017-12-04
-#Revision: 1
+#Revision: 2
 #References: 
 
 .Synopsis
@@ -32,10 +32,10 @@ function Check-RequiredModule() {
         $ModulesCore,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify whether to skip module update"
+            HelpMessage="Specify whether to update module if installed"
         )]
         [switch]
-        $SkipUpdate
+        $Update
     )
 
     Begin {
@@ -90,15 +90,15 @@ function Check-RequiredModule() {
                     Install-Module -Name $Module -AllowClobber -Force -Scope $Scope -ErrorAction Stop
                 }
                 else {
-                    if (!$SkipUpdate){
+                    if ($Update){
                         if (!$Elevated){
                             if ($ModuleCheck.path -like "*Program Files*"){
-                                $SkipModule = $true
+                                $Update = $false
                                 $WarningMessage = "Skipping module update, rerun as an administrator to update this module"
                                 Write-Warning $WarningMessage
                             }
                         }
-                        if (!$SkipModule){
+                        if ($Update){
                             write-Host "Checking for update to module $Module`n"
                             Update-Module -Name $Module
                         }

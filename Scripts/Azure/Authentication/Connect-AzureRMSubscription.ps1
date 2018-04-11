@@ -2,7 +2,7 @@
 #Script name: Connect to Azure subscription
 #Creator: Wesley Trust
 #Date: 2018-04-10
-#Revision: 1
+#Revision: 2
 #References: 
 
 .Synopsis
@@ -54,7 +54,7 @@ Begin {
         # Function definitions
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
-            "$FunctionLocation\Azure\Authentication\Connect-AzureRM.ps1",
+            "$FunctionLocation\Azure\Authentication\Connect-AzureRMSubscription.ps1",
             "$FunctionLocation\Toolkit\Check-RequiredModule.ps1"
         )
         # Function dot source
@@ -97,7 +97,7 @@ Process {
         }
 
         # Connect to Azure RM Subscription with custom parameters
-        Connect-AzureRM @CustomParameters
+        Connect-AzureRMSubscription @CustomParameters
 
     }
     Catch {

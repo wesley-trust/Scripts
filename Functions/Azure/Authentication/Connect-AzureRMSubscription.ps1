@@ -1,15 +1,14 @@
 <#
-#Script name: Connect Azure Subscription
+#Script name: Connect AzureRM Subscription
 #Creator: Wesley Trust
 #Date: 2017-10-30
-#Revision: 2
+#Revision: 3
 #References: 
 
 .Synopsis
-    Function that connects to an Azure subscription via Azure Automation or user Authentication.
+    Function that connects to an AzureRM subscription via an Azure Automation Service Principal or user Authentication.
 .Description
-    Function that connects to an Azure subscription, firstly by checking whether it is in Azure Automation,
-    if not, checks if the AzureRM module is installed, if not, installs the module.
+    Function that connects to an Azure subscription, firstly by checking whether it is in Azure Automation.
     Then checks if there is an active connection, or whether different credentials are required, connects to Azure.
     If it is not in Azure Automation, and there is an active connection, checks if a subscription ID is specified,
     if not, loads subscriptions, prompts for subscription ID, finally selects subscription if not already selected.
@@ -20,7 +19,7 @@
 
 #>
 
-function Connect-AzureRM() {
+function Connect-AzureRMSubscription() {
     [CmdletBinding()]
     Param(
         [Parameter(
@@ -129,6 +128,7 @@ function Connect-AzureRM() {
                 $SelectedSubscriptionID = $AzureConnection.Subscription.id
             }
         }
+        
         catch {
             Write-Error -Message $_.Exception
             throw $_.exception

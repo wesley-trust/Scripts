@@ -2,7 +2,7 @@
 #Script name: New-AzureAD-ExternalUser
 #Creator: Wesley Trust
 #Date: 2017-12-03
-#Revision: 1
+#Revision: 2
 #References: 
 
 .Synopsis
@@ -25,7 +25,7 @@ function New-AzureAD-ExternalUser() {
         $Credential,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify email address(es)"
+            HelpMessage="Specify email address(es) comma seperated"
         )]
         [string[]]
         $Emails,
@@ -35,29 +35,12 @@ function New-AzureAD-ExternalUser() {
         )]
         [ValidateSet("Guest","Member")] 
         [string]
-        $UserType = "Member",
-        [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify whether to skip authentication"
-        )]
-        [bool]
-        $SkipAuthentication = $false
+        $UserType
     )
 
     Begin {
         try {
-            # Required Module
-            $Module = "AzureAD"
             
-            Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
-            . .\Check-RequiredModule.ps1
-            
-            Check-RequiredModule -Modules $Module
-            
-            # Connect to directory tenant
-            if (!$SkipAuthentication) {
-                Connect-AzureAD -Credential $Credential
-            } 
         }
         catch {
             Write-Error -Message $_.Exception
@@ -100,14 +83,25 @@ function New-AzureAD-ExternalUser() {
                 }
                 else {                       
                     # Create external user invitation
-                    New-AzureADMSInvitation `
-                    -InvitedUserEmailAddress $Email `
-                    -SendInvitationMessage $True `
-                    -InviteRedirectUrl "https://portal.azure.com" `
-                    -InvitedUserType $UserType
-
-                    $SuccessMessage = "User $Email has been invited to the directory as $Usertype."
-                    Write-Output $SuccessMessage
+                    $AzureADMSInvitation = New-AzureADMSInvitation `
+                        -InvitedUserEmailAddress $Email `
+                        -SendInvitationMessage $True `
+                        -InviteRedirectUrl "https://portal.azure.com" `
+                        -InvitedUserType $UserType
+                    # Status report
+                    if ($AzureADMSInvitation.status -eq "PendingAcceptance"){
+                        return $AzureADMSInvitation
+                        $SuccessMessage = "User $Email has been invited to the directory as $Usertype."
+                        Write-Host $SuccessMessage
+                    }
+                    else {
+                        # If there was a response with an unexpected status, return this
+                        if ($AzureADMSInvitation){
+                            return $AzureADMSInvitation
+                        }
+                        $ErrorMessage = "An unknown error has occurred for $Email"
+                        Write-Error $ErrorMessage
+                    }
                 }
             }
         }
@@ -117,7 +111,6 @@ function New-AzureAD-ExternalUser() {
         }
     }
     End {
-        # Disconnect
-        Disconnect-AzureAD 
+
     }
 }

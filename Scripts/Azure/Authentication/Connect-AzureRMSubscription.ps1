@@ -61,6 +61,8 @@ Begin {
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
             "$FunctionLocation\Azure\Authentication\Connect-AzureRMSubscription.ps1",
+            "$FunctionLocation\PartnerCenter\Authentication\Connect-PartnerCenter.ps1",
+            "$FunctionLocation\PartnerCenter\Customer\Get-PCCustomerSubscription.ps1",
             "$FunctionLocation\Toolkit\Check-RequiredModule.ps1"
         )
         # Function dot source
@@ -104,8 +106,59 @@ Process {
         }
 
         # Connect to Azure RM Subscription with custom parameters
-        Connect-AzureRMSubscription @CustomParameters
+        $AzureRMSubscription = Connect-AzureRMSubscription @CustomParameters
+        if ($AzureRMSubscription){
+            return $AzureRMSubscription
+        }
+        else {
+            # Required Module
+            $Module = "PartnerCenterModule,AzureAD"
+            
+            Check-RequiredModule -Modules $Module
+            
+            # Connect to Partner Center
+            Connect-PartnerCenter -Credential $Credential | Out-Null
 
+            # Get Azure Subscriptions
+            $AzureCustomerSubscriptions = Get-PCCustomerSubscription -OfferName "Microsoft Azure"
+            if ($AzureCustomerSubscriptions){
+                # Display subscriptions
+                Write-Host "`nSubscriptions you have access to:"
+                $AzureCustomerSubscriptions | ForEach-Object{
+                    # Build hastable of custom parameters
+                    $CustomParameters = @{}
+                    $CustomParameters += @{
+                        TenantID = $_.TenantID
+                        SubscriptionID = $_.SubscriptionID
+                    }
+                    
+                    # Load subscriptions
+                    $Subscriptions = Get-AzureRmSubscription @CustomParameters
+
+                    if ($Subscriptions){
+                        $Subscriptions | Select-Object Name, Id | Format-List | Out-Host -Paging
+                    }
+                }
+                
+                # Request subscription ID
+                $SubscriptionID = Read-Host "Enter subscription ID"
+                
+                # While there is no valid subscription ID specified
+                while ($AzureCustomerSubscriptions.SubscriptionId -notcontains $SubscriptionID){
+                    $WarningMessage = "Invalid Subscription Id $SubscriptionID"
+                    Write-Warning $WarningMessage
+                    $SubscriptionId = Read-Host "Enter valid subscription ID"
+                }
+                $ParterCenterSubscription = $AzureCustomerSubscriptions | Where-Object SubscriptionID -eq $SubscriptionId
+            }
+            else {
+                $ErrorMessage = "No subscriptions returned that you have access to"
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
+            }
+        }
+    # Connect to subscription
+    Connect-AzureRMSubscription -tenantid $ParterCenterSubscription.tenantid -subscriptionid $ParterCenterSubscription.subscriptionid
     }
     Catch {
         Write-Error -Message $_.exception

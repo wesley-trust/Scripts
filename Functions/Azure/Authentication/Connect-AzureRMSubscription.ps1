@@ -234,9 +234,8 @@ function Connect-AzureRMSubscription() {
                             }
                         }
                         else {
-                            $ErrorMessage = "This account does not have access to any subscriptions."
-                            Write-Error $ErrorMessage
-                            throw $ErrorMessage
+                            $WarningMessage = "This account does not have access to any subscriptions."
+                            Write-Warning $WarningMessage
                         }
                     }
                     return $AzureConnection

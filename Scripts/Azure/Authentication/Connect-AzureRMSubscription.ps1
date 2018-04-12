@@ -24,6 +24,12 @@ Param(
     $SubscriptionID,
     [Parameter(
         Mandatory=$false,
+        HelpMessage="Enter the subscription ID"
+    )]
+    [string]
+    $TenantID,
+    [Parameter(
+        Mandatory=$false,
         HelpMessage="Enter a subscription name"
     )]
     [string]
@@ -81,6 +87,7 @@ Process {
         # Create hashtable of custom parameters
         $CustomParameters = @{
             SubscriptionID = $SubscriptionID;
+            TenantID = $TenantID;
             SubscriptionName = $SubscriptionName;
             Credential = $Credential;
         }

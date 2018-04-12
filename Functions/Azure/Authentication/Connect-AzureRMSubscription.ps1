@@ -18,7 +18,6 @@
     
 
 #>
-
 function Connect-AzureRMSubscription() {
     [CmdletBinding()]
     Param(
@@ -28,6 +27,12 @@ function Connect-AzureRMSubscription() {
         )]
         [string]
         $SubscriptionID,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the subscription ID"
+        )]
+        [string]
+        $TenantID,
         [Parameter(
             Mandatory=$false,
             HelpMessage="Enter a subscription name"
@@ -143,12 +148,6 @@ function Connect-AzureRMSubscription() {
                 Connect-AzureRmAccount @CustomParameters | Out-Null
                 # Update context
                 $AzureConnection = Get-AzureRmContext
-
-            }
-            
-            # Get the subscription in the current context
-            if ($AzureConnection){
-                $SelectedSubscriptionID = $AzureConnection.Subscription.id
             }
         }
         
@@ -165,12 +164,22 @@ function Connect-AzureRMSubscription() {
                 
                 # But there is a connection to Azure
                 if ($AzureConnection){
-
+                    # If there is a tenant ID build hastable of custom parameters
+                    $CustomParameters = @{}
+                    if ($TenantID){
+                        $CustomParameters += @{
+                            TenantID = $TenantID
+                        }
+                    }
+                    # Get the subscription in the current context
+                    if ($AzureConnection){
+                        $SelectedSubscriptionID = $AzureConnection.Subscription.id
+                    }
                     # Check whether the subscription is different to current context
                     if ($SelectedSubscriptionID -ne $SubscriptionID){
-
+                        
                         # Load subscriptions
-                        $Subscriptions = Get-AzureRmSubscription
+                        $Subscriptions = Get-AzureRmSubscription @CustomParameters
 
                         if ($Subscriptions){
                             # While there is no subscription ID specified
@@ -221,7 +230,7 @@ function Connect-AzureRMSubscription() {
                                 $SubscriptionName = ($Subscriptions | Where-Object Id -eq $SubscriptionID).name
                                 # Change context to selected subscription
                                 Write-Host "`nSelecting Subscription: $SubscriptionName"
-                                $AzureConnection = Select-AzureRmSubscription -SubscriptionId $SubscriptionId
+                                $AzureConnection = Set-AzureRmContext -SubscriptionId $SubscriptionId @CustomParameters
                             }
                         }
                         else {

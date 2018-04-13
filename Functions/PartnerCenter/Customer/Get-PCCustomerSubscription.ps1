@@ -63,13 +63,18 @@ function Get-PCCustomerSubscription() {
                 # For each customer
                 $SubscriptionCustomers = $Customers | ForEach-Object {
                     $TenantID = $_.id
+                    $CustomerName = $_.CompanyProfile.CompanyName
                     # Get all subscriptions
                     $Subscription = Get-PCSubscription -tenantid $TenantID -all | Where-Object offerName -eq $OfferName
                     # For each subscription
                     $Subscription | ForEach-Object {
                         $ObjectProperties = @{
                             TenantID = $tenantid
+                            CustomerName = $CustomerName
                             SubscriptionId = $_.id
+                            SubscriptionName = $_.friendlyname
+                            OfferName = $_.offername
+                            OfferID = $_.offerid
                         }
                         # Create new object per subscription
                         New-Object psobject -Property $ObjectProperties

@@ -54,7 +54,7 @@ Param(
     $Confirm,
     [Parameter(
         Mandatory=$false,
-        HelpMessage="Specify Partner Center Subscription Offer Name"
+        HelpMessage="Specify Partner Center Offer Name"
     )]
     [string]
     $OfferName = "Microsoft Azure"
@@ -66,9 +66,9 @@ Begin {
         # Function definitions
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
-            "$FunctionLocation\Azure\Authentication\Connect-AzureRMSubscription.ps1",
             "$FunctionLocation\PartnerCenter\Authentication\Connect-PartnerCenter.ps1",
             "$FunctionLocation\PartnerCenter\Customer\Get-PCCustomerSubscription.ps1",
+            "$FunctionLocation\PartnerCenter\Customer\Find-PCCustomer.ps1",
             "$FunctionLocation\Toolkit\Check-RequiredModule.ps1"
         )
         # Function dot source
@@ -77,10 +77,20 @@ Begin {
         }
         
         # Required Module
-        $Module = "AzureRM"
-        $ModuleCore = "AzureRM.Netcore"
+        $Module = "PartnerCenterModule,AzureAD"
         
-        Check-RequiredModule -Modules $Module -ModulesCore $ModuleCore
+        Check-RequiredModule -Modules $Module
+        
+        # Required Module Classes
+        $ModuleClasses = "PartnerCenterModule"
+        
+        # Import Module Classes
+        $scriptBody = "using module $ModuleClasses"
+        $script = [ScriptBlock]::Create($scriptBody)
+        . $script
+        
+        # Connect to Partner Center
+        Connect-PartnerCenter -Credential $Credential | Out-Null
     }
     catch {
         Write-Error -Message $_.Exception
@@ -90,59 +100,37 @@ Begin {
 
 Process {
     try {
-        # Create hashtable of custom parameters
-        $CustomParameters = @{}
+        # Get Customer
         if ($TenantID){
-            $CustomParameters += @{
-                TenantID = $TenantID
-            }
+            $customer = Get-PCCustomer -Tenantid $tenantid
         }
-        if ($SubscriptionID){
-            $CustomParameters += @{
-                SubscriptionID = $SubscriptionID
-            }
+        elseif ($CustomerName -or $TenantDomain){
+            $customer = Find-PCCustomer -Name $CustomerName -Domain $TenantDomain
+            $tenantid = $customer.id
         }
-        # Connect to Azure RM Subscription with custom parameters
-        $AzureSubscriptions = Connect-AzureRMSubscription @CustomParameters
-        if (!$AzureSubscriptions){
-            # Required Module
-            $Module = "PartnerCenterModule,AzureAD"
-            
-            Check-RequiredModule -Modules $Module
-            
-            # Connect to Partner Center
-            Connect-PartnerCenter -Credential $Credential | Out-Null
 
-            # Get Parter Center Azure Subscriptions
-            $AzureSubscriptions = Get-PCCustomerSubscription -OfferName $OfferName -TenantId $TenantID
-        }
-        if ($AzureSubscriptions){
+        # Get Parter Center Azure Subscriptions
+        $AzureCustomerSubscriptions = Get-PCCustomerSubscription -OfferName $OfferName -Tenantid $TenantID
+        if ($AzureCustomerSubscriptions){
             # Display subscriptions
             Write-Host "`nSubscriptions you have access to:"
-            $AzureSubscriptions | Select-Object CustomerName,SubscriptionName,SubscriptionId | Format-List | Out-Host -Paging
+            $AzureCustomerSubscriptions | Select-Object CustomerName,SubscriptionName,SubscriptionId | Format-List | Out-Host -Paging
             
             # Request subscription ID
             $SubscriptionID = Read-Host "Enter subscription ID"
 
             # While there is no valid subscription ID specified
-            while ($AzureSubscriptions.subscriptionid -notcontains $SubscriptionID){
+            while ($AzureCustomerSubscriptions.subscriptionid -notcontains $SubscriptionID){
                 $WarningMessage = "Invalid Subscription Id $SubscriptionID"
                 Write-Warning $WarningMessage
                 $SubscriptionId = Read-Host "Enter valid subscription ID"
             }
             # Filter to selected subscription
-            $ParterCenterSubscription = $AzureSubscriptions | Where-Object SubscriptionID -eq $SubscriptionId
-            # Get full subscription name
-            $SubscriptionName = $ParterCenterSubscription.SubscriptionName
-            # Change context to selected subscription
-            Write-Host "`nSelecting Subscription: $SubscriptionName"
-            $AzureConnection = Set-AzureRmContext `
-                -SubscriptionId $ParterCenterSubscription.SubscriptionId `
-                -TenantId $ParterCenterSubscription.tenantid
-            return $AzureConnection
+            $ParterCenterSubscription = $AzureCustomerSubscriptions | Where-Object SubscriptionID -eq $SubscriptionId
+            return $ParterCenterSubscription
         }
         else {
-            $ErrorMessage = "No Azure Subscriptions returned"
+            $ErrorMessage = "No Partner Center Customers have $OfferName Subscriptions"
             Write-Error $ErrorMessage
             throw $ErrorMessage
         }

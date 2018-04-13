@@ -232,13 +232,13 @@ function Connect-AzureRMSubscription() {
                                 Write-Host "`nSelecting Subscription: $SubscriptionName"
                                 $AzureConnection = Set-AzureRmContext -SubscriptionId $SubscriptionId @CustomParameters
                             }
+                            return $AzureConnection
                         }
                         else {
                             $WarningMessage = "This account does not have access to any subscriptions."
                             Write-Warning $WarningMessage
                         }
                     }
-                    return $AzureConnection
                 }
                 else {
                     $ErrorMessage = "No active Azure connection."

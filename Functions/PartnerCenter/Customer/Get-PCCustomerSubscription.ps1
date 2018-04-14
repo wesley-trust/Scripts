@@ -75,6 +75,7 @@ function Get-PCCustomerSubscription() {
                             Name = $_.friendlyname
                             OfferName = $_.offername
                             OfferID = $_.offerid
+                            State = $_.status
                         }
                         # Create new object per subscription
                         New-Object psobject -Property $ObjectProperties

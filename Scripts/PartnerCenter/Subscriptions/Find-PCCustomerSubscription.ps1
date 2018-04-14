@@ -66,7 +66,8 @@ Begin {
         # Function definitions
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
-            "$FunctionLocation\PartnerCenter\Authentication\Connect-PartnerCenter.ps1",
+            "$FunctionLocation\PartnerCenter\Authentication\Test-PartnerCenterConnection.ps1",
+            "$FunctionLocation\PartnerCenter\Authentication\Get-AzureADPCApp.ps1",
             "$FunctionLocation\PartnerCenter\Customer\Get-PCCustomerSubscription.ps1",
             "$FunctionLocation\PartnerCenter\Customer\Find-PCCustomer.ps1",
             "$FunctionLocation\Toolkit\Check-RequiredModule.ps1"
@@ -89,8 +90,22 @@ Begin {
         $script = [ScriptBlock]::Create($scriptBody)
         . $script
         
-        # Connect to Partner Center
-        Connect-PartnerCenter -Credential $Credential | Out-Null
+        if (!$ReAuthenticate){
+            $ActiveParterCenterConnection = Test-PartnerCenterConnection -Credential $Credential
+        }
+
+        # If no active connection
+        if (!$ActiveParterCenterConnection -or $ReAuthenticate){
+            $CSPApp = Get-AzureADPCApp -Credential $Credential
+            $CSPDomain = ($Credential.UserName).Split("@")[1]
+            $CustomParameters = @{
+                Credential = $Credential
+                CSPAppID = $CSPApp.appid
+                cspDomain = $CSPDomain
+            }
+            Write-Host "`nAuthenticating with Partner Center`n"
+            Add-PCAuthentication @CustomParameters | Out-Null
+        }
     }
     catch {
         Write-Error -Message $_.Exception
@@ -114,7 +129,7 @@ Process {
         if ($AzureCustomerSubscriptions){
             # Display subscriptions
             Write-Host "`nSubscriptions you have access to:"
-            $AzureCustomerSubscriptions | Select-Object CustomerName,SubscriptionName,SubscriptionId | Format-List | Out-Host -Paging
+            $AzureCustomerSubscriptions | Format-List Name,SubscriptionId,State -GroupBy Customer | Out-Host -Paging
             
             # Request subscription ID
             $SubscriptionID = Read-Host "Enter subscription ID"

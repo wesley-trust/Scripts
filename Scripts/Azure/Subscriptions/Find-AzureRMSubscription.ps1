@@ -195,7 +195,7 @@ Process {
 
                     # Display subscriptions
                     Write-Host "`nSubscriptions you have access to:`n"
-                    $AzureSubscriptions | Select-Object Customer,Name,SubscriptionId | Format-List | Out-Host -Paging
+                    $AzureSubscriptions | Format-List Name,SubscriptionId,State -GroupBy Customer | Out-Host -Paging
                     
                     # Request subscription ID
                     $SubscriptionID = Read-Host "Enter subscription ID"

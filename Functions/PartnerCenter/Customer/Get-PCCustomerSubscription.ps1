@@ -70,9 +70,9 @@ function Get-PCCustomerSubscription() {
                     $Subscription | ForEach-Object {
                         $ObjectProperties = @{
                             TenantID = $tenantid
-                            CustomerName = $CustomerName
+                            Customer = $CustomerName
                             SubscriptionId = $_.id
-                            SubscriptionName = $_.friendlyname
+                            Name = $_.friendlyname
                             OfferName = $_.offername
                             OfferID = $_.offerid
                         }

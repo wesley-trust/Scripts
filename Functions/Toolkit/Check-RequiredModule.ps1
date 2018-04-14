@@ -86,7 +86,7 @@ function Check-RequiredModule() {
                 
                 # If not installed, install the module
                 if (!$ModuleCheck){
-                    write-Host "Installing required module $Module for $Scope"
+                    write-Host "`nInstalling required module $Module for $Scope`n"
                     Install-Module -Name $Module -AllowClobber -Force -Scope $Scope -ErrorAction Stop
                 }
                 else {
@@ -99,7 +99,7 @@ function Check-RequiredModule() {
                             }
                         }
                         if ($Update){
-                            write-Host "Checking for update to module $Module`n"
+                            write-Host "`nChecking for update to module $Module`n"
                             Update-Module -Name $Module
                         }
                     }

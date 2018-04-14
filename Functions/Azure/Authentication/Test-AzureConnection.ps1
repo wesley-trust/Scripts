@@ -8,7 +8,7 @@
 .Synopsis
     Function that checks for active connection to Azure
 .Description
-    Including whether correct credentials are in use
+    Including whether correct credentials are in use and access to specified subscription/tenant
 .Example
     Test-AzureConnection -Credential $Credential
 .Example
@@ -17,7 +17,6 @@
 
 
 #>
-
 function Test-AzureConnection() {
     [CmdletBinding()]
     Param(
@@ -26,7 +25,19 @@ function Test-AzureConnection() {
             HelpMessage="Specify PowerShell credential object"
         )]
         [pscredential]
-        $Credential
+        $Credential,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the subscription ID"
+        )]
+        [string]
+        $SubscriptionID,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Enter the tenant ID"
+        )]
+        [string]
+        $TenantID
     )
 
     Begin {
@@ -41,7 +52,6 @@ function Test-AzureConnection() {
     
     Process {
         try {
-
             # Check to see if there is an active connection to Azure
             $AzureContext = Get-AzureRmContext
 
@@ -49,20 +59,39 @@ function Test-AzureConnection() {
             if ($AzureContext.account.id){
                 $ActiveAccountID = $AzureContext.Account.Id
                 Write-Host "`nActive Azure Connection for $ActiveAccountID`n"
-                $ActiveConnection = $True
                 # If there is a credential, check to see if these match
                 if ($Credential){
                     if ($Credential.UserName -ne $ActiveAccountID){
                         Write-Host "`nAccount credentials do not match active account, reauthenticating`n"
-                        $ActiveConnection = $false
+                        $Reauthenticate = $true
                     }
                 }
+                # Check for active connection to subscription/tenant
+                $CustomParameters = @{}
+                if ($TenantID){
+                    $CustomParameters += @{
+                        TenantID = $TenantID
+                    }
+                }
+                if ($SubscriptionID){
+                    $CustomParameters += @{
+                        SubscriptionID = $SubscriptionID
+                    }
+                }
+                $ActiveAzureConnection = Get-AzureRmSubscription @CustomParameters
+                if ($ActiveAzureConnection){
+                    $ActiveConnection = $True
+                }
             }
-            return $ActiveConnection
+            $Properties = @{
+                ActiveConnection = $ActiveConnection
+                ReAuthenticate = $ReAuthenticate
+            }
+            return $Properties
         }
         Catch {
-            #Write-Error -Message $_.exception
-            #throw $_.exception
+<#             Write-Error -Message $_.exception
+            throw $_.exception #>
         }
     }
     End {

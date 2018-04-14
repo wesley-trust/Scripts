@@ -108,17 +108,24 @@ Process {
         # If reauthentication is not required
         if (!$ReAuthenticate){
             # Check for active connection
-            $ActiveAzureConnection = Test-AzureConnection -Credential $Credential
+            $TestResults = Test-AzureConnection @CustomParameters
+            $ActiveConnection = $TestResults.ActiveConnection 
+            $ReAuthenticate = $TestResults.ReAuthenticate
         }
         
         # If no active account
-        if (!$ActiveAzureConnection -or $ReAuthenticate){
+        if (!$ActiveConnection){
+            if ($ReAuthenticate){
+                # Clean up old connection
+                Disconnect-AzureRmAccount | Out-Null
+            }
 
             # Connect to Azure RM
             Write-Host "`nAuthenticating with Azure`n"
-            Connect-AzureRMAccount @CustomParameters | Out-Null
-            # Update Context
-            $AzureContext = Get-AzureRmContext
+            $AzureConnection = Connect-AzureRMAccount @CustomParameters
+            if ($AzureConnection){
+                $AzureContext = Get-AzureRmContext
+            }
         }
 
         # Check whether the subscription is different to current context
@@ -168,9 +175,10 @@ Process {
                 # Get Parter Center Azure Subscriptions
                 $AzureSubscriptions += Get-PCCustomerSubscription -OfferName $OfferName -TenantId $TenantID
             }
+
+
             # If there are Azure Subscriptions
             if ($AzureSubscriptions){
-
                 # Filter if a subscription name is provided
                 if ($SubscriptionName){
                     $AzureSubscriptions = $AzureSubscriptions | Where-Object Name -Like "*$SubscriptionName*"
@@ -180,7 +188,7 @@ Process {
                         throw $ErrorMessage
                     }
                 }
-                # Filter if a subscription name is provided
+                # Filter if a subscription ID is provided
                 if ($SubscriptionID){
                     $AzureSubscriptions = $AzureSubscriptions | Where-Object SubscriptionID -eq $SubscriptionId
                     if (!$AzureSubscriptions){
@@ -207,7 +215,7 @@ Process {
                         $SubscriptionId = Read-Host "Enter valid subscription ID"
                     }
                 }
-                elseif ($AzureSubscriptions.count -eq 1)  {
+                elseif (($AzureSubscriptions | Measure-Object).Count -eq 1)  {
                     $SubscriptionID = $AzureSubscriptions.SubscriptionId
                 }
                 else {

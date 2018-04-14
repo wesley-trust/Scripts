@@ -81,7 +81,7 @@ Process {
         }
 
         # If no active connection, or reauthentcation is required
-        if (!$ActiveParterCenterConnection -or $ReAuthenticate){
+        if (!$ActiveParterCenterConnection){
             if (!$CSPAPPID){
                 $CSPApp = Get-AzureADPCApp -Credential $Credential
                 $CSPAppID = $CSPApp.appid

@@ -97,8 +97,7 @@ Begin {
         . $script
         
         # Connect to Partner Center
-        Connect-PartnerCenter -Credential $Credential | Out-Null
-
+        Connect-PartnerCenter -Credential $Credential
 
     }
     catch {

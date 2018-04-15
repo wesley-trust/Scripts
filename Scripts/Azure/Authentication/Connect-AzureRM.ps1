@@ -87,23 +87,29 @@ Process {
                 Credential = $Credential
             }
         }
-        # If reauthentication is not required
-        if (!$ReAuthenticate){
-            # Check for active connection
-            $ActiveAzureConnection = Test-AzureConnection @CustomParameters
+
+        # Check for active connection
+        $TestConnection = Test-AzureConnection -Credential $Credential
+        
+        # If there is an active connection, clean up
+        if ($TestConnection.ActiveConnection){
+            if ($ReAuthenticate -or $TestConnection.reauthenticate){
+                $TestConnection.ActiveConnection = Disconnect-AzureRmAccount | Out-Null
+            }
         }
 
-        # If no active account or reauthentication is required
-        if (!$ActiveAzureConnection){
-            # Clean up old connection
-            if ($ReAuthenticate){
-                Disconnect-AzureRmAccount | Out-Null
-            }
-            # Connect to Azure RM
+        # If no active connection, connect
+        if (!$TestConnection.ActiveConnection){
             Write-Host "`nAuthenticating with Azure`n"
-            Connect-AzureRMAccount @CustomParameters | Out-Null
-            # Update Context
-            $AzureContext = Get-AzureRmContext
+            $AzureConnection = Connect-AzureRMAccount @CustomParameters
+            if ($AzureConnection){
+                $AzureContext = Get-AzureRmContext
+            }
+            else {
+                $ErrorMessage = "Unable to connect to Azure"
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
+            }
         }
         return $AzureContext
     }

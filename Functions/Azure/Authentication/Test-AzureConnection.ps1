@@ -15,7 +15,6 @@
 
 .Example
 
-
 #>
 function Test-AzureConnection() {
     [CmdletBinding()]
@@ -25,19 +24,7 @@ function Test-AzureConnection() {
             HelpMessage="Specify PowerShell credential object"
         )]
         [pscredential]
-        $Credential,
-        [Parameter(
-            Mandatory=$false,
-            HelpMessage="Enter the subscription ID"
-        )]
-        [string]
-        $SubscriptionID,
-        [Parameter(
-            Mandatory=$false,
-            HelpMessage="Enter the tenant ID"
-        )]
-        [string]
-        $TenantID
+        $Credential
     )
 
     Begin {
@@ -59,28 +46,13 @@ function Test-AzureConnection() {
             if ($AzureContext.account.id){
                 $ActiveAccountID = $AzureContext.Account.Id
                 Write-Host "`nActive Azure Connection for $ActiveAccountID`n"
+                $ActiveConnection = $True
                 # If there is a credential, check to see if these match
                 if ($Credential){
                     if ($Credential.UserName -ne $ActiveAccountID){
                         Write-Host "`nAccount credentials do not match active account, reauthenticating`n"
                         $Reauthenticate = $true
                     }
-                }
-                # Check for active connection to subscription/tenant
-                $CustomParameters = @{}
-                if ($TenantID){
-                    $CustomParameters += @{
-                        TenantID = $TenantID
-                    }
-                }
-                if ($SubscriptionID){
-                    $CustomParameters += @{
-                        SubscriptionID = $SubscriptionID
-                    }
-                }
-                $ActiveAzureConnection = Get-AzureRmSubscription @CustomParameters
-                if ($ActiveAzureConnection){
-                    $ActiveConnection = $True
                 }
             }
             $Properties = @{

@@ -39,6 +39,7 @@ Begin {
         # Function definitions
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
+            "$FunctionLocation\PartnerCenter\Authentication\Test-PartnerCenterConnection.ps1",
             "$FunctionLocation\PartnerCenter\Authentication\Connect-PartnerCenter.ps1",
             "$FunctionLocation\Toolkit\Check-RequiredModule.ps1"
         )
@@ -52,9 +53,25 @@ Begin {
         
         Check-RequiredModule -Modules $Module
         
-        # Connect to Partner Center
-        Connect-PartnerCenter -Credential $Credential | Out-Null
+        # Check for active connection
+        if (!$ReAuthenticate){
+            $TestConnection = Test-PartnerCenterConnection -Credential $Credential
+            if ($TestConnection.reauthenticate){
+                $ReAuthenticate = $true
+            }
+        }
 
+        # If no active connection, connect
+        if (!$TestConnection.ActiveConnection -or $ReAuthenticate){
+            Write-Host "`nAuthenticating with Partner Center`n"
+            $PartnerCenterConnection = Connect-PartnerCenter -Credential $Credential
+            
+            if (!$PartnerCenterConnection){
+                $ErrorMessage = "Unable to connect to Partner Center"
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
+            }
+        }
     }
     catch {
         Write-Error -Message $_.Exception

@@ -2,7 +2,7 @@
 #Script name: Connect to Partner Center
 #Creator: Wesley Trust
 #Date: 2018-04-10
-#Revision: 1
+#Revision: 2
 #References: 
 
 .Synopsis
@@ -27,19 +27,7 @@ Param(
         HelpMessage="Specify whether to reauthenticate with different credentials"
     )]
     [switch]
-    $ReAuthenticate,
-    [Parameter(
-        Mandatory=$false,
-        HelpMessage="Optionally specify a CSP App ID, if no ID is specified, an Azure AD lookup will be attemted"
-    )]
-    [string]
-    $CSPAppID,
-    [Parameter(
-        Mandatory=$false,
-        HelpMessage="Optionally specify a CSP domain, if no domain is specified, username domain is assumed"
-    )]
-    [string]
-    $CSPDomain
+    $ReAuthenticate
 )
 
 Begin {
@@ -49,7 +37,7 @@ Begin {
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
             "$FunctionLocation\PartnerCenter\Authentication\Test-PartnerCenterConnection.ps1",
-            "$FunctionLocation\PartnerCenter\Authentication\Get-AzureADPCApp.ps1",
+            "$FunctionLocation\PartnerCenter\Authentication\Connect-PartnerCenter.ps1",
             "$FunctionLocation\Toolkit\Check-RequiredModule.ps1"
         )
         # Function dot source
@@ -71,32 +59,28 @@ Begin {
 
 Process {
     try {
-        # If there are no credentials
         if (!$Credential){
             $Credential = Get-Credential -Message "Enter Partner Center credentials"
         }
-                    
+
+        # Check for active connection
         if (!$ReAuthenticate){
-            $ActiveParterCenterConnection = Test-PartnerCenterConnection -Credential $Credential
+            $TestConnection = Test-PartnerCenterConnection -Credential $Credential
+            if ($TestConnection.reauthenticate){
+                $ReAuthenticate = $true
+            }
         }
 
-        # If no active connection, or reauthentcation is required
-        if (!$ActiveParterCenterConnection){
-            if (!$CSPAPPID){
-                $CSPApp = Get-AzureADPCApp -Credential $Credential
-                $CSPAppID = $CSPApp.appid
+        # If no active connection, connect
+        if (!$TestConnection.ActiveConnection -or $ReAuthenticate){
+            Write-Host "`nAuthenticating with Partner Center`n"
+            $PartnerCenterConnection = Connect-PartnerCenter -Credential $Credential
+                    
+            if (!$PartnerCenterConnection){
+                $ErrorMessage = "Unable to connect to Partner Center"
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
             }
-            if (!$CSPDomain){
-                $CSPDomain = ($Credential.UserName).Split("@")[1]
-            }
-
-            $CustomParameters = @{
-                Credential = $Credential
-                CSPAppID = $CSPApp.appid
-                cspDomain = $CSPDomain
-            }
-            Write-Host "`nAuthenticating with Partner Center"
-            Add-PCAuthentication @CustomParameters | Out-Null
         }
     }
     catch [System.Management.Automation.RuntimeException] {
@@ -104,15 +88,9 @@ Process {
         Add-PCAuthentication @CustomParameters | Out-Null
     }
     catch [System.Net.WebException]{
-        Write-Host "`nAuthentication attempt failed, prompting for new credentials"
+        Write-Host "`nAuthentication attempt failed, retrying with prompt for new credentials"
         $Credential = Get-Credential -Message "Enter Partner Center credentials"
-        # Create hashtable of custom parameters
-        $CustomParameters = @{
-            Credential = $Credential
-            CSPAppID = $CSPAppID
-            cspDomain = $CSPDomain
-        }
-        Add-PCAuthentication @CustomParameters | Out-Null
+        Connect-PartnerCenter -Credential $Credential | Out-Null
     }
     Catch {
         Write-Error -Message $_.exception

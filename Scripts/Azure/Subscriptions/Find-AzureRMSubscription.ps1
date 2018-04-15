@@ -105,26 +105,27 @@ Process {
                 Credential = $Credential
             }
         }
-        # If reauthentication is not required
-        if (!$ReAuthenticate){
-            # Check for active connection
-            $TestResults = Test-AzureConnection @CustomParameters
-            $ActiveConnection = $TestResults.ActiveConnection 
-            $ReAuthenticate = $TestResults.ReAuthenticate
-        }
-        
-        # If no active account
-        if (!$ActiveConnection){
-            if ($ReAuthenticate){
-                # Clean up old connection
-                Disconnect-AzureRmAccount | Out-Null
-            }
+        # Check for active connection
+        $TestConnection = Test-AzureConnection -Credential $Credential
 
-            # Connect to Azure RM
+        # If there is an active connection, clean up
+        if ($TestConnection.ActiveConnection){
+            if ($ReAuthenticate -or $TestConnection.reauthenticate){
+                $TestConnection.ActiveConnection = Disconnect-AzureRmAccount | Out-Null
+            }
+        }
+
+        # If no active connection, connect
+        if (!$TestConnection.ActiveConnection){
             Write-Host "`nAuthenticating with Azure`n"
             $AzureConnection = Connect-AzureRMAccount @CustomParameters
             if ($AzureConnection){
                 $AzureContext = Get-AzureRmContext
+            }
+            else {
+                $ErrorMessage = "Unable to connect to Azure"
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
             }
         }
 
@@ -134,7 +135,7 @@ Process {
             # Check for Azure Subscriptions, if none available, automatically include CSP
             $AzureSubscriptions = Get-AzureRmSubscription
             if (!$AzureSubscriptions){
-                Write-Verbose "No subscriptions available for active connection, including CSP subscriptions"
+                Write-Verbose "No subscriptions available for active connection, including CSP subscriptions within scope"
                 $IncludeCSP = $True
             }
             # Connect to Partner Center
@@ -143,7 +144,7 @@ Process {
                 $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
                 $Functions = @(
                     "$FunctionLocation\PartnerCenter\Authentication\Test-PartnerCenterConnection.ps1",
-                    "$FunctionLocation\PartnerCenter\Authentication\Get-AzureADPCApp.ps1",
+                    "$FunctionLocation\PartnerCenter\Authentication\Connect-PartnerCenter.ps1",
                     "$FunctionLocation\PartnerCenter\Customer\Get-PCCustomerSubscription.ps1"
                 )
                 # Function dot source
@@ -155,27 +156,29 @@ Process {
                             
                 Check-RequiredModule -Modules $Module
                 
+                # Check for active connection
                 if (!$ReAuthenticate){
-                    $ActiveParterCenterConnection = Test-PartnerCenterConnection -Credential $Credential
-                }
-
-                # If no active connection
-                if (!$ActiveParterCenterConnection -or $ReAuthenticate){
-                    $CSPApp = Get-AzureADPCApp -Credential $Credential
-                    $CSPDomain = ($Credential.UserName).Split("@")[1]
-                    $CustomParameters = @{
-                        Credential = $Credential
-                        CSPAppID = $CSPApp.appid
-                        cspDomain = $CSPDomain
+                    $TestConnection = Test-PartnerCenterConnection -Credential $Credential
+                    if ($TestConnection.reauthenticate){
+                        $ReAuthenticate = $true
                     }
-                    Write-Host "`nAuthenticating with Partner Center`n"
-                    Add-PCAuthentication @CustomParameters | Out-Null
                 }
 
+                # If no active connection, connect
+                if (!$TestConnection.ActiveConnection -or $ReAuthenticate){
+                    Write-Host "`nAuthenticating with Partner Center`n"
+                    $PartnerCenterConnection = Connect-PartnerCenter -Credential $Credential
+                    
+                    if (!$PartnerCenterConnection){
+                        $ErrorMessage = "Unable to connect to Partner Center"
+                        Write-Error $ErrorMessage
+                        throw $ErrorMessage
+                    }
+                }
+                
                 # Get Parter Center Azure Subscriptions
                 $AzureSubscriptions += Get-PCCustomerSubscription -OfferName $OfferName -TenantId $TenantID
             }
-
 
             # If there are Azure Subscriptions
             if ($AzureSubscriptions){
@@ -231,14 +234,16 @@ Process {
                 $SubscriptionName = $AzureSubscription.Name
                 
                 # Connecting to specific subscription
-                Write-Host "`nConnecting to Subscription: $SubscriptionName`n"
-                $AzureContext = Connect-AzureRmAccount `
-                    -SubscriptionId $AzureSubscription.SubscriptionId `
-                    -TenantId $AzureSubscription.tenantid `
-                    -Credential $Credential
-                
-                # Update Context to return
-                $AzureContext = Get-AzureRmContext
+                Write-Host "`nConnecting to Azure Subscription: $SubscriptionName`n"
+                $AzureConnection = Connect-AzureRMAccount @CustomParameters
+                if ($AzureConnection){
+                    $AzureContext = Get-AzureRmContext
+                }
+                else {
+                    $ErrorMessage = "Unable to connect to Azure"
+                    Write-Error $ErrorMessage
+                    throw $ErrorMessage
+                }
             }
             else {
                 $ErrorMessage = "This account does not have access to any subscriptions."

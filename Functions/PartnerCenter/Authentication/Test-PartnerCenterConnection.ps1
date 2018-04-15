@@ -43,10 +43,10 @@ function Test-PartnerCenterConnection() {
         try {
             # Check to see if there is an active connection
             $PCOrganizationProfile = Get-PCOrganizationProfile
-            $PCOrganizationActiveDomain = $PCOrganizationProfile.domain
             
             # If a connection exists
             if ($PCOrganizationProfile){
+                $PCOrganizationActiveDomain = $PCOrganizationProfile.domain
                 Write-Host "`nActive Partner Center connection for $PCOrganizationActiveDomain`n"
                 $ActiveConnection = $True
                 # If a credential exists
@@ -56,11 +56,15 @@ function Test-PartnerCenterConnection() {
 
                     # Check if already connected to same domain
                     if (!$UserDomain -eq $PCOrganizationActiveDomain){
-                        Write-Host "`nConnection request for domain: $UserDomain`n"
-                        $ActiveConnection = $false
+                        Write-Host "`nAccount credentials do not match active domain: $UserDomain, reauthenticating`n"
+                        $Reauthenticate = $true
                     }
                 }
-            return $ActiveConnection
+                $Properties = @{
+                    ActiveConnection = $ActiveConnection
+                    ReAuthenticate = $ReAuthenticate
+                }
+                return $Properties
             }
         }
         Catch {

@@ -67,7 +67,7 @@ Begin {
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
             "$FunctionLocation\PartnerCenter\Authentication\Test-PartnerCenterConnection.ps1",
-            "$FunctionLocation\PartnerCenter\Authentication\Get-AzureADPCApp.ps1",
+            "$FunctionLocation\PartnerCenter\Authentication\Connect-PartnerCenter.ps1",
             "$FunctionLocation\PartnerCenter\Customer\Get-PCCustomerSubscription.ps1",
             "$FunctionLocation\PartnerCenter\Customer\Find-PCCustomer.ps1",
             "$FunctionLocation\Toolkit\Check-RequiredModule.ps1"
@@ -90,21 +90,24 @@ Begin {
         $script = [ScriptBlock]::Create($scriptBody)
         . $script
         
+        # Check for active connection
         if (!$ReAuthenticate){
-            $ActiveParterCenterConnection = Test-PartnerCenterConnection -Credential $Credential
+            $TestConnection = Test-PartnerCenterConnection -Credential $Credential
+            if ($TestConnection.reauthenticate){
+                $ReAuthenticate = $true
+            }
         }
 
-        # If no active connection
-        if (!$ActiveParterCenterConnection -or $ReAuthenticate){
-            $CSPApp = Get-AzureADPCApp -Credential $Credential
-            $CSPDomain = ($Credential.UserName).Split("@")[1]
-            $CustomParameters = @{
-                Credential = $Credential
-                CSPAppID = $CSPApp.appid
-                cspDomain = $CSPDomain
-            }
+        # If no active connection, connect
+        if (!$TestConnection.ActiveConnection -or $ReAuthenticate){
             Write-Host "`nAuthenticating with Partner Center`n"
-            Add-PCAuthentication @CustomParameters | Out-Null
+            $PartnerCenterConnection = Connect-PartnerCenter -Credential $Credential
+            
+            if (!$PartnerCenterConnection){
+                $ErrorMessage = "Unable to connect to Partner Center"
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
+            }
         }
     }
     catch {

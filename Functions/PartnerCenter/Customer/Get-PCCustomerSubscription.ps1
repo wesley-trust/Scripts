@@ -1,12 +1,12 @@
 <#
-#Script name: Create default subscription orders
+#Script name: Get Partner Center Customer Subscriptions
 #Creator: Wesley Trust
 #Date: 2018-04-08
 #Revision: 1
 #References: 
 
 .Synopsis
-    
+    Gets specific, or all customers' subscriptions, supports offer name parameter
 .Description
 
 .Example

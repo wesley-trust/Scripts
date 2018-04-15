@@ -58,7 +58,7 @@ function Connect-PartnerCenter() {
             }
 
             # Get App ID
-            if (!$CSPAPPID){
+            if (!$CSPAppID){
                 # Connect to Azure AD
                 Connect-AzureAD -Credential $Credential | Out-Null
                             
@@ -70,15 +70,14 @@ function Connect-PartnerCenter() {
                 
                 # Check if app is returned
                 if ($CSPApp){
-                    return $CSPApp
+                    # Update App ID
+                    $CSPAppID = $CSPApp.appid
                 }
                 else {
                     $ErrorMessage = "No Partner Center App Id is specified and an Azure AD lookup failed"
                     Write-Error $ErrorMessage
                     throw $ErrorMessage
                 }
-                # Update App ID
-                $CSPAppID = $CSPApp.appid
             }
             # Get domain
             if (!$CSPDomain){
@@ -87,19 +86,22 @@ function Connect-PartnerCenter() {
             # Create hashtable of custom parameters
             $CustomParameters = @{
                 Credential = $Credential
-                CSPAppID = $CSPApp.appid
+                CSPAppID = $CSPAppID
                 cspDomain = $CSPDomain
             }
             # Connect
             Add-PCAuthentication @CustomParameters
         }
         catch [System.Management.Automation.RuntimeException] {
-            Write-Host "`nAuthentication attempt failed, retrying with same credentials"
-            Add-PCAuthentication @CustomParameters | Out-Null
+            Write-Host "`nAuthentication attempt failed, retrying with same credentials`n"
+            Add-PCAuthentication @CustomParameters
         }
         catch [System.Net.WebException]{
-            $ErrorMessage = "`nAuthentication attempt failed, try with new credentials"
-            Write-Error $ErrorMessage
+            Write-Host "`nAuthentication attempt failed, prompting for retry with new credentials`n"
+            $Credential = Get-Credential -Message "Enter Partner Center credentials"
+            $CustomParameters.Remove("Credential")
+            $CustomParameters.Add("Credential",$Credential)
+            Add-PCAuthentication @CustomParameters
         }
         Catch {
             Write-Error -Message $_.exception

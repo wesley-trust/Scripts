@@ -1,14 +1,15 @@
 <#
-#Script name: Connect to Azure subscription
+#Script name: Find Azure subscription
 #Creator: Wesley Trust
 #Date: 2018-04-10
 #Revision: 2
 #References: 
 
 .Synopsis
-    Connects to an Azure RM subscription
+    Finds Azure subscriptions from Azure direct, or via Partner Center
 .Description
-
+    Uses Tenant ID and/or Subscription ID or Subscription name to search
+    Connects to selected subscription.
 .Example
     
 .Example
@@ -134,7 +135,7 @@ Process {
 
             # Check for Azure Subscriptions, if none available, automatically include CSP
             $AzureSubscriptions = Get-AzureRmSubscription
-            if (!$AzureSubscriptions){
+            if ($SubscriptionID -notcontains $AzureSubscriptions.SubscriptionId){
                 Write-Verbose "No subscriptions available for active connection, including CSP subscriptions within scope"
                 $IncludeCSP = $True
             }
@@ -175,13 +176,14 @@ Process {
                         throw $ErrorMessage
                     }
                 }
-                
+
                 # Get Parter Center Azure Subscriptions
                 $AzureSubscriptions += Get-PCCustomerSubscription -OfferName $OfferName -TenantId $TenantID
             }
 
             # If there are Azure Subscriptions
             if ($AzureSubscriptions){
+                $AzureSubscriptions = $AzureSubscriptions | Sort-Object SubscriptionID -Unique
                 # Filter if a subscription name is provided
                 if ($SubscriptionName){
                     $AzureSubscriptions = $AzureSubscriptions | Where-Object Name -Like "*$SubscriptionName*"
@@ -203,10 +205,9 @@ Process {
 
                 # If multiple subscriptions are returned
                 if ($AzureSubscriptions.count -gt 1){
-
                     # Display subscriptions
                     Write-Host "`nSubscriptions you have access to:`n"
-                    $AzureSubscriptions | Format-List Name,SubscriptionId,State -GroupBy Customer | Out-Host -Paging
+                    $AzureSubscriptions | Format-List Name,SubscriptionId -GroupBy Customer | Out-Host -Paging
                     
                     # Request subscription ID
                     $SubscriptionID = Read-Host "Enter subscription ID"
@@ -228,14 +229,17 @@ Process {
                 }
                 
                 # Filter to selected subscription
-                $AzureSubscription = $AzureSubscriptions | Where-Object SubscriptionID -eq $SubscriptionId
+                $AzureSubscription = $AzureSubscriptions | Where-Object SubscriptionID -eq $SubscriptionId | Select-Object -First 1
                 
                 # Get full subscription name
                 $SubscriptionName = $AzureSubscription.Name
                 
                 # Connecting to specific subscription
                 Write-Host "`nConnecting to Azure Subscription: $SubscriptionName`n"
-                $AzureConnection = Connect-AzureRMAccount @CustomParameters
+                $AzureConnection = Connect-AzureRMAccount `
+                    -Credential $Credential `
+                    -TenantId $AzureSubscription.tenantid `
+                    -SubscriptionId $AzureSubscription.SubscriptionId
                 if ($AzureConnection){
                     $AzureContext = Get-AzureRmContext
                 }

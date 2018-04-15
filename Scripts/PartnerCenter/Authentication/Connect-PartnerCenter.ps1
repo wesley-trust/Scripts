@@ -75,22 +75,13 @@ Process {
         if (!$TestConnection.ActiveConnection -or $ReAuthenticate){
             Write-Host "`nAuthenticating with Partner Center`n"
             $PartnerCenterConnection = Connect-PartnerCenter -Credential $Credential
-                    
+
             if (!$PartnerCenterConnection){
                 $ErrorMessage = "Unable to connect to Partner Center"
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
             }
         }
-    }
-    catch [System.Management.Automation.RuntimeException] {
-        Write-Host "`nAuthentication attempt failed, retrying with same credentials"
-        Add-PCAuthentication @CustomParameters | Out-Null
-    }
-    catch [System.Net.WebException]{
-        Write-Host "`nAuthentication attempt failed, retrying with prompt for new credentials"
-        $Credential = Get-Credential -Message "Enter Partner Center credentials"
-        Connect-PartnerCenter -Credential $Credential | Out-Null
     }
     Catch {
         Write-Error -Message $_.exception

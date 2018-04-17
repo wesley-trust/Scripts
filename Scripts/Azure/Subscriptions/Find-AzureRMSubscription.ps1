@@ -173,12 +173,11 @@ Process {
                     if (!$PartnerCenterConnection){
                         $ErrorMessage = "Unable to connect to Partner Center"
                         Write-Error $ErrorMessage
-                        throw $ErrorMessage
                     }
                 }
 
                 # Get Parter Center Azure Subscriptions
-                $AzureSubscriptions += Get-PCCustomerSubscription -OfferName $OfferName -TenantId $TenantID
+                $AzureSubscriptions += Get-PCCustomerSubscription -OfferName $OfferName -TenantId $TenantID -ErrorAction SilentlyContinue
             }
 
             # If there are Azure Subscriptions

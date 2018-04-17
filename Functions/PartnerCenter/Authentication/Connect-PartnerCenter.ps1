@@ -93,15 +93,19 @@ function Connect-PartnerCenter() {
             Add-PCAuthentication @CustomParameters
         }
         catch [System.Management.Automation.RuntimeException] {
-            Write-Host "`nAuthentication attempt failed, retrying with same credentials`n"
-            Add-PCAuthentication @CustomParameters
+            if ($CSPAppID -and $CSPDomain){
+                Write-Host "`nAuthentication attempt failed, retrying with same credentials`n"
+                Add-PCAuthentication @CustomParameters
+            }
         }
         catch [System.Net.WebException]{
-            Write-Host "`nAuthentication attempt failed, prompting for retry with new credentials`n"
-            $Credential = Get-Credential -Message "Enter Partner Center credentials"
-            $CustomParameters.Remove("Credential")
-            $CustomParameters.Add("Credential",$Credential)
-            Add-PCAuthentication @CustomParameters
+            if ($CSPAppID -and $CSPDomain){
+                Write-Host "`nAuthentication attempt failed, prompting for retry with new credentials`n"
+                $Credential = Get-Credential -Message "Enter Partner Center credentials"
+                $CustomParameters.Remove("Credential")
+                $CustomParameters.Add("Credential",$Credential)
+                Add-PCAuthentication @CustomParameters
+            }
         }
         Catch {
             Write-Error -Message $_.exception

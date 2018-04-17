@@ -44,7 +44,6 @@ function Get-PCCustomerSubscription() {
         }
         catch {
             Write-Error -Message $_.Exception
-            throw $_.exception
         }
     }
 
@@ -87,18 +86,15 @@ function Get-PCCustomerSubscription() {
                 else {
                     $ErrorMessage = "No customers have $OfferName"
                     Write-Error $ErrorMessage
-                    throw $ErrorMessage
                 }
             }
             else {
                 $ErrorMessage = "No customer returned"
                 Write-Error $ErrorMessage
-                throw $ErrorMessage
             }
         }
         Catch {
             Write-Error -Message $_.exception
-            throw $_.exception
         }
     }
     End {

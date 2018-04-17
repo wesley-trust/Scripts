@@ -33,7 +33,6 @@ function Test-AzureConnection() {
         }
         catch {
             Write-Error -Message $_.Exception
-            throw $_.exception
         }
     }
     
@@ -62,8 +61,7 @@ function Test-AzureConnection() {
             return $Properties
         }
         Catch {
-<#             Write-Error -Message $_.exception
-            throw $_.exception #>
+            Write-Error -Message $_.exception
         }
     }
     End {

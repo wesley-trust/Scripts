@@ -46,7 +46,6 @@ function Connect-PartnerCenter() {
         }
         catch {
             Write-Error -Message $_.Exception
-            throw $_.exception
         }
     }
     
@@ -109,7 +108,6 @@ function Connect-PartnerCenter() {
         }
         Catch {
             Write-Error -Message $_.exception
-            #throw $_.exception
         }
     }
     End {

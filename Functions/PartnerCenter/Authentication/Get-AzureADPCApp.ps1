@@ -35,7 +35,6 @@ function Get-AzureADPCApp() {
         }
         catch {
             Write-Error -Message $_.Exception
-            throw $_.exception
         }
     }
     
@@ -54,12 +53,10 @@ function Get-AzureADPCApp() {
             else {
                 $ErrorMessage = "No Partner Center App Id is specified and an Azure AD lookup failed"
                 Write-Error $ErrorMessage
-                throw $ErrorMessage
             }
         }
         Catch {
             Write-Error -Message $_.exception
-            throw $_.exception
         }
     }
     End {

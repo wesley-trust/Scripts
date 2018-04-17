@@ -64,7 +64,6 @@ function New-PCOrderItem() {
         }
         catch {
             Write-Error -Message $_.Exception
-            throw $_.exception
         }
     }
 
@@ -101,24 +100,20 @@ function New-PCOrderItem() {
                     else {
                         $ErrorMessage = "Unable to order, confirmation was not received, or Force was not specified"
                         Write-Error $ErrorMessage
-                        throw $ErrorMessage
                     }
                 }
                 else {
                     $ErrorMessage = "No Partner Center offer that matches $OfferId in country $CountryID"
                     Write-Error $ErrorMessage
-                    throw $ErrorMessage
                 }
             }
             else {
                 $ErrorMessage = "No customer returned, unable to order without a customer"
                 Write-Error $ErrorMessage
-                throw $ErrorMessage
             }
         }
         Catch {
             Write-Error -Message $_.exception
-            throw $_.exception
         }
     }
     End {

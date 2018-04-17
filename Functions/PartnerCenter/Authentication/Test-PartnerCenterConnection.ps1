@@ -35,7 +35,6 @@ function Test-PartnerCenterConnection() {
         }
         catch {
             Write-Error -Message $_.Exception
-            throw $_.exception
         }
     }
     
@@ -68,8 +67,7 @@ function Test-PartnerCenterConnection() {
             }
         }
         Catch {
-            #Write-Error -Message $_.exception
-            #throw $_.exception
+            Write-Error -Message $_.exception
         }
     }
     End {

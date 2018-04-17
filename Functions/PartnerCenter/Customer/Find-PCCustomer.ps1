@@ -46,7 +46,7 @@ function Find-PCCustomer() {
         }
         catch {
             Write-Error -Message $_.Exception
-            throw $_.exception
+
         }
     }
     
@@ -79,13 +79,11 @@ function Find-PCCustomer() {
             else {
                 $ErrorMessage = "No customers returned."
                 Write-Error $ErrorMessage
-                throw $ErrorMessage
             }
         return $PCCustomer
         }
         Catch {
             Write-Error -Message $_.exception
-            throw $_.exception
         }
     }
     End {

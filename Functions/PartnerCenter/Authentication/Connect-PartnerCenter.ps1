@@ -51,31 +51,28 @@ function Connect-PartnerCenter() {
     
     Process {
         try {
-            # If there are no credentials
-            if (!$Credential){
-                $Credential = Get-Credential -Message "Enter Partner Center credentials"
-            }
-
             # Get App ID
             if (!$CSPAppID){
-                # Connect to Azure AD
-                Connect-AzureAD -Credential $Credential | Out-Null
-                            
-                # Retrieve CSP App ID from AzureAD
-                $CSPApp = Get-AzureADApplication | Where-Object DisplayName -eq "Partner Center Native App"
-                
-                # Disconnect Azure AD
-                Disconnect-AzureAD
-                
-                # Check if app is returned
-                if ($CSPApp){
-                    # Update App ID
-                    $CSPAppID = $CSPApp.appid
-                }
-                else {
-                    $ErrorMessage = "No Partner Center App Id is specified and an Azure AD lookup failed"
-                    Write-Error $ErrorMessage
-                    throw $ErrorMessage
+                if ($Credential){
+                    # Connect to Azure AD
+                    Connect-AzureAD -Credential $Credential | Out-Null
+                                
+                    # Retrieve CSP App ID from AzureAD
+                    $CSPApp = Get-AzureADApplication | Where-Object DisplayName -eq "Partner Center Native App"
+                    
+                    # Disconnect Azure AD
+                    Disconnect-AzureAD
+                    
+                    # Check if app is returned
+                    if ($CSPApp){
+                        # Update App ID
+                        $CSPAppID = $CSPApp.appid
+                    }
+                    else {
+                        $ErrorMessage = "No Partner Center App Id is specified and an Azure AD lookup failed"
+                        Write-Error $ErrorMessage
+                        throw $ErrorMessage
+                    }
                 }
             }
             # Get domain

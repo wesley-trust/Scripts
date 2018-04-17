@@ -159,25 +159,26 @@ Process {
                 
                 # Check for active connection
                 if (!$ReAuthenticate){
-                    $TestConnection = Test-PartnerCenterConnection -Credential $Credential
+                    $TestConnection = Test-PartnerCenterConnection -Credential $Credential -ErrorAction SilentlyContinue
                     if ($TestConnection.reauthenticate){
                         $ReAuthenticate = $true
                     }
                 }
-
-                # If no active connection, connect
-                if (!$TestConnection.ActiveConnection -or $ReAuthenticate){
-                    Write-Host "`nAuthenticating with Partner Center`n"
-                    $PartnerCenterConnection = Connect-PartnerCenter -Credential $Credential
-                    
-                    if (!$PartnerCenterConnection){
-                        $ErrorMessage = "Unable to connect to Partner Center"
-                        Write-Error $ErrorMessage
+                # If there are credentials and no active connection, attempt connection
+                if ($Credential){
+                    if (!$TestConnection.ActiveConnection -or $ReAuthenticate){
+                        Write-Host "`nAuthenticating with Partner Center`n"
+                        $PartnerCenterConnection = Connect-PartnerCenter -Credential $Credential
+                        
+                        if (!$PartnerCenterConnection){
+                            $ErrorMessage = "Unable to connect to Partner Center"
+                            Write-Error $ErrorMessage
+                        }
                     }
-                }
 
-                # Get Parter Center Azure Subscriptions
-                $AzureSubscriptions += Get-PCCustomerSubscription -OfferName $OfferName -TenantId $TenantID -ErrorAction SilentlyContinue
+                    # Get Parter Center Azure Subscriptions
+                    $AzureSubscriptions += Get-PCCustomerSubscription -OfferName $OfferName -TenantId $TenantID
+                }
             }
 
             # If there are Azure Subscriptions
@@ -235,12 +236,48 @@ Process {
                 
                 # Connecting to specific subscription
                 Write-Host "`nConnecting to Azure Subscription: $SubscriptionName`n"
-                $AzureConnection = Connect-AzureRMAccount `
-                    -Credential $Credential `
-                    -TenantId $AzureSubscription.tenantid `
-                    -SubscriptionId $AzureSubscription.SubscriptionId
-                if ($AzureConnection){
-                    $AzureContext = Get-AzureRmContext
+                # Build custom parameters
+                $CustomParameters = @{}
+                if ($AzureSubscription.tenantid){
+                    $CustomParameters += @{
+                        TenantID = $AzureSubscription.tenantid
+                    }
+                }
+                if ($AzureSubscription.SubscriptionId){
+                    $CustomParameters += @{
+                        SubscriptionID = $AzureSubscription.SubscriptionId
+                    }
+                }
+                if ($Credential){
+                    $CustomParameters += @{
+                        Credential = $Credential
+                    }
+                }
+                # If there is a credential, and tenant, connect
+                if ($Credential){
+                    if ($TenantID){
+                        $AzureConnection = Connect-AzureRMAccount @CustomParameters
+                        if ($AzureConnection){
+                            $AzureContext = Get-AzureRmContext
+                        }
+                        else {
+                            $ErrorMessage = "Unable to connect to Azure"
+                            Write-Error $ErrorMessage
+                            throw $ErrorMessage
+                        }
+                    }
+                }
+                # Otherwise, change context
+                elseif (!$TenantID) {
+                    $AzureConnection = Set-AzureRmContext @CustomParameters
+                    if ($AzureConnection){
+                        $AzureContext = Get-AzureRmContext
+                    }
+                    else {
+                        $ErrorMessage = "Unable to connect to Azure"
+                        Write-Error $ErrorMessage
+                        throw $ErrorMessage
+                    }
                 }
                 else {
                     $ErrorMessage = "Unable to connect to Azure"

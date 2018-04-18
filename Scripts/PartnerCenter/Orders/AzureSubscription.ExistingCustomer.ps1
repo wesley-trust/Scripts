@@ -96,6 +96,10 @@ Begin {
         $script = [ScriptBlock]::Create($scriptBody)
         . $script
         
+        # Prompt for credentials
+        if (!$Credential){
+            $Credential = Get-Credential -Message "Enter Partner Center credentials"
+        }
         # Connect to Partner Center
         Connect-PartnerCenter -Credential $Credential
 

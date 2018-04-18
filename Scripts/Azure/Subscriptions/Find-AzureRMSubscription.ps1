@@ -118,6 +118,12 @@ Process {
 
         # If no active connection, connect
         if (!$TestConnection.ActiveConnection){
+            # If no credentials
+            if (!$Credential){
+                $Credential = Get-Credential
+                $CustomParameters.Remove("Credential")
+                $CustomParameters.Add("Credential",$Credential)
+            }
             Write-Host "`nAuthenticating with Azure`n"
             $AzureConnection = Connect-AzureRMAccount @CustomParameters
             if ($AzureConnection){
@@ -280,7 +286,7 @@ Process {
                     }
                 }
                 else {
-                    $ErrorMessage = "Unable to connect to Azure"
+                    $ErrorMessage = "Unable to connect to Azure, credentials required."
                     Write-Error $ErrorMessage
                     throw $ErrorMessage
                 }

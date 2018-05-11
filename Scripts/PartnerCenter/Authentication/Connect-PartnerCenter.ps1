@@ -75,8 +75,10 @@ Process {
         if (!$TestConnection.ActiveConnection -or $ReAuthenticate){
             Write-Host "`nAuthenticating with Partner Center`n"
             $PartnerCenterConnection = Connect-PartnerCenter -Credential $Credential
-
-            if (!$PartnerCenterConnection){
+            if ($PartnerCenterConnection){
+                return $PartnerCenterConnection
+            }
+            else{
                 $ErrorMessage = "Unable to connect to Partner Center"
                 Write-Error $ErrorMessage
                 throw $ErrorMessage

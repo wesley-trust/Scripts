@@ -21,7 +21,7 @@ function Connect-PartnerCenter() {
     [CmdletBinding()]
     Param(
         [Parameter(
-            Mandatory=$false,
+            Mandatory=$true,
             HelpMessage="Specify PowerShell credential object"
         )]
         [pscredential]

@@ -66,11 +66,8 @@ function Test-PartnerCenterConnection() {
                 return $Properties
             }
         }
-        catch [Microsoft.PowerShell.Commands.WriteErrorException,Test-PartnerCenterConnection] {
-            Write-Verbose "No active connection to Partner Center"
-        }
         Catch {
-            Write-Error -Message $_.exception
+            #Write-Error -Message $_.exception
         }
     }
     End {

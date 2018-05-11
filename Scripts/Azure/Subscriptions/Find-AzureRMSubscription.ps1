@@ -89,6 +89,10 @@ Begin {
 
 Process {
     try {
+        # If a credential exists, make the password read only so it can be reused
+        if ($Credential){
+            $Credential.Password.MakeReadOnly()
+        }
         # Build custom parameters
         $CustomParameters = @{}
         if ($TenantID){
@@ -170,6 +174,7 @@ Process {
                     # If there are no credentials
                     if (!$Credential){
                         $Credential = Get-Credential -Message "Enter Partner Center credentials"
+                        $Credential.Password.MakeReadOnly()
                     }
                     Write-Host "`nAuthenticating with Partner Center`n"
                     $PartnerCenterConnection = Connect-PartnerCenter -Credential $Credential

@@ -51,6 +51,10 @@ function Connect-PartnerCenter() {
     
     Process {
         try {
+            # If a credential exists, make the password read only so it can be reused
+            if ($Credential){
+                $Credential.Password.MakeReadOnly()
+            }
             # Get App ID
             if (!$CSPAppID){
                 if ($Credential){

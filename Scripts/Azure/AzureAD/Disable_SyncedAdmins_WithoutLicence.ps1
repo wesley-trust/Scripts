@@ -1,12 +1,12 @@
 <#
-#Script name: Disable users in the SyncedAdmins group wihout a valid Azure AD P1 licence
+#Script name: Disable members of SyncedAdmins group without valid Azure AD P1 licence
 #Creator: Wesley Trust
 #Date: 2018-05-14
 #Revision: 1
 #References: 
 
 .Synopsis
-    Gets members of the SyncedAdmins group, checks whether they have an Azure AD P1 licence (for conditional access) changes Account Enabled to disabled if not.
+    Gets members of the SyncedAdmins group, checks whether they have an Azure AD P1 licence (for conditional access) then changes Account Enabled Status to disabled.
 .Description
 
 .Example
@@ -45,7 +45,7 @@ Param(
         HelpMessage="Specify account action if required licence status is not found"
     )]
     [switch]
-    $AccountEnabled = $false
+    $AccountStatus = $false
 )
 
 Begin {
@@ -54,7 +54,8 @@ Begin {
         # Function definitions
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
-            "$FunctionLocation\Toolkit\Check-RequiredModule.ps1"
+            "$FunctionLocation\Toolkit\Check-RequiredModule.ps1",
+            "$FunctionLocation\Azure\AzureAD\Set-AccountStatusOnLicenceInGroup.ps1"
         )
         # Function dot source
         foreach ($Function in $Functions){
@@ -78,11 +79,11 @@ Begin {
 Process {
     try {
         # Execute
-        Disable-UnlicencedInGroup `
+        Set-AccountStatusOnLicenceInGroup `
             -GroupDisplayName $GroupDisplayName `
             -AzureADServicePlanId $ServicePlanId `
             -LicenceStatus $LicenceStatus `
-            -AccountEnabled $AccountEnabled
+            -AccountEnabled $AccountStatus
     }
     Catch {
         Write-Error -Message $_.exception

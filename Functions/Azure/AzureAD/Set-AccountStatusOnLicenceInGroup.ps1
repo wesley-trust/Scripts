@@ -10,12 +10,12 @@
 .Description
 
 .Example
-    Set-AccountEnabledOnLicenceStatusInGroup -GroupDisplayName $Name -ServicePlanId $ServicePlan -$LicenceStatus "Success" -AccountEnabled $true
+    Set-AccountEnabledOnLicenceStatusInGroup -GroupDisplayName $Name -ServicePlanId $ServicePlan -$LicenceStatus "Success" -AccountEnabledStatus $true
 .Example
     
 #>
 
-function Set-AccountEnabledOnLicenceStatusInGroup {
+function Set-AccountStatusOnLicenceInGroup {
     Param(
         [Parameter(
             Mandatory=$false,
@@ -40,7 +40,7 @@ function Set-AccountEnabledOnLicenceStatusInGroup {
             HelpMessage="Specify account action if required licence status is not found"
         )]
         [switch]
-        $AccountEnabled
+        $AccountStatus
     )
 
     Begin {
@@ -99,11 +99,11 @@ function Set-AccountEnabledOnLicenceStatusInGroup {
                 New-Object psobject -Property $ObjectProperties
             }
 
-            # For any user without a successfully provisioned licence, block account for safety
+            # For any user without the specified licence status, set the account enabled attribute
             $UnlicencedUsers = $UserLicenceCheck.status -ne $LicenceStatus
             if ($UnlicencedUsers){
                 $UnlicencedUsers | ForEach-Object {
-                    Set-AzureADUser -ObjectID $_.ObjectId -AccountEnabled $AccountEnabled
+                    Set-AzureADUser -ObjectID $_.ObjectId -AccountEnabled $AccountdStatus
                 }
             }
         }

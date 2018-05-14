@@ -10,7 +10,7 @@
 .Description
 
 .Example
-    Set-AccountEnabledOnLicenceStatusInGroup -GroupDisplayName $Name -ServicePlanId $ServicePlan -$LicenceStatus "Success" -AccountEnabledStatus $true
+    Set-AccountStatusOnLicenceInGroup -GroupDisplayName $Name -ServicePlanId $ServicePlan -$LicenceStatus "Success" -AccountEnabledStatus $true
 .Example
     
 #>

@@ -33,13 +33,13 @@ function Set-AccountStatusOnLicenceInGroup {
             Mandatory=$false,
             HelpMessage="Specify licence status required"
         )]
-        [switch]
+        [string]
         $LicenceStatus,
         [Parameter(
             Mandatory=$false,
             HelpMessage="Specify account action if required licence status is not found"
         )]
-        [switch]
+        [bool]
         $AccountStatus
     )
 
@@ -64,9 +64,12 @@ function Set-AccountStatusOnLicenceInGroup {
 
             # Get Members of Azure AD Group
             $AzureADGroupMembers = Get-AzureADGroupMember -ObjectId $AzureADGroup.ObjectId
+
+            # Filter members
+            $FilteredGroupMembers = $AzureADGroupMembers | Where-Object $_.AccountEnabled -ne $AccountStatus
             
             # Check licence for each member
-            $UserLicenceCheck = foreach ($Member in $AzureADGroupMembers){
+            $UserLicenceCheck = foreach ($Member in $FilteredGroupMembers){
                 $UserServicePlans = Get-AzureADUserLicenseDetail -ObjectId $Member.ObjectId `
                     | Select-Object -ExpandProperty ServicePlans
                 

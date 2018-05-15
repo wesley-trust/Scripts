@@ -38,13 +38,13 @@ Param(
         Mandatory=$false,
         HelpMessage="Specify licence status required"
     )]
-    [switch]
+    [string]
     $LicenceStatus = "Success",
     [Parameter(
         Mandatory=$false,
         HelpMessage="Specify account action if required licence status is not found"
     )]
-    [switch]
+    [bool]
     $AccountStatus = $false
 )
 

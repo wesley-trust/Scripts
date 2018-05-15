@@ -83,7 +83,7 @@ Process {
             -GroupDisplayName $GroupDisplayName `
             -AzureADServicePlanId $ServicePlanId `
             -LicenceStatus $LicenceStatus `
-            -AccountEnabled $AccountStatus
+            -AccountStatus $AccountStatus
     }
     Catch {
         Write-Error -Message $_.exception

@@ -103,7 +103,7 @@ function Set-AccountStatusOnLicenceInGroup {
             $UnlicencedUsers = $UserLicenceCheck.status -ne $LicenceStatus
             if ($UnlicencedUsers){
                 $UnlicencedUsers | ForEach-Object {
-                    Set-AzureADUser -ObjectID $_.ObjectId -AccountEnabled $AccountdStatus
+                    Set-AzureADUser -ObjectID $_.ObjectId -AccountEnabled $AccountStatus
                 }
             }
         }

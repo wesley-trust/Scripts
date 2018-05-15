@@ -8,9 +8,10 @@
 .Synopsis
     Gets members of a group, checks whether they have a specific service plan and changes Account Enabled status.
 .Description
-
+    This function returns a compliance object of whether the users in a group, are compliant with the criteria.
+    Implementing the account enabled action as appropriate, checking whether this is successful, and returning all user compliance results.
 .Example
-    Set-AccountStatusOnLicenceInGroup -GroupDisplayName $Name -ServicePlanId $ServicePlan -$LicenceStatus "Success" -AccountEnabledStatus $true
+    Set-AccountStatusOnLicenceInGroup -GroupDisplayName $Name -ServicePlanId $ServicePlan -$LicenceStatus "Success" -$AccountStatus $false
 .Example
     
 #>
@@ -71,13 +72,6 @@ function Set-AccountStatusOnLicenceInGroup {
             # If there are members, check licence for each member
             if ($FilteredGroupMembers){
                 $UserLicenceCheck = foreach ($Member in $FilteredGroupMembers){
-                    # Get service plans for user
-                    $UserServicePlans = Get-AzureADUserLicenseDetail -ObjectId $Member.ObjectId `
-                        | Select-Object -ExpandProperty ServicePlans
-                    
-                    # Filter to specific service plan
-                    $UserServicePlan = $UserServicePlans | Where-Object ServicePlanId -eq $ServicePlanId
-                    
                     # Build object properties
                     $ObjectProperties = @{
                         ObjectID = $Member.ObjectId
@@ -85,6 +79,13 @@ function Set-AccountStatusOnLicenceInGroup {
                         UserPrincipalName = $Member.UserPrincipalName
                         ServicePlanId = $ServicePlanId
                     }
+                    # Get service plans for user
+                    $UserServicePlans = Get-AzureADUserLicenseDetail -ObjectId $Member.ObjectId `
+                        | Select-Object -ExpandProperty ServicePlans
+                    
+                    # Filter to specific service plan
+                    $UserServicePlan = $UserServicePlans | Where-Object ServicePlanId -eq $ServicePlanId
+                    
                     # If service plan exists, append to object
                     if ($UserServicePlan){
                         $ObjectProperties += @{
@@ -99,7 +100,6 @@ function Set-AccountStatusOnLicenceInGroup {
                             Status = $NoLicenceStatus
                         }
                     }
-
                     # Create new object per member with licence status information
                     New-Object psobject -Property $ObjectProperties
                 }

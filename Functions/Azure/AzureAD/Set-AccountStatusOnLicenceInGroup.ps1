@@ -2,7 +2,7 @@
 #Script name: Set user account enabled parameter based on licence status and group membership
 #Creator: Wesley Trust
 #Date: 2018-05-14
-#Revision: 1
+#Revision: 2
 #References: 
 
 .Synopsis
@@ -68,46 +68,100 @@ function Set-AccountStatusOnLicenceInGroup {
             # Filter members
             $FilteredGroupMembers = $AzureADGroupMembers | Where-Object $_.AccountEnabled -ne $AccountStatus
             
-            # Check licence for each member
-            $UserLicenceCheck = foreach ($Member in $FilteredGroupMembers){
-                $UserServicePlans = Get-AzureADUserLicenseDetail -ObjectId $Member.ObjectId `
-                    | Select-Object -ExpandProperty ServicePlans
-                
-                # Filter to specific service plan
-                $UserServicePlan = $UserServicePlans | Where-Object ServicePlanId -eq $ServicePlanId
-                
-                # Build object properties
-                $ObjectProperties = @{
-                    ObjectID = $Member.ObjectId
-                    DisplayName = $Member.DisplayName
-                    UserPrincipalName = $Member.UserPrincipalName
-                    ServicePlanId = $ServicePlanId
-                }
-                # If service plan exists, append to object
-                if ($UserServicePlan){
-                    $ObjectProperties += @{
-                        Licence = $UserServicePlan.ServicePlanName
-                        Status = $UserServicePlan.ProvisioningStatus
+            # If there are members, check licence for each member
+            if ($FilteredGroupMembers){
+                $UserLicenceCheck = foreach ($Member in $FilteredGroupMembers){
+                    # Get service plans for user
+                    $UserServicePlans = Get-AzureADUserLicenseDetail -ObjectId $Member.ObjectId `
+                        | Select-Object -ExpandProperty ServicePlans
+                    
+                    # Filter to specific service plan
+                    $UserServicePlan = $UserServicePlans | Where-Object ServicePlanId -eq $ServicePlanId
+                    
+                    # Build object properties
+                    $ObjectProperties = @{
+                        ObjectID = $Member.ObjectId
+                        DisplayName = $Member.DisplayName
+                        UserPrincipalName = $Member.UserPrincipalName
+                        ServicePlanId = $ServicePlanId
                     }
-                }
-                # If service plan does not exist, append error
-                else {
-                    $ObjectProperties += @{
-                        Licence = $NoLicence
-                        Status = $NoLicenceStatus
+                    # If service plan exists, append to object
+                    if ($UserServicePlan){
+                        $ObjectProperties += @{
+                            Licence = $UserServicePlan.ServicePlanName
+                            Status = $UserServicePlan.ProvisioningStatus
+                        }
                     }
-                }
+                    # If service plan does not exist, append variable to property
+                    else {
+                        $ObjectProperties += @{
+                            Licence = $NoLicence
+                            Status = $NoLicenceStatus
+                        }
+                    }
 
-                # Create new object per member with licence status information
-                New-Object psobject -Property $ObjectProperties
+                    # Create new object per member with licence status information
+                    New-Object psobject -Property $ObjectProperties
+                }
+                
+                # For any user without the specified licence status, set the account enabled attribute
+                $NonCompliantUsers = $UserLicenceCheck | Where-Object Status -ne $LicenceStatus
+                if ($NonCompliantUsers){
+                    $NonCompliantUserStatus = $NonCompliantUsers | ForEach-Object {
+                        Set-AzureADUser -ObjectID $_.ObjectId -AccountEnabled $AccountStatus
+                        # Check this has applied
+                        $AzureADUser = Get-AzureADUser -ObjectId $_.ObjectId
+                        # Build object
+                        $ObjectProperties = @{
+                            ObjectID = $_.ObjectId
+                            DisplayName = $_.DisplayName
+                            UserPrincipalName = $_.UserPrincipalName
+                            ServicePlanId = $_.ServicePlanId
+                            Licence = $_.Licence
+                            Status = $_.Status
+                            AccountEnabled = $AzureADUser.AccountEnabled
+                            ComplianceStatus = "Non-compliant"
+                        }
+                        # Include action status
+                        if ($AzureADUser.AccountEnabled -eq $AccountStatus){
+                            $ObjectProperties += @{
+                                ActionStatus = "Successfully changed account enabled property"
+                            }
+                        }
+                        else {
+                            $ObjectProperties += @{
+                                ActionStatus = "Failed to change account enabled property"
+                            }
+                        }
+                        # Create object
+                        New-Object psobject -Property $ObjectProperties
+                    }
+                }
+                # For users with correct licence status
+                $CompliantUsers = $UserLicenceCheck | Where-Object Status -eq $LicenceStatus
+                if ($CompliantUsers){
+                    $CompliantUserStatus = $CompliantUsers | ForEach-Object {
+                        # Build object
+                        $ObjectProperties = @{
+                            ObjectID = $_.ObjectId
+                            DisplayName = $_.DisplayName
+                            UserPrincipalName = $_.UserPrincipalName
+                            ServicePlanId = $_.ServicePlanId
+                            Licence = $_.Licence
+                            Status = $_.Status
+                            AccountEnabled = $AzureADUser.AccountEnabled
+                            ComplianceStatus = "Compliant"
+                        }
+                        # Create object
+                        New-Object psobject -Property $ObjectProperties
+                    }
+                }
+                # Return compliance status
+                return $NonCompliantUserStatus
+                return $CompliantUserStatus
             }
-
-            # For any user without the specified licence status, set the account enabled attribute
-            $UnlicencedUsers = $UserLicenceCheck.status -ne $LicenceStatus
-            if ($UnlicencedUsers){
-                $UnlicencedUsers | ForEach-Object {
-                    Set-AzureADUser -ObjectID $_.ObjectId -AccountEnabled $AccountStatus
-                }
+            else {
+                Write-Output "No members with account enabled status of $AccountStatus for group $GroupDisplayName"
             }
         }
         Catch {

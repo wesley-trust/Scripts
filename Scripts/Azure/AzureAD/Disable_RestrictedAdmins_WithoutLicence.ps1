@@ -1,12 +1,12 @@
 <#
-#Script name: Disable members of SyncedAdmins group without valid Azure AD P1 licence
+#Script name: Disable members of SyncedAdmins group without valid Azure AD P1 licence and check available licences
 #Creator: Wesley Trust
 #Date: 2018-05-14
-#Revision: 1
+#Revision: 2
 #References: 
 
 .Synopsis
-    Gets members of the SyncedAdmins group, checks whether they have an Azure AD P1 licence (for conditional access) then changes Account Enabled Status to disabled.
+    Gets members of a group, checks whether they have a licence, changes account status to disabled when non-compliant and gets licence counts.
 .Description
 
 .Example
@@ -27,7 +27,7 @@ Param(
         HelpMessage="Specify the display name of group to check"
     )]
     [string]
-    $GroupDisplayName = "SyncedAdmins",
+    $GroupDisplayName = "RestrictedAdmins",
     [Parameter(
         Mandatory=$false,
         HelpMessage="Specify the licence service plan ID to check"
@@ -42,10 +42,10 @@ Param(
     $LicenceStatus = "Success",
     [Parameter(
         Mandatory=$false,
-        HelpMessage="Specify account action if required licence status is not found"
+        HelpMessage="Specify account enabled status if required licence status is not found"
     )]
     [bool]
-    $AccountStatus = $false
+    $AccountEnabled = $false
 )
 
 Begin {
@@ -55,7 +55,7 @@ Begin {
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
             "$FunctionLocation\Toolkit\Check-RequiredModule.ps1",
-            "$FunctionLocation\Azure\AzureAD\Set-AccountStatusOnLicenceInGroup.ps1"
+            "$FunctionLocation\Azure\AzureAD\ServicePlanCompliance.ps1"
         )
         # Function dot source
         foreach ($Function in $Functions){
@@ -78,12 +78,28 @@ Begin {
 
 Process {
     try {
-        # Execute
-        Set-AccountStatusOnLicenceInGroup `
+        # Get user licence compliance
+        $GroupMemberServicePlanCompliance = Get-GroupMemberServicePlanCompliance `
             -GroupDisplayName $GroupDisplayName `
-            -AzureADServicePlanId $ServicePlanId `
+            -ServicePlanId $ServicePlanId `
             -LicenceStatus $LicenceStatus `
-            -AccountStatus $AccountStatus
+            -AccountEnabled $AccountEnabled
+
+        # Set user account status, based on the compliance status
+        $UserAccountEnabledOnComplianceStatus = $GroupMemberServicePlanCompliance | ForEach-Object {
+            Set-UserAccountEnabledOnComplianceStatus `
+                -ObjectId $_.$ObjectId `
+                -AccountEnabled $AccountEnabled `
+                -ComplianceStatus $_.$ComplianceStatus
+        }
+
+        # Sanity check available licences
+        $TotalServicePlanUnits = Get-TotalServicePlanUnits -LicenceStatus $LicenceStatus
+
+        # Output
+        $GroupMemberServicePlanCompliance
+        $UserAccountEnabledOnComplianceStatus
+        $TotalServicePlanUnits
     }
     Catch {
         Write-Error -Message $_.exception

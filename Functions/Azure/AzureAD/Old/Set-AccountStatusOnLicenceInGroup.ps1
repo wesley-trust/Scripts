@@ -16,6 +16,7 @@
     
 #>
 
+# Exisiting function
 function Set-AccountStatusOnLicenceInGroup {
     Param(
         [Parameter(
@@ -106,6 +107,66 @@ function Set-AccountStatusOnLicenceInGroup {
                 
                 # For any user without the specified licence status, set the account enabled attribute
                 $NonCompliantUsers = $UserLicenceCheck | Where-Object Status -ne $LicenceStatus
+
+                # Get Service Plans
+                $AvailableServicePlans = Get-AzureADSubscribedSku `
+                    | Select-Object SkuPartNumber,ConsumedUnits,CapabilityStatus `
+                    -ExpandProperty ServicePlans
+
+                # Filter to Service Plan
+                $AvailableServicePlan = $AvailableServicePlans `
+                    | Where-Object ServicePlanId -EQ $ServicePlanId
+
+                # If there are SKUs with the service plan
+                if ($AvailableServicePlan){
+                    $ServicePlanPrepaidUnits = $AvailableServicePlan | ForEach-Object {
+
+                        # Get prepaid units
+                        $AvailableSubscribedSkuPrepaidUnits = Get-AzureADSubscribedSku `
+                            | Where-Object SkuPartNumber -eq $_.SkuPartNumber `
+                            | Select-Object -ExpandProperty PrepaidUnits
+
+                        # Build object
+                        [PSCustomObject]@{
+                            SkuPartNumber = $_.SkuPartNumber
+                            ConsumedUnits = $_.ConsumedUnits
+                            CapabilityStatus = $_.CapabilityStatus
+                            AppliesTo = $_.AppliesTo
+                            ProvisioningStatus = $_.ProvisioningStatus
+                            ServicePlanId = $_.ServicePlanId
+                            ServicePlanName = $_.ServicePlanName
+                            Enabled = $AvailableSubscribedSkuPrepaidUnits.Enabled
+                            Suspended  = $AvailableSubscribedSkuPrepaidUnits.Suspended
+                            Warning  = $AvailableSubscribedSkuPrepaidUnits.Warning
+                        }
+                    }
+                    
+                    # Calculate total licences
+                    $ServicePlanPrepaidUnits | ForEach-Object {
+                        $TotalEnabled += $_.Enabled
+                        $TotalConsumed +=  $_.ConsumedUnits
+                    }
+                
+                    # Calculate available units
+                    $AvailableUnits = $TotalEnabled - $TotalConsumed
+                    
+                    # Unique variables
+                    $ServicePlanId = $ServicePlanPrepaidUnits.ServicePlanId | Select-Object -Unique
+                    $ServicePlanName = $ServicePlanPrepaidUnits.ServicePlanName | Select-Object -Unique
+
+                    # Build Totals Object
+                    $TotalServicePlanUnits =[PSCustomObject]@{
+                        TotalEnabledUnits = $TotalEnabled
+                        TotalConsumedUnits = $TotalConsumed
+                        TotalAvailableUnits = $AvailableUnits
+                        ServicePlanId = $ServicePlanId
+                        ServicePlanName = $ServicePlanName
+                    }
+                }
+                else {
+                    Write-Output "No available SKUs with the Service Plan, an appropriate subscription should be purchased"
+                }
+
                 if ($NonCompliantUsers){
                     $NonCompliantUserStatus = $NonCompliantUsers | ForEach-Object {
                         Set-AzureADUser -ObjectID $_.ObjectId -AccountEnabled $AccountStatus
@@ -156,9 +217,11 @@ function Set-AccountStatusOnLicenceInGroup {
                         New-Object psobject -Property $ObjectProperties
                     }
                 }
-                # Return compliance status
+                
+                # Return objects
                 return $NonCompliantUserStatus
                 return $CompliantUserStatus
+                return $TotalServicePlanUnits
             }
             else {
                 Write-Output "No members with account enabled status of $AccountStatus for group $GroupDisplayName"

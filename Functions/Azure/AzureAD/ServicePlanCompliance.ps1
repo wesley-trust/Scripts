@@ -283,8 +283,8 @@ function Get-TotalServicePlanUnits {
                         ServicePlanId = $_.ServicePlanId
                         ServicePlanName = $_.ServicePlanName
                         Enabled = $AvailableSubscribedSkuPrepaidUnits.Enabled
-                        Suspended  = $AvailableSubscribedSkuPrepaidUnits.Suspended
-                        Warning  = $AvailableSubscribedSkuPrepaidUnits.Warning
+                        Suspended = $AvailableSubscribedSkuPrepaidUnits.Suspended
+                        Warning = $AvailableSubscribedSkuPrepaidUnits.Warning
                     }
                 }
                 
@@ -292,8 +292,8 @@ function Get-TotalServicePlanUnits {
                 $ServicePlanPrepaidUnits | ForEach-Object {
                     $TotalEnabled += $_.Enabled
                     $TotalConsumed +=  $_.ConsumedUnits
-                    $TotalSuspended  = $_.Suspended
-                    $TotalWarning  = $_.Warning
+                    $TotalSuspended += $_.Suspended
+                    $TotalWarning += $_.Warning
                 }
             
                 # Calculate available units

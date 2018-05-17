@@ -273,6 +273,9 @@ function Get-TotalServicePlanUnits {
                         | Where-Object SkuPartNumber -eq $_.SkuPartNumber `
                         | Select-Object -ExpandProperty PrepaidUnits
 
+                    # Calculate available within SKU
+                    $AvailableUnits = $AvailableSubscribedSkuPrepaidUnits.Enabled - $_.ConsumedUnits
+                    
                     # Build object
                     [PSCustomObject]@{
                         SkuPartNumber = $_.SkuPartNumber
@@ -285,19 +288,19 @@ function Get-TotalServicePlanUnits {
                         Enabled = $AvailableSubscribedSkuPrepaidUnits.Enabled
                         Suspended = $AvailableSubscribedSkuPrepaidUnits.Suspended
                         Warning = $AvailableSubscribedSkuPrepaidUnits.Warning
+                        Available = $AvailableUnits
                     }
                 }
-                
+
                 # Calculate total licences
                 $ServicePlanPrepaidUnits | ForEach-Object {
                     $TotalEnabled += $_.Enabled
                     $TotalConsumed +=  $_.ConsumedUnits
                     $TotalSuspended += $_.Suspended
                     $TotalWarning += $_.Warning
+                    $TotalAvailable += $_.Available
+
                 }
-            
-                # Calculate available units
-                $AvailableUnits = $TotalEnabled - $TotalConsumed
                 
                 # Unique variables
                 $ServicePlanId = $ServicePlanPrepaidUnits.ServicePlanId | Select-Object -Unique
@@ -309,10 +312,10 @@ function Get-TotalServicePlanUnits {
                     ServicePlanId = $ServicePlanId
                     TotalEnabledUnits = $TotalEnabled
                     TotalConsumedUnits = $TotalConsumed
-                    TotalAvailableUnits = $AvailableUnits
+                    TotalAvailableUnits = $TotalAvailable
                     TotalWarningUnits = $TotalWarning
                     TotalSuspendedUnits = $TotalSuspended
-                    ObjectReference = $ServicePlanPrepaidUnits
+                    SkuObject = $ServicePlanPrepaidUnits
                 }
             }
             else {

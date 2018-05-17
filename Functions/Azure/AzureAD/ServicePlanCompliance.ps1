@@ -109,6 +109,7 @@ function Get-GroupMemberServicePlanCompliance {
                     New-Object psobject -Property $ObjectProperties
                 }
                 
+                # For each user with a licence record compliance
                 $ComplianceStatus = $UserLicenceCheck | ForEach-Object {
                     # Build object
                     $ObjectProperties = @{
@@ -151,6 +152,7 @@ function Get-GroupMemberServicePlanCompliance {
 
     }
 }
+
 function Set-UserAccountEnabledOnComplianceStatus {
     Param(
         [Parameter(
@@ -290,6 +292,8 @@ function Get-TotalServicePlanUnits {
                 $ServicePlanPrepaidUnits | ForEach-Object {
                     $TotalEnabled += $_.Enabled
                     $TotalConsumed +=  $_.ConsumedUnits
+                    $TotalSuspended  = $_.Suspended
+                    $TotalWarning  = $_.Warning
                 }
             
                 # Calculate available units
@@ -301,11 +305,14 @@ function Get-TotalServicePlanUnits {
 
                 # Build Totals Object
                 $TotalServicePlanUnits =[PSCustomObject]@{
+                    ServicePlanName = $ServicePlanName
+                    ServicePlanId = $ServicePlanId
                     TotalEnabledUnits = $TotalEnabled
                     TotalConsumedUnits = $TotalConsumed
                     TotalAvailableUnits = $AvailableUnits
-                    ServicePlanId = $ServicePlanId
-                    ServicePlanName = $ServicePlanName
+                    TotalWarningUnits = $TotalWarning
+                    TotalSuspendedUnits = $TotalSuspended
+                    ObjectReference = $ServicePlanPrepaidUnits
                 }
             }
             else {

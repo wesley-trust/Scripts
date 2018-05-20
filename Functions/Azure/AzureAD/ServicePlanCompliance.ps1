@@ -2,19 +2,14 @@
 #Script name: Service Plan Licences and Compliance
 #Creator: Wesley Trust
 #Date: 2018-05-16
-#Revision: 1
+#Revision: 2
 #References: 
 
 .Synopsis
     Functions to get members of a group and check their licence compliance, perform an action as a result, and check licence units
 .Description
-    These functions return a compliance object of group members, a user account status object, based on compliance, as well as an object of licence units.
-.Example
-    Get-GroupMemberServicePlanCompliance -GroupDisplayName $GroupDisplayName -ServicePlanId $ServicePlanId -LicenceStatus $LicenceStatus -AccountEnabled $AccountEnabled
+    These functions return a group member compliance object, a user account status object (based on compliance action), as well as an SKU unit objects, including summary.
 
-    Set-UserAccountEnabledOnComplianceStatus -ObjectId $ObjectId -AccountEnabled $AccountEnabled -ComplianceStatus $ComplianceStatus
-    
-    Get-TotalServicePlanUnits -LicenceStatus $LicenceStatus
 .Example
     
 #>
@@ -152,12 +147,13 @@ function Get-GroupMemberServicePlanCompliance {
 
     }
 }
-
 function Set-UserAccountEnabledOnComplianceStatus {
     Param(
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify the object id"
+            HelpMessage="Specify the object id",
+            Position=0,
+            ValueFromPipeLineByPropertyName=$true
         )]
         [string]
         $ObjectId,
@@ -227,20 +223,14 @@ function Set-UserAccountEnabledOnComplianceStatus {
 
     }
 }
-function Get-TotalServicePlanUnits {
+function Get-ServicePlanSku {
     Param(
         [Parameter(
             Mandatory=$false,
             HelpMessage="Specify the licence service plan ID to check"
         )]
         [string]
-        $ServicePlanId,
-        [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify licence status required"
-        )]
-        [string]
-        $LicenceStatus
+        $ServicePlanId
     )
 
     Begin {
@@ -255,6 +245,7 @@ function Get-TotalServicePlanUnits {
 
     Process {
         try {
+            
             # Get Service Plans
             $AvailableServicePlans = Get-AzureADSubscribedSku `
                 | Select-Object SkuPartNumber,ConsumedUnits,CapabilityStatus `
@@ -266,7 +257,7 @@ function Get-TotalServicePlanUnits {
 
             # If there are SKUs with the service plan
             if ($AvailableServicePlan){
-                $ServicePlanPrepaidUnits = $AvailableServicePlan | ForEach-Object {
+                $ServicePlanSku = $AvailableServicePlan | ForEach-Object {
 
                     # Get prepaid units
                     $AvailableSubscribedSkuPrepaidUnits = Get-AzureADSubscribedSku `
@@ -291,38 +282,136 @@ function Get-TotalServicePlanUnits {
                         Available = $AvailableUnits
                     }
                 }
-
-                # Calculate total licences
-                $ServicePlanPrepaidUnits | ForEach-Object {
-                    $TotalEnabled += $_.Enabled
-                    $TotalConsumed +=  $_.ConsumedUnits
-                    $TotalSuspended += $_.Suspended
-                    $TotalWarning += $_.Warning
-                    $TotalAvailable += $_.Available
-
-                }
-                
-                # Unique variables
-                $ServicePlanId = $ServicePlanPrepaidUnits.ServicePlanId | Select-Object -Unique
-                $ServicePlanName = $ServicePlanPrepaidUnits.ServicePlanName | Select-Object -Unique
-
-                # Build Totals Object
-                $TotalServicePlanUnits =[PSCustomObject]@{
-                    ServicePlanName = $ServicePlanName
-                    ServicePlanId = $ServicePlanId
-                    TotalEnabledUnits = $TotalEnabled
-                    TotalConsumedUnits = $TotalConsumed
-                    TotalAvailableUnits = $TotalAvailable
-                    TotalWarningUnits = $TotalWarning
-                    TotalSuspendedUnits = $TotalSuspended
-                    SkuObject = $ServicePlanPrepaidUnits
-                }
             }
             else {
                 Write-Output "No available SKUs with the Service Plan, an appropriate subscription should be purchased"
             }
             # Return object
-            return $TotalServicePlanUnits
+            return $ServicePlanSku
+        }
+        Catch {
+            Write-Error -Message $_.exception
+
+        }
+    }
+    End {
+
+    }
+}
+function Get-SkuConsumptionSummary {
+    Param(
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify the service plan sku object",
+            Position=0,
+            ValueFromPipeLine=$true
+        )]
+        [psobject]
+        $ServicePlanSku
+    )
+
+    Begin {
+        try {
+        
+        }
+        catch {
+            Write-Error -Message $_.Exception
+
+        }
+    }
+
+    Process {
+        try {
+            # Get Summary
+            $SkuConsumptionSummary = $ServicePlanSku | ForEach-Object {
+                $ObjectProperties += @{
+                    SkuPartNumber = $_.SkuPartNumber
+                    EnabledUnits = $_.Enabled
+                    ConsumedUnits = $_.ConsumedUnits
+                    AvailableUnits = $_.Available
+                }
+                if ($_.Available -eq "0"){
+                    $ObjectProperties += @{
+                        Status = "Caution"
+                        StatusDetail = "No available units, consider capacity/demand management"
+                    }
+                }
+                elseif ($_.Available -lt "0"){
+                    $ObjectProperties += @{
+                        Status = "Warning"
+                        StatusDetail = "Available units in deficit, immediate action required"
+                        SKU = $_
+                    }
+                }
+                elseif ($_.Available -gt "0"){
+                    $ObjectProperties += @{
+                        Status = "Informational"
+                        StatusDetail = "Consider reducing licence count"
+                        SKU = $_
+                    }
+                }
+                New-Object -TypeName psobject -Property $ObjectProperties
+            }
+            # Return object
+            return $SkuConsumptionSummary
+        }
+        Catch {
+            Write-Error -Message $_.exception
+
+        }
+    }
+    End {
+
+    }
+}
+function Get-ServicePlanUnitSummary {
+    Param(
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify the service plan sku object",
+            Position=0,
+            ValueFromPipeLine=$true
+        )]
+        [psobject]
+        $ServicePlanSku
+    )
+
+    Begin {
+        try {
+        
+        }
+        catch {
+            Write-Error -Message $_.Exception
+
+        }
+    }
+
+    Process {
+        try {
+            # Calculate total licences
+            $ServicePlanSku | ForEach-Object {
+                $TotalEnabled += $_.Enabled
+                $TotalConsumed +=  $_.ConsumedUnits
+                $TotalSuspended += $_.Suspended
+                $TotalWarning += $_.Warning
+                $TotalAvailable += $_.Available
+            }
+            # Unique variables
+            $ServicePlanId = $ServicePlanSku.ServicePlanId | Select-Object -Unique
+            $ServicePlanName = $ServicePlanSku.ServicePlanName | Select-Object -Unique
+
+            # Build Totals Object
+            $ServicePlanUnitSummary =[PSCustomObject]@{
+                ServicePlanName = $ServicePlanName
+                ServicePlanId = $ServicePlanId
+                TotalEnabledUnits = $TotalEnabled
+                TotalConsumedUnits = $TotalConsumed
+                TotalAvailableUnits = $TotalAvailable
+                TotalWarningUnits = $TotalWarning
+                TotalSuspendedUnits = $TotalSuspended
+            }
+            # Return object
+            return $ServicePlanUnitSummary
         }
         Catch {
             Write-Error -Message $_.exception

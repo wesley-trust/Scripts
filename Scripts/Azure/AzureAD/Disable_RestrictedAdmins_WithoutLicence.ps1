@@ -93,39 +93,23 @@ Process {
                 -ComplianceStatus $_.$ComplianceStatus
         }
 
-        # Check available licences
-        $TotalServicePlanUnits = Get-TotalServicePlanUnits -ServicePlanId $ServicePlanId -LicenceStatus $LicenceStatus
+        # Get Service Plan Skus
+        $ServicePlanSku = Get-ServicePlanSku -ServicePlanId $ServicePlanId
 
-        # SKU consumption analysis
-        $SKUConsumption = $TotalServicePlanUnits.Skuobject | ForEach-Object {
-            if ($_.Available -eq "0"){
-                [PSCustomObject]@{
-                    Status = "Caution"
-                    StatusDetail = "No available units, plan for action"
-                    SKU = $_
-                }
-            }
-            elseif ($_.Available -lt "0"){
-                [PSCustomObject]@{
-                    Status = "Warning"
-                    StatusDetail = "Available units in deficit, immediate action required to prevent suspension"
-                    SKU = $_
-                }
-            }
-            elseif ($_.Available -gt "0"){
-                [PSCustomObject]@{
-                    Status = "Informational"
-                    StatusDetail = "Consider reducing licence count"
-                    SKU = $_
-                }
-            }
+        # Get Summary if a SKU is available
+        if ($ServicePlanSku.SkuPartNumber){
+            $SkuConsumptionSummary = $ServicePlanSku | Get-SkuConsumptionSummary
         }
 
         # Output
         $GroupMemberServicePlanCompliance
         $UserAccountEnabledOnComplianceStatus
-        $TotalServicePlanUnits
-        $SKUConsumption
+        if ($SkuConsumptionSummary){
+            $SkuConsumptionSummary
+        }
+        else {
+            $ServicePlanSku
+        }
     }
     Catch {
         Write-Error -Message $_.exception

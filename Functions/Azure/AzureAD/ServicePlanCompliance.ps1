@@ -2,7 +2,7 @@
 #Script name: Service Plan Licences and Compliance
 #Creator: Wesley Trust
 #Date: 2018-05-16
-#Revision: 2
+#Revision: 3
 #References: 
 
 .Synopsis
@@ -36,12 +36,6 @@ function Get-UserServicePlanCompliance {
         $ServicePlanProvisioningStatus,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify service plan capability status required"
-        )]
-        [string]
-        $ServicePlanCapabilityStatus,
-        [Parameter(
-            Mandatory=$false,
             HelpMessage="Specify desired account enabled status if non-compliant"
         )]
         [bool]
@@ -60,10 +54,6 @@ function Get-UserServicePlanCompliance {
 
     Process {
         try {
-            # Variables
-            $NoServicePlanName = "Service Plan not found"
-            $NoServicePlanProvisioningStatus = "Error"
-            $NoServicePlanCapabilityStatus = $NoServicePlanProvisioningStatus
             
             # Get users to analyse
             if ($GroupDisplayName){
@@ -88,94 +78,64 @@ function Get-UserServicePlanCompliance {
                 $AzureADMembers = $AzureADMembers | Where-Object AccountEnabled -ne $AccountEnabled
             }
 
-            # If there are members, check licence for each member
+            # If there are members, check licence compliance for each member
             if ($AzureADMembers){
-                $UserLicenceCheck = foreach ($Member in $AzureADMembers){
+                $UserComplianceStatus = foreach ($Member in $AzureADMembers){
+                    
+                    # Assigned Service Plan
+                    $MemberAssignedServicePlan = $Member.AssignedPlans | Where-Object ServicePlanId -eq $ServicePlanId
+                    
+                    # Get user licence details
+                    $AzureADUserLicenseDetail = Get-AzureADUserLicenseDetail -ObjectId $Member.ObjectId
+
+                    # Get service plans for user
+                    $UserServicePlans = $AzureADUserLicenseDetail | Select-Object -ExpandProperty ServicePlans
+
+                    # Filter to specific service plan
+                    $UserSpecificServicePlan = $UserServicePlans `
+                        | Where-Object {
+                            $_.ServicePlanId -eq $ServicePlanId
+                        }
+                    
                     # Build object properties
                     $ObjectProperties = @{
                         ObjectID = $Member.ObjectId
                         DisplayName = $Member.DisplayName
                         UserPrincipalName = $Member.UserPrincipalName
+                        AccountEnabled = $Member.AccountEnabled
                         AssignedLicenses = $Member.AssignedLicenses
-                        AssignedPlans = $Member.AssignedPlans
+                        AssignedPlans = $MemberAssignedServicePlan
+                        ServicePlanId = $ServicePlanId
                     }
-                    # Get service plans for user
-                    $AzureADUserLicenseDetail = Get-AzureADUserLicenseDetail -ObjectId $Member.ObjectId
 
-                    if ($ServicePlanId){
+                    # Filter to user service plan status
+                    $UserStatusServicePlan = $UserSpecificServicePlan `
+                        | Where-Object {
+                            $_.ProvisioningStatus -eq $ServicePlanProvisioningStatus
+                        } `
+                        | Select-Object -Unique
+
+                    # If service plan exists, append to object
+                    if ($UserStatusServicePlan){
                         $ObjectProperties += @{
-                            ServicePlanId = $ServicePlanId
+                            ServicePlanName = $UserStatusServicePlan.ServicePlanName
+                            ComplianceStatus = $true
                         }
-                        # Get service plans for user
-                        $UserServicePlans = $AzureADUserLicenseDetail | Select-Object -ExpandProperty ServicePlans
-
-                        # Filter to specific unique service plan with licence status
-                        $UserServicePlan = $UserServicePlans `
-                            | Where-Object {
-                                $_.ServicePlanId -eq $ServicePlanId
-                                -and
-                                $_.ProvisioningStatus -eq $ServicePlanProvisioningStatus
-                                -and
-                                $_.CapabilityStatus -eq $ServicePlanCapabilityStatus
-                            } `
-                            | Select-Object -Unique
-
-                        # If service plan exists, append to object
-                        if ($UserServicePlan){
-                            $ObjectProperties += @{
-                                ServicePlanName = $UserServicePlan.ServicePlanName
-                                ServicePlanProvisioningStatus = $UserServicePlan.ProvisioningStatus
-                                ServicePlanCapabilityStatus = $UserServicePlan.CapabilityStatus
-                            }
-                        }
-                        # If service plan does not exist, append variable to property
-                        else {
-                            $ObjectProperties += @{
-                                ServicePlanName = $NoServicePlanName
-                                ServicePlanProvisioningStatus = $NoServicePlanProvisioningStatus
-                                ServicePlanCapabilityStatus = $NoServicePlanCapabilityStatus
-                            }
+                    }
+                    # If service plan does not exist, append variable to property
+                    else {
+                        $ObjectProperties += @{
+                            ComplianceStatus = $false
+                            ComplianceStatusDetail = $UserSpecificServicePlan
                         }
                     }
 
                     # Create new object per member with licence status information
                     New-Object psobject -Property $ObjectProperties
                 }
-                
-                # For each user with a licence record compliance
-                $ComplianceStatus = $UserLicenceCheck | ForEach-Object {
-                    # Assigned Service Plan
-                    $AssignedServicePlan = $_.AssignedPlans | Where-Object ServicePlanId -eq $ServicePlanId
-                    # Build object
-                    $ObjectProperties = @{
-                        ObjectID = $_.ObjectId
-                        DisplayName = $_.DisplayName
-                        UserPrincipalName = $_.UserPrincipalName
-                        AccountEnabled = $_.AccountEnabled
-                        ServicePlanId = $_.ServicePlanId
-                        ServicePlanName = $_.ServicePlan
-                        ServicePlanProvisioningStatus = $_.ServicePlanProvisioningStatus
-                        ServicePlanCapabilityStatus = $_.ServicePlanCapabilityStatus
-                        AssignedServicePlan = $AssignedServicePlan
-                        AssignedLicenses = $_.AssignedLicenses
-                    }
-                    # Include action status
-                    if ($_.status -ne $AccountEnabled){
-                        $ObjectProperties += @{
-                            ComplianceStatus = $false
-                        }
-                    }
-                    else {
-                        $ObjectProperties += @{
-                            ComplianceStatus = $true
-                        }
-                    }
-                    # Create object
-                    New-Object psobject -Property $ObjectProperties
-                }
-                
+                                
                 # Return objects
-                return $ComplianceStatus
+                return $UserComplianceStatus
             }
             else {
                 Write-Output "No members with account enabled status of $AccountEnabled"

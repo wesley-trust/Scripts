@@ -42,12 +42,6 @@ Param(
     $ServicePlanProvisioningStatus = "Success",
     [Parameter(
         Mandatory=$false,
-        HelpMessage="Specify service plan capability status required"
-    )]
-    [string]
-    $ServicePlanCapabilityStatus = "Enabled",
-    [Parameter(
-        Mandatory=$false,
         HelpMessage="Specify account enabled status if required licence status is not found"
     )]
     [bool]

@@ -45,7 +45,19 @@ Param(
         HelpMessage="Specify account enabled status if required licence status is not found"
     )]
     [bool]
-    $AccountEnabled = $false
+    $AccountEnabled = $false,
+    [Parameter(
+        Mandatory=$false,
+        HelpMessage="Specify required compliance status"
+    )]
+    [bool]
+    $ComplianceStatus = $True,
+    [Parameter(
+        Mandatory=$false,
+        HelpMessage="Specify Sku consumption status to check for"
+    )]
+    [string]
+    $SkuConsumptionStatus = "Warning"
 )
 
 Begin {
@@ -79,14 +91,14 @@ Begin {
 Process {
     try {
         # Get user licence compliance
-        $GroupMemberServicePlanCompliance = Get-GroupMemberServicePlanCompliance `
+        $UserServicePlanCompliance = Get-UserServicePlanCompliance `
             -GroupDisplayName $GroupDisplayName `
             -ServicePlanId $ServicePlanId `
             -LicenceStatus $LicenceStatus `
             -AccountEnabled $AccountEnabled
 
         # Set user account status, based on the compliance status
-        $UserAccountEnabledOnComplianceStatus = $GroupMemberServicePlanCompliance | ForEach-Object {
+        $UserAccountEnabledOnComplianceStatus = $UserServicePlanCompliance | ForEach-Object {
             Set-UserAccountEnabledOnComplianceStatus `
                 -ObjectId $_.$ObjectId `
                 -AccountEnabled $AccountEnabled `
@@ -99,13 +111,29 @@ Process {
         # Get Summary if a SKU is available
         if ($ServicePlanSku.SkuPartNumber){
             $SkuConsumptionSummary = $ServicePlanSku | Get-SkuConsumptionSummary
+            
+            # If user compliance is equal to required status
+            if ($UserServicePlanCompliance -eq $ComplianceStatus){
+                $FilteredUserServicePlanCompliance | Where-Object Status -eq $ComplianceStatus
+
+                # If SKU is equal to required status
+                if ($SkuConsumptionSummary.Status = $SkuConsumptionStatus){
+                    $FilteredSkuConsumption = $SkuConsumptionSummary | Where-Object Status -eq $SkuConsumptionStatus
+                    
+                    # Get Summary of users with a warning Sku
+                    $UserSkuConsumptionSummary = $FilteredUserServicePlanCompliance | Get-UserSkuConsumptionSummary -SkuConsumption $FilteredSkuConsumption
+                }
+            }
         }
 
         # Output
-        $GroupMemberServicePlanCompliance
+        $UserServicePlanCompliance
         $UserAccountEnabledOnComplianceStatus
         if ($SkuConsumptionSummary){
             $SkuConsumptionSummary
+            if ($UserSkuConsumptionSummary){
+                $UserSkuConsumptionSummary
+            }
         }
         else {
             $ServicePlanSku

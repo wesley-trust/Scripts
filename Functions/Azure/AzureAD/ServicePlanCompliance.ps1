@@ -14,7 +14,7 @@
     
 #>
 
-function Get-GroupMemberServicePlanCompliance {
+function Get-UserServicePlanCompliance {
     Param(
         [Parameter(
             Mandatory=$false,
@@ -55,51 +55,73 @@ function Get-GroupMemberServicePlanCompliance {
     Process {
         try {
             # Variables
-            $NoLicence = "No licence found"
-            $NoLicenceStatus = "Error"
-
-            # Get Azure AD Group
-            $AzureADGroup = Get-AzureADGroup -Filter "DisplayName eq '$GroupDisplayName'"
-
-            # Get Members of Azure AD Group
-            $AzureADGroupMembers = Get-AzureADGroupMember -ObjectId $AzureADGroup.ObjectId
-
-            # Filter members
-            $FilteredGroupMembers = $AzureADGroupMembers | Where-Object $_.AccountEnabled -ne $AccountEnabled
+            $NoServicePlan = "No service plan found"
+            $NoServicePlanStatus = "Error"
             
+            # Get users to analyse
+            if ($GroupDisplayName){
+                # Get Azure AD Group
+                $AzureADGroup = Get-AzureADGroup -Filter "DisplayName eq '$GroupDisplayName'"
+
+                # Get Members of Azure AD Group
+                $AzureADMembers = Get-AzureADGroupMember -ObjectId $AzureADGroup.ObjectId
+            }
+            elseif ($UserDisplayName) {
+                $AzureADMembers = Get-AzureADUser -Filter "DisplayName eq '$UserDisplayName'"
+            }
+            elseif ($UserUPN){
+                $AzureADMembers = Get-AzureADUser -Filter "UserPrincipalName eq '$UserUPN'"
+            }
+            else {
+                $AzureADMembers = Get-AzureADUser -All $true
+            }
+
+            # Filter members (excluding null property)
+            if ($AccountEnabled -eq $true -or $AccountEnabled -eq $false){
+                $AzureADMembers = $AzureADMembers | Where-Object AccountEnabled -ne $AccountEnabled
+            }
+
             # If there are members, check licence for each member
-            if ($FilteredGroupMembers){
-                $UserLicenceCheck = foreach ($Member in $FilteredGroupMembers){
+            if ($AzureADMembers){
+                $UserLicenceCheck = foreach ($Member in $AzureADMembers){
                     # Build object properties
                     $ObjectProperties = @{
                         ObjectID = $Member.ObjectId
                         DisplayName = $Member.DisplayName
                         UserPrincipalName = $Member.UserPrincipalName
-                        ServicePlanId = $ServicePlanId
+                        AssignedLicenses = $Member.AssignedLicenses
                     }
                     # Get service plans for user
-                    $UserServicePlans = Get-AzureADUserLicenseDetail -ObjectId $Member.ObjectId `
-                        | Select-Object -ExpandProperty ServicePlans
-                    
-                    # Filter to specific unique service plan with licence status
-                    $UserServicePlan = $UserServicePlans `
-                        | Where-Object {ServicePlanId -eq $ServicePlanId -and ProvisioningStatus -eq $LicenceStatus} `
-                        | Select-Object -Unique
-                    
-                    # If service plan exists, append to object
-                    if ($UserServicePlan){
+                    $AzureADUserLicenseDetail = Get-AzureADUserLicenseDetail -ObjectId $Member.ObjectId
+
+                    if ($ServicePlanId){
                         $ObjectProperties += @{
-                            Licence = $UserServicePlan.ServicePlanName
-                            Status = $UserServicePlan.ProvisioningStatus
+                            ServicePlanId = $ServicePlanId
+                        }
+                        # Get service plans for user
+                        $UserServicePlans = $AzureADUserLicenseDetail | Select-Object -ExpandProperty ServicePlans
+
+                        # Filter to specific unique service plan with licence status
+                        $UserServicePlan = $UserServicePlans `
+                            | Where-Object {$_.ServicePlanId -eq $ServicePlanId -and $_.ProvisioningStatus -eq $LicenceStatus} `
+                            | Select-Object -Unique
+
+                        # If service plan exists, append to object
+                        if ($UserServicePlan){
+                            $ObjectProperties += @{
+                                ServicePlan = $UserServicePlan.ServicePlanName
+                                ServicePlanStatus = $UserServicePlan.ProvisioningStatus
+                            }
+                        }
+                        # If service plan does not exist, append variable to property
+                        else {
+                            $ObjectProperties += @{
+                                ServicePlan = $NoServicePlan
+                                ServicePlanStatus = $NoServicePlanStatus
+                            }
                         }
                     }
-                    # If service plan does not exist, append variable to property
-                    else {
-                        $ObjectProperties += @{
-                            Licence = $NoLicence
-                            Status = $NoLicenceStatus
-                        }
-                    }
+
                     # Create new object per member with licence status information
                     New-Object psobject -Property $ObjectProperties
                 }
@@ -112,9 +134,10 @@ function Get-GroupMemberServicePlanCompliance {
                         DisplayName = $_.DisplayName
                         UserPrincipalName = $_.UserPrincipalName
                         ServicePlanId = $_.ServicePlanId
-                        Licence = $_.Licence
-                        Status = $_.Status
+                        ServicePlan = $_.ServicePlan
+                        ServicePlanStatus = $_.ServicePlanStatus
                         AccountEnabled = $AzureADUser.AccountEnabled
+                        AssignedLicenses = $_.AssignedLicenses
                     }
                     # Include action status
                     if ($_.status -ne $AccountEnabled){
@@ -248,7 +271,7 @@ function Get-ServicePlanSku {
             
             # Get Service Plans
             $AvailableServicePlans = Get-AzureADSubscribedSku `
-                | Select-Object SkuPartNumber,ConsumedUnits,CapabilityStatus `
+                | Select-Object SkuPartNumber,SkuId,ConsumedUnits,CapabilityStatus `
                 -ExpandProperty ServicePlans
 
             # Filter to Service Plan
@@ -260,25 +283,26 @@ function Get-ServicePlanSku {
                 $ServicePlanSku = $AvailableServicePlan | ForEach-Object {
 
                     # Get prepaid units
-                    $AvailableSubscribedSkuPrepaidUnits = Get-AzureADSubscribedSku `
+                    $SubscribedSkuPrepaidUnits = Get-AzureADSubscribedSku `
                         | Where-Object SkuPartNumber -eq $_.SkuPartNumber `
                         | Select-Object -ExpandProperty PrepaidUnits
 
                     # Calculate available within SKU
-                    $AvailableUnits = $AvailableSubscribedSkuPrepaidUnits.Enabled - $_.ConsumedUnits
+                    $AvailableUnits = $SubscribedSkuPrepaidUnits.Enabled - $_.ConsumedUnits
                     
                     # Build object
                     [PSCustomObject]@{
                         SkuPartNumber = $_.SkuPartNumber
+                        SkuId = $_.SkuId
                         ConsumedUnits = $_.ConsumedUnits
                         CapabilityStatus = $_.CapabilityStatus
                         AppliesTo = $_.AppliesTo
                         ProvisioningStatus = $_.ProvisioningStatus
                         ServicePlanId = $_.ServicePlanId
                         ServicePlanName = $_.ServicePlanName
-                        Enabled = $AvailableSubscribedSkuPrepaidUnits.Enabled
-                        Suspended = $AvailableSubscribedSkuPrepaidUnits.Suspended
-                        Warning = $AvailableSubscribedSkuPrepaidUnits.Warning
+                        Enabled = $SubscribedSkuPrepaidUnits.Enabled
+                        Suspended = $SubscribedSkuPrepaidUnits.Suspended
+                        Warning = $SubscribedSkuPrepaidUnits.Warning
                         Available = $AvailableUnits
                     }
                 }
@@ -307,7 +331,7 @@ function Get-SkuConsumptionSummary {
             ValueFromPipeLine=$true
         )]
         [psobject]
-        $ServicePlanSku
+        $InputObject
     )
 
     Begin {
@@ -323,9 +347,10 @@ function Get-SkuConsumptionSummary {
     Process {
         try {
             # Get Summary
-            $SkuConsumptionSummary = $ServicePlanSku | ForEach-Object {
-                $ObjectProperties += @{
+            $SkuConsumptionSummary = $InputObject | ForEach-Object {
+                $ObjectProperties = @{
                     SkuPartNumber = $_.SkuPartNumber
+                    SkuId = $_.SkuId
                     EnabledUnits = $_.Enabled
                     ConsumedUnits = $_.ConsumedUnits
                     AvailableUnits = $_.Available
@@ -340,20 +365,85 @@ function Get-SkuConsumptionSummary {
                     $ObjectProperties += @{
                         Status = "Warning"
                         StatusDetail = "Available units in deficit, immediate action required"
-                        SKU = $_
                     }
                 }
                 elseif ($_.Available -gt "0"){
                     $ObjectProperties += @{
                         Status = "Informational"
                         StatusDetail = "Consider reducing licence count"
-                        SKU = $_
                     }
                 }
                 New-Object -TypeName psobject -Property $ObjectProperties
             }
             # Return object
             return $SkuConsumptionSummary
+        }
+        Catch {
+            Write-Error -Message $_.exception
+
+        }
+    }
+    End {
+
+    }
+}
+function Get-UserSkuConsumptionSummary {
+    Param(
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify the user input object",
+            Position=0,
+            ValueFromPipeLine=$true
+        )]
+        [psobject]
+        $InputObject,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify the object id"
+        )]
+        [psobject]
+        $SkuConsumption
+    )
+
+    Begin {
+        try {
+        
+        }
+        catch {
+            Write-Error -Message $_.Exception
+
+        }
+    }
+
+    Process {
+        try {
+            # Variables
+            $SkuStatusAssigned = "Assigned"
+            $SkuStatusUnassigned = "Unassigned"
+
+            # Get Sku consumption
+            $UserConsumptionSummary = $InputObject | ForEach-Object {
+                $ObjectProperties = @{
+                    ObjectId = $_.ObjectId
+                    DisplayName = $_.DisplayName
+                    UserPrincipalName = $_.UserPrincipalName
+                    SkuPartNumber = $SkuConsumption.SkuPartNumber
+                    SkuId = $SkuConsumption.SkuId
+                }
+                if ($_.AssignedLicenses.skuid -contains $SkuConsumption.SkuId){
+                    $ObjectProperties += @{
+                        SkuStatus = $SkuStatusAssigned
+                    }
+                }
+                else {
+                    $ObjectProperties += @{
+                        SkuStatus = $SkuStatusUnassigned
+                    }
+                }
+                New-Object -TypeName psobject -Property $ObjectProperties
+            }
+            # Return object
+            return $UserConsumptionSummary
         }
         Catch {
             Write-Error -Message $_.exception
@@ -373,7 +463,7 @@ function Get-ServicePlanUnitSummary {
             ValueFromPipeLine=$true
         )]
         [psobject]
-        $ServicePlanSku
+        $InputObject
     )
 
     Begin {
@@ -389,7 +479,7 @@ function Get-ServicePlanUnitSummary {
     Process {
         try {
             # Calculate total licences
-            $ServicePlanSku | ForEach-Object {
+            $InputObject | ForEach-Object {
                 $TotalEnabled += $_.Enabled
                 $TotalConsumed +=  $_.ConsumedUnits
                 $TotalSuspended += $_.Suspended
@@ -397,8 +487,8 @@ function Get-ServicePlanUnitSummary {
                 $TotalAvailable += $_.Available
             }
             # Unique variables
-            $ServicePlanId = $ServicePlanSku.ServicePlanId | Select-Object -Unique
-            $ServicePlanName = $ServicePlanSku.ServicePlanName | Select-Object -Unique
+            $ServicePlanId = $InputObject.ServicePlanId | Select-Object -Unique
+            $ServicePlanName = $InputObject.ServicePlanName | Select-Object -Unique
 
             # Build Totals Object
             $ServicePlanUnitSummary =[PSCustomObject]@{

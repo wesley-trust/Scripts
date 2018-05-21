@@ -434,7 +434,7 @@ function Get-UserSkuConsumptionSummary {
 
     }
 }
-function Get-ServicePlanUnitSummary {
+function Get-SkuServicePlanUnitSummary {
     Param(
         [Parameter(
             Mandatory=$false,

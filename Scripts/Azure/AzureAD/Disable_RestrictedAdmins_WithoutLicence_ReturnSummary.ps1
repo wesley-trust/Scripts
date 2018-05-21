@@ -36,10 +36,16 @@ Param(
     $ServicePlanId = "41781fb2-bc02-4b7c-bd55-b576c07bb09d",
     [Parameter(
         Mandatory=$false,
-        HelpMessage="Specify licence status required"
+        HelpMessage="Specify service plan provisioning status required"
     )]
     [string]
-    $LicenceStatus = "Success",
+    $ServicePlanProvisioningStatus = "Success",
+    [Parameter(
+        Mandatory=$false,
+        HelpMessage="Specify service plan capability status required"
+    )]
+    [string]
+    $ServicePlanCapabilityStatus = "Enabled",
     [Parameter(
         Mandatory=$false,
         HelpMessage="Specify account enabled status if required licence status is not found"
@@ -94,7 +100,7 @@ Process {
         $UserServicePlanCompliance = Get-UserServicePlanCompliance `
             -GroupDisplayName $GroupDisplayName `
             -ServicePlanId $ServicePlanId `
-            -LicenceStatus $LicenceStatus `
+            -ServicePlanProvisioningStatus $ServicePlanProvisioningStatus `
             -AccountEnabled $AccountEnabled
 
         # Set user account status, based on the compliance status

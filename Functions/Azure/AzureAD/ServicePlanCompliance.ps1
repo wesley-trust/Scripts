@@ -30,10 +30,16 @@ function Get-UserServicePlanCompliance {
         $ServicePlanId,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify licence status required"
+            HelpMessage="Specify service plan provisioning status required"
         )]
         [string]
-        $LicenceStatus,
+        $ServicePlanProvisioningStatus,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify service plan capability status required"
+        )]
+        [string]
+        $ServicePlanCapabilityStatus,
         [Parameter(
             Mandatory=$false,
             HelpMessage="Specify desired account enabled status if non-compliant"
@@ -55,8 +61,9 @@ function Get-UserServicePlanCompliance {
     Process {
         try {
             # Variables
-            $NoServicePlan = "No service plan found"
-            $NoServicePlanStatus = "Error"
+            $NoServicePlanName = "Service Plan not found"
+            $NoServicePlanProvisioningStatus = "Error"
+            $NoServicePlanCapabilityStatus = $NoServicePlanProvisioningStatus
             
             # Get users to analyse
             if ($GroupDisplayName){
@@ -90,6 +97,7 @@ function Get-UserServicePlanCompliance {
                         DisplayName = $Member.DisplayName
                         UserPrincipalName = $Member.UserPrincipalName
                         AssignedLicenses = $Member.AssignedLicenses
+                        AssignedPlans = $Member.AssignedPlans
                     }
                     # Get service plans for user
                     $AzureADUserLicenseDetail = Get-AzureADUserLicenseDetail -ObjectId $Member.ObjectId
@@ -103,21 +111,29 @@ function Get-UserServicePlanCompliance {
 
                         # Filter to specific unique service plan with licence status
                         $UserServicePlan = $UserServicePlans `
-                            | Where-Object {$_.ServicePlanId -eq $ServicePlanId -and $_.ProvisioningStatus -eq $LicenceStatus} `
+                            | Where-Object {
+                                $_.ServicePlanId -eq $ServicePlanId
+                                -and
+                                $_.ProvisioningStatus -eq $ServicePlanProvisioningStatus
+                                -and
+                                $_.CapabilityStatus -eq $ServicePlanCapabilityStatus
+                            } `
                             | Select-Object -Unique
 
                         # If service plan exists, append to object
                         if ($UserServicePlan){
                             $ObjectProperties += @{
-                                ServicePlan = $UserServicePlan.ServicePlanName
-                                ServicePlanStatus = $UserServicePlan.ProvisioningStatus
+                                ServicePlanName = $UserServicePlan.ServicePlanName
+                                ServicePlanProvisioningStatus = $UserServicePlan.ProvisioningStatus
+                                ServicePlanCapabilityStatus = $UserServicePlan.CapabilityStatus
                             }
                         }
                         # If service plan does not exist, append variable to property
                         else {
                             $ObjectProperties += @{
-                                ServicePlan = $NoServicePlan
-                                ServicePlanStatus = $NoServicePlanStatus
+                                ServicePlanName = $NoServicePlanName
+                                ServicePlanProvisioningStatus = $NoServicePlanProvisioningStatus
+                                ServicePlanCapabilityStatus = $NoServicePlanCapabilityStatus
                             }
                         }
                     }
@@ -128,15 +144,19 @@ function Get-UserServicePlanCompliance {
                 
                 # For each user with a licence record compliance
                 $ComplianceStatus = $UserLicenceCheck | ForEach-Object {
+                    # Assigned Service Plan
+                    $AssignedServicePlan = $_.AssignedPlans | Where-Object ServicePlanId -eq $ServicePlanId
                     # Build object
                     $ObjectProperties = @{
                         ObjectID = $_.ObjectId
                         DisplayName = $_.DisplayName
                         UserPrincipalName = $_.UserPrincipalName
+                        AccountEnabled = $_.AccountEnabled
                         ServicePlanId = $_.ServicePlanId
-                        ServicePlan = $_.ServicePlan
-                        ServicePlanStatus = $_.ServicePlanStatus
-                        AccountEnabled = $AzureADUser.AccountEnabled
+                        ServicePlanName = $_.ServicePlan
+                        ServicePlanProvisioningStatus = $_.ServicePlanProvisioningStatus
+                        ServicePlanCapabilityStatus = $_.ServicePlanCapabilityStatus
+                        AssignedServicePlan = $AssignedServicePlan
                         AssignedLicenses = $_.AssignedLicenses
                     }
                     # Include action status
@@ -158,7 +178,7 @@ function Get-UserServicePlanCompliance {
                 return $ComplianceStatus
             }
             else {
-                Write-Output "No members with account enabled status of $AccountEnabled for group $GroupDisplayName"
+                Write-Output "No members with account enabled status of $AccountEnabled"
             }
         }
         Catch {
@@ -297,7 +317,7 @@ function Get-ServicePlanSku {
                         ConsumedUnits = $_.ConsumedUnits
                         CapabilityStatus = $_.CapabilityStatus
                         AppliesTo = $_.AppliesTo
-                        ProvisioningStatus = $_.ProvisioningStatus
+                        ServicePlanProvisioningStatus = $_.ServicePlanProvisioningStatus
                         ServicePlanId = $_.ServicePlanId
                         ServicePlanName = $_.ServicePlanName
                         Enabled = $SubscribedSkuPrepaidUnits.Enabled

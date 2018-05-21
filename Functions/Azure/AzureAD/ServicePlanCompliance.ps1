@@ -14,7 +14,7 @@
     
 #>
 
-function Get-UserServicePlanCompliance {
+function Get-AzureADMembers {
     Param(
         [Parameter(
             Mandatory=$false,
@@ -24,19 +24,19 @@ function Get-UserServicePlanCompliance {
         $GroupDisplayName,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify the licence service plan ID to check"
+            HelpMessage="Specify the display name of user to check"
         )]
         [string]
-        $ServicePlanId,
+        $UserDisplayName,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify service plan provisioning status required"
+            HelpMessage="Specify the UPN of user to check"
         )]
         [string]
-        $ServicePlanProvisioningStatus,
+        $UserUPN,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify desired account enabled status if non-compliant"
+            HelpMessage="Specify account status to check"
         )]
         [bool]
         $AccountEnabled
@@ -75,8 +75,55 @@ function Get-UserServicePlanCompliance {
 
             # Filter members (excluding null property)
             if ($AccountEnabled -eq $true -or $AccountEnabled -eq $false){
-                $AzureADMembers = $AzureADMembers | Where-Object AccountEnabled -ne $AccountEnabled
+                $AzureADMembers = $AzureADMembers | Where-Object AccountEnabled -eq $AccountEnabled
             }
+
+            # Return objects
+            return $AzureADMembers
+        }
+        Catch {
+            Write-Error -Message $_.exception
+
+        }
+    }
+    End {
+
+    }
+}
+function Get-UserServicePlanCompliance {
+    Param(
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify the Azure AD members to check"
+        )]
+        [psobject]
+        $AzureADMembers,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify the licence service plan ID to check"
+        )]
+        [string]
+        $ServicePlanId,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify service plan provisioning status required"
+        )]
+        [string]
+        $ServicePlanProvisioningStatus
+    )
+
+    Begin {
+        try {
+        
+        }
+        catch {
+            Write-Error -Message $_.Exception
+
+        }
+    }
+
+    Process {
+        try {
 
             # If there are members, check licence compliance for each member
             if ($AzureADMembers){
@@ -138,7 +185,7 @@ function Get-UserServicePlanCompliance {
                 return $UserComplianceStatus
             }
             else {
-                Write-Output "No members with account enabled status of $AccountEnabled"
+                Write-Output "No members specified to check"
             }
         }
         Catch {
@@ -162,7 +209,7 @@ function Set-UserAccountEnabledOnComplianceStatus {
         $ObjectId,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify the intended account status if compliance status is false"
+            HelpMessage="Specify the original account status"
         )]
         [bool]
         $AccountEnabled,
@@ -188,7 +235,7 @@ function Set-UserAccountEnabledOnComplianceStatus {
         try {
             # If compliance status is false
             if (!$ComplianceStatus){
-                Set-AzureADUser -ObjectID $ObjectId -AccountEnabled $AccountEnabled
+                Set-AzureADUser -ObjectID $ObjectId -AccountEnabled !$AccountEnabled
 
                     # Check this has applied
                     $AzureADUser = Get-AzureADUser -ObjectId $ObjectId
@@ -201,7 +248,7 @@ function Set-UserAccountEnabledOnComplianceStatus {
                         AccountEnabled = $AzureADUser.AccountEnabled
                     }
                     # Include action status
-                    if ($AzureADUser.AccountEnabled -eq $AccountEnabled){
+                    if ($AzureADUser.AccountEnabled -eq !$AccountEnabled){
                         $ObjectProperties += @{
                             ActionStatus = "Successfully changed account enabled property"
                         }

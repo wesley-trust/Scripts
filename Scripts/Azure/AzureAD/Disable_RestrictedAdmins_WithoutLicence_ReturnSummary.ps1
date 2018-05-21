@@ -42,10 +42,10 @@ Param(
     $ServicePlanProvisioningStatus = "Success",
     [Parameter(
         Mandatory=$false,
-        HelpMessage="Specify account enabled status if required licence status is not found"
+        HelpMessage="Specify account enabled status to check"
     )]
     [bool]
-    $AccountEnabled = $false,
+    $AccountEnabled = $true,
     [Parameter(
         Mandatory=$false,
         HelpMessage="Specify required compliance status"
@@ -91,11 +91,15 @@ Begin {
 Process {
     try {
         # Get user licence compliance
-        $UserServicePlanCompliance = Get-UserServicePlanCompliance `
+        $AzureADMembers = Get-AzureADMembers `
             -GroupDisplayName $GroupDisplayName `
-            -ServicePlanId $ServicePlanId `
-            -ServicePlanProvisioningStatus $ServicePlanProvisioningStatus `
             -AccountEnabled $AccountEnabled
+
+        # Get user licence compliance
+        $UserServicePlanCompliance = Get-UserServicePlanCompliance `
+            -AzureADMembers $AzureADMembers `
+            -ServicePlanId $ServicePlanId `
+            -ServicePlanProvisioningStatus $ServicePlanProvisioningStatus
 
         # Set user account status, based on the compliance status
         $UserAccountEnabledOnComplianceStatus = $UserServicePlanCompliance | ForEach-Object {

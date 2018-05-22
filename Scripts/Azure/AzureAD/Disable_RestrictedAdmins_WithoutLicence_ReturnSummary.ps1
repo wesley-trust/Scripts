@@ -1,12 +1,12 @@
 <#
-#Script name: Disable members of SyncedAdmins group without valid Azure AD P1 licence and check available licences
+#Script name: Disable members of RestrictedAdmins group without valid Azure AD P1 licence and check available licences and assignments
 #Creator: Wesley Trust
 #Date: 2018-05-14
-#Revision: 2
+#Revision: 3
 #References: 
 
 .Synopsis
-    Gets members of a group, checks whether they have a licence, changes account status to disabled when non-compliant and gets licence counts.
+    Gets members of a group, checks whether they have a licence, changes account status to disabled when non-compliant and gets licence counts/assignments.
 .Description
 
 .Example
@@ -80,7 +80,7 @@ Begin {
         Check-RequiredModule -Modules $Module
 
         # Connect to directory tenant
-        Connect-AzureAD -Credential $Credential
+        $ConnectionStatus = Connect-AzureAD -Credential $Credential
     }
     catch {
         Write-Error -Message $_.Exception
@@ -95,52 +95,76 @@ Process {
             -GroupDisplayName $GroupDisplayName `
             -AccountEnabled $AccountEnabled
 
-        # Get user licence compliance
-        $UserServicePlanCompliance = Get-UserServicePlanCompliance `
-            -AzureADMembers $AzureADMembers `
-            -ServicePlanId $ServicePlanId `
-            -ServicePlanProvisioningStatus $ServicePlanProvisioningStatus
+        # If users are retuned
+        if ($AzureADMembers){
+            # Get user licence compliance
+            $UserServicePlanCompliance = Get-UserServicePlanCompliance `
+                -AzureADMembers $AzureADMembers `
+                -ServicePlanId $ServicePlanId `
+                -ServicePlanProvisioningStatus $ServicePlanProvisioningStatus
 
-        # Set user account status, based on the compliance status
-        $UserAccountEnabledOnComplianceStatus = $UserServicePlanCompliance | ForEach-Object {
-            Set-UserAccountEnabledOnComplianceStatus `
-                -ObjectId $_.$ObjectId `
-                -AccountEnabled $AccountEnabled `
-                -ComplianceStatus $_.$ComplianceStatus
-        }
+            # Set user account status, based on the compliance status
+            $UserAccountEnabledOnComplianceStatus = $UserServicePlanCompliance | ForEach-Object {
+                Set-UserAccountEnabledOnComplianceStatus `
+                    -ObjectId $_.ObjectId `
+                    -AccountEnabled $AccountEnabled `
+                    -ComplianceStatus $_.ComplianceStatus
+            }
 
-        # Get Service Plan Skus
-        $ServicePlanSku = Get-ServicePlanSku -ServicePlanId $ServicePlanId
+            # Get Service Plan Skus
+            $ServicePlanSku = Get-ServicePlanSku -ServicePlanId $ServicePlanId
 
-        # Get Summary if a SKU is available
-        if ($ServicePlanSku.SkuPartNumber){
-            $SkuConsumptionSummary = $ServicePlanSku | Get-SkuConsumptionSummary
-            
-            # If user compliance is equal to required status
-            if ($UserServicePlanCompliance -eq $ComplianceStatus){
-                $FilteredUserServicePlanCompliance | Where-Object Status -eq $ComplianceStatus
+            # Get Summary if a SKU is available
+            if ($ServicePlanSku.SkuPartNumber){
+                $SkuConsumptionSummary = $ServicePlanSku | Get-SkuConsumptionSummary
+                
+                # If user compliance is equal to required status
+                if ($UserServicePlanCompliance.ComplianceStatus -eq $ComplianceStatus){
+                    $FilteredUserServicePlanCompliance = $UserServicePlanCompliance | Where-Object ComplianceStatus -eq $ComplianceStatus
 
-                # If SKU is equal to required status
-                if ($SkuConsumptionSummary.Status = $SkuConsumptionStatus){
-                    $FilteredSkuConsumption = $SkuConsumptionSummary | Where-Object Status -eq $SkuConsumptionStatus
-                    
-                    # Get Summary of users with a warning Sku
-                    $UserSkuConsumptionSummary = $FilteredUserServicePlanCompliance | Get-UserSkuConsumptionSummary -SkuConsumption $FilteredSkuConsumption
+                    # If SKU is equal to required status
+                    if ($SkuConsumptionSummary.Status -eq $SkuConsumptionStatus){
+                        $FilteredSkuConsumption = $SkuConsumptionSummary | Where-Object Status -eq $SkuConsumptionStatus
+                        
+                        # Get Summary of users with specified SKU consumption
+                        $UserSkuConsumptionSummary = $FilteredUserServicePlanCompliance | Get-UserSkuConsumptionSummary -SkuConsumption $FilteredSkuConsumption
+                    }
                 }
             }
-        }
+            else {
+                $WarningMessage = "No SKUs available"
+                Write-Warning $WarningMessage
+            }
 
-        # Output
-        $UserServicePlanCompliance
-        $UserAccountEnabledOnComplianceStatus
-        if ($SkuConsumptionSummary){
-            $SkuConsumptionSummary
-            if ($UserSkuConsumptionSummary){
-                $UserSkuConsumptionSummary
+            # Format Output
+            Write-Host "`nUser Service Plan Compliance:`n"
+            $UserServicePlanCompliance | Format-Table DisplayName,UserPrincipalName,ServicePlanName,ComplianceStatus,AccountEnabled
+            
+            if ($UserAccountEnabledOnComplianceStatus){
+                Write-Host "`nUser Action on Service Plan Compliance:`n"
+                $UserAccountEnabledOnComplianceStatus | Format-Table DisplayName,ActionStatus,AccountEnabled
+            }
+
+            if ($ServicePlanSku){
+                Write-Host "`nSKUs with Service Plan:`n"
+                $ServicePlanSku | Format-Table SkuPartNumber,CapabilityStatus,ServicePlanName,ProvisioningStatus
+                
+                Write-Host "`nSKU Consumption Analysis:`n"
+                $SkuConsumptionSummary | Format-Table SkuPartNumber,AvailableUnits,Status,StatusDetail
+                
+                if ($UserSkuConsumptionSummary){
+                    Write-Host "`nUser SKU Assignment:`n"
+                    $UserSkuConsumptionSummary | Format-Table DisplayName,UserPrincipalName,AccountEnabled,SkuPartNumber,SkuAssigned
+                }
+            }
+            else {
+                Write-Output "No available SKUs with the Service Plan, an appropriate SKU, if required, should be provisioned"
             }
         }
         else {
-            $ServicePlanSku
+            $ErrorMessage = "No Azure AD members returned"
+            Write-Error $ErrorMessage
+            throw $ErrorMessage
         }
     }
     Catch {

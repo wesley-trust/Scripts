@@ -6,34 +6,41 @@
 #References: 
 
 .Synopsis
-    Functions to get members of a group and check their licence compliance, perform an action as a result, and check licence units
+    Functions to get Azure AD members, check their licence compliance, perform an action as a result, and check licence units/assignments
 .Description
-    These functions return a group member compliance object, a user account status object (based on compliance action), as well as an SKU unit objects, including summary.
-
+    These functions return a member compliance object, a user account action object (based on compliance), as well as an SKU unit amounts/assignments/analysis.
 .Example
     
 #>
-
 function Get-AzureADMembers {
     Param(
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify the display name of group to check"
+            HelpMessage="Specify the display name of group to check, multiple groups can be comma separated or in an array",
+            ValueFromPipeLineByPropertyName=$true
         )]
-        [string]
+        [string[]]
         $GroupDisplayName,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify the display name of user to check"
+            HelpMessage="Specify the display name of user to check, multiple names can be comma separated or in an array",
+            ValueFromPipeLineByPropertyName=$true
         )]
-        [string]
+        [string[]]
         $UserDisplayName,
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Specify the UPN of user to check"
+            HelpMessage="Specify the UPN of user to check, multiple UPNs can be comma separated or in an array",
+            ValueFromPipeLineByPropertyName=$true
         )]
-        [string]
-        $UserUPN,
+        [string[]]
+        $UserPrincipalName,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify whether all users should be included"
+        )]
+        [switch]
+        $AllUsers,
         [Parameter(
             Mandatory=$false,
             HelpMessage="Specify account status to check"
@@ -54,24 +61,55 @@ function Get-AzureADMembers {
 
     Process {
         try {
+            # Clear members
+            $AzureADMembers = $null
             
-            # Get users to analyse
-            if ($GroupDisplayName){
-                # Get Azure AD Group
-                $AzureADGroup = Get-AzureADGroup -Filter "DisplayName eq '$GroupDisplayName'"
-
-                # Get Members of Azure AD Group
-                $AzureADMembers = Get-AzureADGroupMember -ObjectId $AzureADGroup.ObjectId
-            }
-            elseif ($UserDisplayName) {
-                $AzureADMembers = Get-AzureADUser -Filter "DisplayName eq '$UserDisplayName'"
-            }
-            elseif ($UserUPN){
-                $AzureADMembers = Get-AzureADUser -Filter "UserPrincipalName eq '$UserUPN'"
-            }
-            else {
+            # If all users switch is true, get all users, else use property values
+            if ($AllUsers) {
                 $AzureADMembers = Get-AzureADUser -All $true
             }
+            else {
+                # Get users to analyse
+                if ($GroupDisplayName){
+                    # Split and trim input
+                    $GroupDisplayName = $GroupDisplayName.Split(",")
+                    $GroupDisplayName = $GroupDisplayName.Trim()
+                    
+                    # Get Azure AD Group
+                    $AzureADGroup = $GroupDisplayName | Foreach-Object {
+                        Get-AzureADGroup -Filter "DisplayName eq '$_'"
+                    }
+
+                    # Get Members of Azure AD Group
+                    $AzureADGroup | ForEach-Object {
+                        $AzureADMembers += Get-AzureADGroupMember -ObjectId $_.ObjectId
+                    }
+                }
+                if ($UserDisplayName) {
+                    # Split and trim input
+                    $UserDisplayName = $UserDisplayName.Split(",")
+                    $UserDisplayName = $UserDisplayName.Trim()
+
+                    # Get Members of Azure AD Group
+                    $UserDisplayName | ForEach-Object {
+                        $AzureADMembers += Get-AzureADUser -Filter "DisplayName eq '$_'"
+                    }
+                }
+                if ($UserPrincipalName){
+
+                    # Split and trim input
+                    $UserUPN = $UserUPN.Split(",")
+                    $UserUPN = $UserUPN.Trim()
+
+                    # Get Members of Azure AD Group
+                    $UserUPN | ForEach-Object {
+                        $AzureADMembers += Get-AzureADUser -Filter "UserPrincipalName eq '$_'"
+                    }
+                }
+            }
+            
+            # Unique members
+            $AzureADMembers = $AzureADMembers | Select-Object -Unique
 
             # Filter members (excluding null property)
             if ($AccountEnabled -eq $true -or $AccountEnabled -eq $false){
@@ -233,9 +271,12 @@ function Set-UserAccountEnabledOnComplianceStatus {
 
     Process {
         try {
+            # Invert Parameter
+            $AccountEnabled = !$AccountEnabled
+            
             # If compliance status is false
             if (!$ComplianceStatus){
-                Set-AzureADUser -ObjectID $ObjectId -AccountEnabled !$AccountEnabled
+                Set-AzureADUser -ObjectID $ObjectId -AccountEnabled $AccountEnabled
 
                     # Check this has applied
                     $AzureADUser = Get-AzureADUser -ObjectId $ObjectId
@@ -248,7 +289,7 @@ function Set-UserAccountEnabledOnComplianceStatus {
                         AccountEnabled = $AzureADUser.AccountEnabled
                     }
                     # Include action status
-                    if ($AzureADUser.AccountEnabled -eq !$AccountEnabled){
+                    if ($AzureADUser.AccountEnabled -eq $AccountEnabled){
                         $ObjectProperties += @{
                             ActionStatus = "Successfully changed account enabled property"
                         }
@@ -324,7 +365,7 @@ function Get-ServicePlanSku {
                         ConsumedUnits = $_.ConsumedUnits
                         CapabilityStatus = $_.CapabilityStatus
                         AppliesTo = $_.AppliesTo
-                        ServicePlanProvisioningStatus = $_.ServicePlanProvisioningStatus
+                        ProvisioningStatus = $_.ProvisioningStatus
                         ServicePlanId = $_.ServicePlanId
                         ServicePlanName = $_.ServicePlanName
                         Enabled = $SubscribedSkuPrepaidUnits.Enabled
@@ -333,9 +374,6 @@ function Get-ServicePlanSku {
                         Available = $AvailableUnits
                     }
                 }
-            }
-            else {
-                Write-Output "No available SKUs with the Service Plan, an appropriate subscription should be purchased"
             }
             # Return object
             return $ServicePlanSku
@@ -391,7 +429,7 @@ function Get-SkuConsumptionSummary {
                 elseif ($_.Available -lt "0"){
                     $ObjectProperties += @{
                         Status = "Warning"
-                        StatusDetail = "Available units in deficit, immediate action required"
+                        StatusDetail = "Available units in deficit, licences will expire soon"
                     }
                 }
                 elseif ($_.Available -gt "0"){
@@ -444,9 +482,6 @@ function Get-UserSkuConsumptionSummary {
 
     Process {
         try {
-            # Variables
-            $SkuStatusAssigned = "Assigned"
-            $SkuStatusUnassigned = "Unassigned"
 
             # Get Sku consumption
             $UserConsumptionSummary = $InputObject | ForEach-Object {
@@ -454,17 +489,18 @@ function Get-UserSkuConsumptionSummary {
                     ObjectId = $_.ObjectId
                     DisplayName = $_.DisplayName
                     UserPrincipalName = $_.UserPrincipalName
+                    AccountEnabled = $_.AccountEnabled
                     SkuPartNumber = $SkuConsumption.SkuPartNumber
                     SkuId = $SkuConsumption.SkuId
                 }
                 if ($_.AssignedLicenses.skuid -contains $SkuConsumption.SkuId){
                     $ObjectProperties += @{
-                        SkuStatus = $SkuStatusAssigned
+                        SkuAssigned = $true
                     }
                 }
                 else {
                     $ObjectProperties += @{
-                        SkuStatus = $SkuStatusUnassigned
+                        SkuAssigned = $false
                     }
                 }
                 New-Object -TypeName psobject -Property $ObjectProperties

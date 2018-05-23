@@ -2,7 +2,7 @@
 #Script name: Disable members of RestrictedAdmins group without valid Azure AD P1 licence and check available licences and assignments
 #Creator: Wesley Trust
 #Date: 2018-05-14
-#Revision: 3
+#Revision: 4
 #References: 
 
 .Synopsis

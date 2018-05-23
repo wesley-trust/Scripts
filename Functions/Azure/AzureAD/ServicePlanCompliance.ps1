@@ -2,7 +2,7 @@
 #Script name: Service Plan Licences and Compliance
 #Creator: Wesley Trust
 #Date: 2018-05-16
-#Revision: 3
+#Revision: 4
 #References: 
 
 .Synopsis
@@ -96,7 +96,7 @@ function Get-AzureADMember {
                     $AzureADMemberUsers += $AzureADMembers | Where-Object ObjectType -eq "User"
                     $AzureADMemberGroups = $AzureADMembers | Where-Object ObjectType -eq "Group"
 
-                    # If recurse is true, recall function and iterate until not groups remain, appending
+                    # If recurse is true, recall function and iterate until no groups remain, appending
                     if ($Recurse){
                         if ($AzureADMemberGroups){
                             $AzureADMemberUsers += $AzureADMemberGroups | ForEach-Object {

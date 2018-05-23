@@ -12,7 +12,7 @@
 .Example
     
 #>
-function Get-AzureADMembers {
+function Get-AzureADMember {
     Param(
         [Parameter(
             Mandatory=$false,
@@ -21,6 +21,12 @@ function Get-AzureADMembers {
         )]
         [string[]]
         $GroupDisplayName,
+        [Parameter(
+            Mandatory=$false,
+            HelpMessage="Specify whether to check group membership recursively for nested groups (default: true)"
+        )]
+        [bool]
+        $Recurse = $true,
         [Parameter(
             Mandatory=$false,
             HelpMessage="Specify the display name of user to check, multiple names can be comma separated or in an array",
@@ -45,7 +51,7 @@ function Get-AzureADMembers {
             Mandatory=$false,
             HelpMessage="Specify account status to check"
         )]
-        [bool]
+        [Nullable[bool]]
         $AccountEnabled
     )
 
@@ -61,63 +67,80 @@ function Get-AzureADMembers {
 
     Process {
         try {
-            # Clear members
-            $AzureADMembers = $null
+            # Create array
+            $AzureADMemberUsers = @()
             
             # If all users switch is true, get all users, else use property values
             if ($AllUsers) {
-                $AzureADMembers = Get-AzureADUser -All $true
+                $AzureADMemberUsers = Get-AzureADUser -All $true
             }
             else {
                 # Get users to analyse
                 if ($GroupDisplayName){
+                    
                     # Split and trim input
                     $GroupDisplayName = $GroupDisplayName.Split(",")
                     $GroupDisplayName = $GroupDisplayName.Trim()
                     
                     # Get Azure AD Group
-                    $AzureADGroup = $GroupDisplayName | Foreach-Object {
+                    $AzureADGroups = $GroupDisplayName | Foreach-Object {
                         Get-AzureADGroup -Filter "DisplayName eq '$_'"
                     }
-
+                    
                     # Get Members of Azure AD Group
-                    $AzureADGroup | ForEach-Object {
-                        $AzureADMembers += Get-AzureADGroupMember -ObjectId $_.ObjectId
+                    $AzureADMembers = $AzureADGroups | ForEach-Object {
+                       Get-AzureADGroupMember -ObjectId $_.ObjectId -All $true
+                    }
+                    
+                    # Filter on object type
+                    $AzureADMemberUsers += $AzureADMembers | Where-Object ObjectType -eq "User"
+                    $AzureADMemberGroups = $AzureADMembers | Where-Object ObjectType -eq "Group"
+
+                    # If recurse is true, recall function and iterate until not groups remain, appending
+                    if ($Recurse){
+                        if ($AzureADMemberGroups){
+                            $AzureADMemberUsers += $AzureADMemberGroups | ForEach-Object {
+                                Get-AzureADMember -GroupDisplayName $_.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled
+                            }
+                        }
                     }
                 }
-                if ($UserDisplayName) {
-                    # Split and trim input
-                    $UserDisplayName = $UserDisplayName.Split(",")
-                    $UserDisplayName = $UserDisplayName.Trim()
-
-                    # Get Members of Azure AD Group
-                    $UserDisplayName | ForEach-Object {
-                        $AzureADMembers += Get-AzureADUser -Filter "DisplayName eq '$_'"
-                    }
-                }
-                if ($UserPrincipalName){
-
-                    # Split and trim input
-                    $UserUPN = $UserUPN.Split(",")
-                    $UserUPN = $UserUPN.Trim()
-
-                    # Get Members of Azure AD Group
-                    $UserUPN | ForEach-Object {
-                        $AzureADMembers += Get-AzureADUser -Filter "UserPrincipalName eq '$_'"
-                    }
+                else {
+                    Write-Output "Does not contain group"
                 }
             }
-            
+            if ($UserDisplayName) {
+                # Split and trim input
+                $UserDisplayName = $UserDisplayName.Split(",")
+                $UserDisplayName = $UserDisplayName.Trim()
+
+                # Get Members of Azure AD Group
+                $UserDisplayName | ForEach-Object {
+                    $AzureADMemberUsers += Get-AzureADUser -Filter "DisplayName eq '$_'"
+                }
+            }
+            if ($UserPrincipalName){
+
+                # Split and trim input
+                $UserUPN = $UserUPN.Split(",")
+                $UserUPN = $UserUPN.Trim()
+
+                # Get Members of Azure AD Group
+                $UserUPN | ForEach-Object {
+                    $AzureADMemberUsers += Get-AzureADUser -Filter "UserPrincipalName eq '$_'"
+                }
+            }
+
             # Unique members
-            $AzureADMembers = $AzureADMembers | Select-Object -Unique
-
-            # Filter members (excluding null property)
-            if ($AccountEnabled -eq $true -or $AccountEnabled -eq $false){
-                $AzureADMembers = $AzureADMembers | Where-Object AccountEnabled -eq $AccountEnabled
-            }
+            $AzureADMemberUsers = $AzureADMemberUsers | Select-Object -Unique
+            
+            # Evaluate account enabled property
+            if(![string]::IsNullOrEmpty($AccountEnabled)){
+                $AzureADMemberUsers = $AzureADMemberUsers | Where-Object AccountEnabled -eq $AccountEnabled
+              }
 
             # Return objects
-            return $AzureADMembers
+            return $AzureADMemberUsers
         }
         Catch {
             Write-Error -Message $_.exception

@@ -44,7 +44,7 @@ Param(
         Mandatory=$false,
         HelpMessage="Specify account enabled status to check"
     )]
-    [bool]
+    [Nullable[bool]]
     $AccountEnabled = $true,
     [Parameter(
         Mandatory=$false,

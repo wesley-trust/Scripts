@@ -100,7 +100,7 @@ function Get-AzureADMember {
                     if ($Recurse){
                         if ($AzureADMemberGroups){
                             if ($AzureADMemberGroups.DisplayName -contains $AzureADGroups.DisplayName){
-                                $ErrorMessage = "Circular reference in nested group"
+                                $ErrorMessage = "Circular reference, child group is a member of the parent group"
                                 Write-Error $ErrorMessage
                                 throw $ErrorMessage
                             }

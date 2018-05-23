@@ -91,7 +91,7 @@ Begin {
 Process {
     try {
         # Get user licence compliance
-        $AzureADMembers = Get-AzureADMembers `
+        $AzureADMembers = Get-AzureADMember `
             -GroupDisplayName $GroupDisplayName `
             -AccountEnabled $AccountEnabled
 

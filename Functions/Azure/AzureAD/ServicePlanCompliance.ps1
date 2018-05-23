@@ -99,9 +99,17 @@ function Get-AzureADMember {
                     # If recurse is true, recall function and iterate until no groups remain, appending
                     if ($Recurse){
                         if ($AzureADMemberGroups){
-                            $AzureADMemberUsers += $AzureADMemberGroups | ForEach-Object {
-                                Get-AzureADMember -GroupDisplayName $_.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled
+                            if ($AzureADMemberGroups.DisplayName -contains $AzureADGroups.DisplayName){
+                                $ErrorMessage = "Circular reference in nested group"
+                                Write-Error $ErrorMessage
+                                throw $ErrorMessage
                             }
+                            else {
+                                $AzureADMemberUsers += $AzureADMemberGroups | ForEach-Object {
+                                    Get-AzureADMember -GroupDisplayName $_.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled
+                                }
+                            }
+
                         }
                     }
                 }

@@ -95,7 +95,7 @@ function Get-AzureADMember {
                     # Filter on object type
                     $AzureADMemberUsers += $AzureADMembers | Where-Object ObjectType -eq "User"
                     $AzureADMemberGroups = $AzureADMembers | Where-Object ObjectType -eq "Group"
-
+                    
                     # If recurse is true, recall function and iterate until no groups remain, appending
                     if ($Recurse){
                         if ($AzureADMemberGroups){
@@ -105,11 +105,10 @@ function Get-AzureADMember {
                                 throw $ErrorMessage
                             }
                             else {
-                                $AzureADMemberUsers += $AzureADMemberGroups | ForEach-Object {
-                                    Get-AzureADMember -GroupDisplayName $_.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled
+                                $AzureADMemberGroups | ForEach-Object {
+                                Get-AzureADMember -GroupDisplayName $_.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled
                                 }
                             }
-
                         }
                     }
                 }
@@ -145,7 +144,7 @@ function Get-AzureADMember {
             # Evaluate account enabled property
             if(![string]::IsNullOrEmpty($AccountEnabled)){
                 $AzureADMemberUsers = $AzureADMemberUsers | Where-Object AccountEnabled -eq $AccountEnabled
-              }
+            }
 
             # Return objects
             return $AzureADMemberUsers

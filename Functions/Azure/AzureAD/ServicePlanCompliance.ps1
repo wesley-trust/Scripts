@@ -73,9 +73,9 @@ function Get-AzureADMember {
                 $AzureADMemberUsersTotal = Get-AzureADUser -All $true
             }
             else {
-                # Create user collection object
-                $AzureADMemberUsersTotal = New-Object System.Collections.Generic.List[System.Object]
+                # Initialise collection
                 #$AzureADMemberUsersTotal = @()
+                $AzureADMemberUsersTotal = New-Object System.Collections.Generic.List[System.Object]
                 
                 # Get users to analyse
                 if ($GroupDisplayName) {
@@ -93,6 +93,7 @@ function Get-AzureADMember {
                     $AzureADGroupsTotal = New-Object System.Collections.Generic.List[System.Object]
                                         
                     # Add group objects to object list
+                    #$AzureADGroupsTotal += $AzureADGroups
                     #$AzureADGroupsTotal.Add($AzureADGroups)
                     $AzureADGroups | Foreach-Object {
                         $AzureADGroupsTotal.add($_)
@@ -108,11 +109,11 @@ function Get-AzureADMember {
                     $AzureADMemberGroups = $AzureADMembers | Where-Object ObjectType -eq "Group"
                     
                     # Add user objects
+                    #$AzureADMemberUsersTotal += $AzureADMemberUsers
                     #$AzureADMemberUsersTotal.add($AzureADMemberUsers)
                     $AzureADMemberUsers | Foreach-Object {
                         $AzureADMemberUsersTotal.add($_)
                     }
-                    #$AzureADMemberUsersTotal += $AzureADMemberUsers
                     
                     # If recurse is true, recall function and iterate until no groups remain, appending
                     if ($Recurse) {
@@ -160,7 +161,7 @@ function Get-AzureADMember {
                     }
                     
                     # Add user objects
-                    #$AzureADMemberUsersTotal += $AzureADMemberUsers
+                    $#AzureADMemberUsersTotal += $AzureADMemberUsers
                     #$AzureADMemberUsersTotal.add($AzureADMemberUsers)
                     $AzureADMemberUsers | Foreach-Object {
                         $AzureADMemberUsersTotal.add($_)
@@ -174,11 +175,15 @@ function Get-AzureADMember {
                     $AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Where-Object AccountEnabled -eq $AccountEnabled
                 }
 
+                # Try changing to psobject
+                #$AzureADMemberUsersTotal = $AzureADMemberUsersTotal | ConvertTo-Json | ConvertFrom-Json
+
                 # Sort and unique users
-                $AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object ObjectId -Unique
+                #$AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object ObjectId -Unique
+                #$AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object {[string]$_.ObjectId} -Unique
                 #$AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object {$_.ObjectId} -Unique
                 #$AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Select-Object -Unique
-                #$AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object @{Expression={$_[0]}} | Get-Unique
+                #$AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object @{Expression={$_[0].DisplayName}} -Unique #| Get-Unique
                 
                 # Return objects
                 return $AzureADMemberUsersTotal
@@ -193,7 +198,7 @@ function Get-AzureADMember {
         }
     }
     End {
-
+        
     }
 }
 function Get-UserServicePlanCompliance {
@@ -231,8 +236,9 @@ function Get-UserServicePlanCompliance {
     Process {
         try {
 
-            # If there are members, check licence compliance for each member
+            # If there are members, unique input and check licence compliance for each member
             if ($AzureADMembers) {
+                #$AzureADMembers = $AzureADMembers | Sort-Object ObjectId -Unique
                 $UserComplianceStatus = foreach ($Member in $AzureADMembers) {
                     
                     # Assigned Service Plan

@@ -403,9 +403,10 @@ function Set-UserAccountEnabledOnComplianceStatus {
                 }
                 # Create object
                 $ComplianceActionStatus = New-Object psobject -Property $ObjectProperties
+                
+                # Return Compliance Action Status
+                return $ComplianceActionStatus
             }
-            # Return Compliance Action Status
-            return $ComplianceActionStatus
         }
         Catch {
             Write-Error -Message $_.exception

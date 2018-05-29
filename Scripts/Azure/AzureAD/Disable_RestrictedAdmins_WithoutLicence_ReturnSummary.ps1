@@ -2,7 +2,7 @@
 #Script name: Disable members of RestrictedAdmins group without valid Azure AD P1 licence and check available licences and assignments
 #Creator: Wesley Trust
 #Date: 2018-05-14
-#Revision: 4
+#Revision: 6
 #References: 
 
 .Synopsis
@@ -17,47 +17,53 @@
 
 Param(
     [Parameter(
-        Mandatory=$false,
-        HelpMessage="Specify a PowerShell credential"
+        Mandatory = $false,
+        HelpMessage = "Specify a PowerShell credential"
     )]
     [pscredential]
     $Credential,
     [Parameter(
-        Mandatory=$false,
-        HelpMessage="Specify the display name of group to check"
+        Mandatory = $false,
+        HelpMessage = "Specify the display name of group to check"
     )]
     [string]
     $GroupDisplayName = "RestrictedAdmins",
     [Parameter(
-        Mandatory=$false,
-        HelpMessage="Specify the licence service plan ID to check"
+        Mandatory = $false,
+        HelpMessage = "Specify the licence service plan ID to check"
     )]
     [string]
     $ServicePlanId = "41781fb2-bc02-4b7c-bd55-b576c07bb09d",
     [Parameter(
-        Mandatory=$false,
-        HelpMessage="Specify service plan provisioning status required"
+        Mandatory = $false,
+        HelpMessage = "Specify service plan provisioning status required"
     )]
     [string]
     $ServicePlanProvisioningStatus = "Success",
     [Parameter(
-        Mandatory=$false,
-        HelpMessage="Specify account enabled status to check"
+        Mandatory = $false,
+        HelpMessage = "Specify account enabled status to check"
     )]
     [Nullable[bool]]
     $AccountEnabled = $true,
     [Parameter(
-        Mandatory=$false,
-        HelpMessage="Specify required compliance status"
+        Mandatory = $false,
+        HelpMessage = "Specify required compliance status"
     )]
     [bool]
     $ComplianceStatus = $True,
     [Parameter(
-        Mandatory=$false,
-        HelpMessage="Specify Sku consumption status to check for"
+        Mandatory = $false,
+        HelpMessage = "Specify Sku consumption status to check for"
     )]
     [string]
-    $SkuConsumptionStatus = "Warning"
+    $SkuConsumptionStatus = "Warning",
+    [Parameter(
+        Mandatory = $false,
+        HelpMessage = "Specify whether to skip disconnection"
+    )]
+    [switch]
+    $SkipDisconnect
 )
 
 Begin {
@@ -70,7 +76,7 @@ Begin {
             "$FunctionLocation\Azure\AzureAD\ServicePlanCompliance.ps1"
         )
         # Function dot source
-        foreach ($Function in $Functions){
+        foreach ($Function in $Functions) {
             . $Function
         }
         
@@ -79,8 +85,14 @@ Begin {
         
         Check-RequiredModule -Modules $Module
 
-        # Connect to directory tenant
-        $ConnectionStatus = Connect-AzureAD -Credential $Credential
+        # Check for active session
+        $CurrentSession = Get-AzureADCurrentSessionInfo
+        
+        if (!$CurrentSession) {
+            # Connect to directory tenant
+            $ConnectionStatus = Connect-AzureAD -Credential $Credential
+        }
+
     }
     catch {
         Write-Error -Message $_.Exception
@@ -96,7 +108,7 @@ Process {
             -AccountEnabled $AccountEnabled
 
         # If users are retuned
-        if ($AzureADMembers){
+        if ($AzureADMembers) {
             # Get user licence compliance
             $UserServicePlanCompliance = Get-UserServicePlanCompliance `
                 -AzureADMembers $AzureADMembers `
@@ -115,15 +127,15 @@ Process {
             $ServicePlanSku = Get-ServicePlanSku -ServicePlanId $ServicePlanId
 
             # Get Summary if a SKU is available
-            if ($ServicePlanSku.SkuPartNumber){
+            if ($ServicePlanSku.SkuPartNumber) {
                 $SkuConsumptionSummary = $ServicePlanSku | Get-SkuConsumptionSummary
                 
                 # If user compliance is equal to required status
-                if ($UserServicePlanCompliance.ComplianceStatus -eq $ComplianceStatus){
+                if ($UserServicePlanCompliance.ComplianceStatus -eq $ComplianceStatus) {
                     $FilteredUserServicePlanCompliance = $UserServicePlanCompliance | Where-Object ComplianceStatus -eq $ComplianceStatus
 
                     # If SKU is equal to required status
-                    if ($SkuConsumptionSummary.Status -eq $SkuConsumptionStatus){
+                    if ($SkuConsumptionSummary.Status -eq $SkuConsumptionStatus) {
                         $FilteredSkuConsumption = $SkuConsumptionSummary | Where-Object Status -eq $SkuConsumptionStatus
                         
                         # Get Summary of users with specified SKU consumption
@@ -138,23 +150,29 @@ Process {
 
             # Format Output
             Write-Host "`nUser Service Plan Compliance:`n"
-            $UserServicePlanCompliance | Format-Table DisplayName,UserPrincipalName,ServicePlanName,ComplianceStatus,AccountEnabled
+            $UserServicePlanCompliance | Format-Table DisplayName, UserPrincipalName, ServicePlanName, ComplianceStatus, AccountEnabled
             
-            if ($UserAccountEnabledOnComplianceStatus){
-                Write-Host "`nUser Action on Service Plan Compliance:`n"
-                $UserAccountEnabledOnComplianceStatus | Format-Table DisplayName,ActionStatus,AccountEnabled
+            if ($UserAccountEnabledOnComplianceStatus) {
+                Write-Host "`nUser Action based on Service Plan Compliance:`n"
+                $UserAccountEnabledOnComplianceStatus | Format-Table DisplayName, ActionStatus, AccountEnabled
+            }
+            else {
+                Write-Verbose "No User Action Required based on Service Plan Compliance: $ComplianceStatus"
             }
 
-            if ($ServicePlanSku){
+            if ($ServicePlanSku) {
                 Write-Host "`nSKUs with Service Plan:`n"
-                $ServicePlanSku | Format-Table SkuPartNumber,CapabilityStatus,ServicePlanName,ProvisioningStatus
+                $ServicePlanSku | Format-Table SkuPartNumber, CapabilityStatus, ServicePlanName, ProvisioningStatus
                 
                 Write-Host "`nSKU Consumption Analysis:`n"
-                $SkuConsumptionSummary | Format-Table SkuPartNumber,AvailableUnits,Status,StatusDetail
+                $SkuConsumptionSummary | Format-Table SkuPartNumber, AvailableUnits, Status, StatusDetail
                 
-                if ($UserSkuConsumptionSummary){
+                if ($UserSkuConsumptionSummary) {
                     Write-Host "`nUser SKU Assignment:`n"
-                    $UserSkuConsumptionSummary | Format-Table DisplayName,UserPrincipalName,AccountEnabled,SkuPartNumber,SkuAssigned
+                    $UserSkuConsumptionSummary | Format-Table DisplayName, UserPrincipalName, AccountEnabled, SkuPartNumber, SkuAssigned
+                }
+                else {
+                    Write-Verbose "No User SKU Consumption Required based on Status: $SkuConsumptionStatus"
                 }
             }
             else {
@@ -173,6 +191,8 @@ Process {
     }
 }
 End {
-    # Disconnect
-    Disconnect-AzureAD 
+    if (!$SkipDisconnect) {
+        # Disconnect
+        Disconnect-AzureAD 
+    }
 }

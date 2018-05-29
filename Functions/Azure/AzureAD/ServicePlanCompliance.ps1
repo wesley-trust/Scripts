@@ -75,63 +75,6 @@ function Get-AzureADMember {
             else {
                 # Initialise collection
                 #$AzureADMemberUsersTotal = @()
-                $AzureADMemberUsersTotal = New-Object System.Collections.Generic.List[System.Object]
-                
-                # Get users to analyse
-                if ($GroupDisplayName) {
-                    
-                    # Split and trim input
-                    $GroupDisplayName = $GroupDisplayName.Split(",")
-                    $GroupDisplayName = $GroupDisplayName.Trim()
-                    
-                    # Get Azure AD Group
-                    $AzureADGroups = $GroupDisplayName | Foreach-Object {
-                        Get-AzureADGroup -Filter "DisplayName eq '$_'"
-                    }
-                    
-                    # Create group collection object
-                    $AzureADGroupsTotal = New-Object System.Collections.Generic.List[System.Object]
-                                        
-                    # Add group objects to object list
-                    #$AzureADGroupsTotal += $AzureADGroups
-                    #$AzureADGroupsTotal.Add($AzureADGroups)
-                    $AzureADGroups | Foreach-Object {
-                        $AzureADGroupsTotal.add($_)
-                    }
-
-                    # Get Members of Azure AD Group
-                    $AzureADMembers = $AzureADGroups | ForEach-Object {
-                        Get-AzureADGroupMember -ObjectId $_.ObjectId -All $true
-                    }
-
-                    # Filter on object type
-                    $AzureADMemberUsers = $AzureADMembers | Where-Object ObjectType -eq "User"
-                    $AzureADMemberGroups = $AzureADMembers | Where-Object ObjectType -eq "Group"
-                    
-                    # Add user objects
-                    #$AzureADMemberUsersTotal += $AzureADMemberUsers
-                    #$AzureADMemberUsersTotal.add($AzureADMemberUsers)
-                    $AzureADMemberUsers | Foreach-Object {
-                        $AzureADMemberUsersTotal.add($_)
-                    }
-                    
-                    # If recurse is true, recall function and iterate until no groups remain, appending
-                    if ($Recurse) {
-                        if ($AzureADMemberGroups) {
-                            # Infinite loop protection
-                            if ($AzureADMemberGroups.DisplayName -in $AzureADGroupsTotal.DisplayName) {
-                                $ErrorMessage = "Circular reference, child group is a member of a parent group"
-                                Write-Error $ErrorMessage
-                                throw $ErrorMessage
-                            }
-                            else {
-                                $AzureADMemberGroups | ForEach-Object {
-                                    Get-AzureADMember -GroupDisplayName $_.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled
-                                }
-                            }
-                        }
-                    }
-                }
                 if ($UserDisplayName) {
                     # Split and trim input
                     $UserDisplayName = $UserDisplayName.Split(",")
@@ -143,11 +86,7 @@ function Get-AzureADMember {
                     }
                     
                     # Add user objects
-                    #$AzureADMemberUsersTotal += $AzureADMemberUsers
-                    #$AzureADMemberUsersTotal.add($AzureADMemberUsers)
-                    $AzureADMemberUsers | Foreach-Object {
-                        $AzureADMemberUsersTotal.add($_)
-                    }
+                    $AzureADMemberUsersTotal = $AzureADMemberUsers
                 }
                 if ($UserPrincipalName) {
     
@@ -161,35 +100,94 @@ function Get-AzureADMember {
                     }
                     
                     # Add user objects
-                    $#AzureADMemberUsersTotal += $AzureADMemberUsers
-                    #$AzureADMemberUsersTotal.add($AzureADMemberUsers)
-                    $AzureADMemberUsers | Foreach-Object {
-                        $AzureADMemberUsersTotal.add($_)
+                    $AzureADMemberUsersTotal = $AzureADMemberUsers
+                }
+                if ($GroupDisplayName) {
+                    
+                    # Split and trim input
+                    $GroupDisplayName = $GroupDisplayName.Split(",")
+                    $GroupDisplayName = $GroupDisplayName.Trim()
+                    
+                    # Get Azure AD Group
+                    $AzureADGroups = $GroupDisplayName | Foreach-Object {
+                        Get-AzureADGroup -Filter "DisplayName eq '$_'"
+                    }
+
+                    # Get Members of Azure AD Group
+                    $AzureADMembers = $AzureADGroups | ForEach-Object {
+                        Get-AzureADGroupMember -ObjectId $_.ObjectId -All $true
+                    }
+                    
+                    # Filter on user object type
+                    $AzureADMemberUsers = $AzureADMembers | Where-Object ObjectType -eq "User"
+                    
+                    # If recurse is true, filter to member groups
+                    if ($Recurse) {
+                        
+                        # Create user collection object
+                        if (!$Script:AzureADMemberUsersTotal) {
+                            $Script:AzureADMemberUsersTotal = New-Object System.Collections.Generic.List[System.Object]
+                        }
+                        
+                        # Add user objects
+                        $AzureADMemberUsers | Foreach-Object {
+                            #if ($_.ObjectId -notin $script:AzureADMemberUsersTotal.ObjectId) {
+                            $script:AzureADMemberUsersTotal.add($_)
+                            #}
+                        }
+
+                        # Filter on group object type
+                        $AzureADMemberGroups = $AzureADMembers | Where-Object ObjectType -eq "Group"
+
+                        if ($AzureADMemberGroups) {
+                            # Create group collection object
+                            if (!$Script:AzureADGroupsTotal) {
+                                $Script:AzureADGroupsTotal = New-Object System.Collections.Generic.List[System.Object]
+                            }
+                            # Add group objects to object list
+                            $AzureADGroups | Foreach-Object {
+                                $Script:AzureADGroupsTotal.add($_)
+                            }
+                            # Infinite loop protection
+                            if ($AzureADMemberGroups.DisplayName -in $script:AzureADGroupsTotal.DisplayName) {
+                                $ErrorMessage = "Circular reference, child group is a member of a parent group"
+                                Write-Error $ErrorMessage
+                                throw $ErrorMessage
+                            }
+                            else {
+                                # Iterate through child groups
+                                $AzureADMemberGroups | ForEach-Object {
+                                    Get-AzureADMember -GroupDisplayName $_.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled
+                                }
+                            }
+                        }
+                        else {
+                            if ($Script:AzureADMemberUsersTotal) {
+        
+                                # Move scope
+                                $AzureADMemberUsersTotal = $Script:AzureADMemberUsersTotal
+                                
+                                # Clean up script scope variables
+                                $Script:AzureADGroupsTotal = $null
+                                $Script:AzureADMemberUsersTotal = $null
+                            }
+                        }
+                    }
+                    else {
+                        $AzureADMemberUsersTotal = $AzureADMemberUsers
                     }
                 }
             }
-
+            # Return output
             if ($AzureADMemberUsersTotal) {
                 # Evaluate account enabled property
                 if (![string]::IsNullOrEmpty($AccountEnabled)) {
                     $AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Where-Object AccountEnabled -eq $AccountEnabled
                 }
 
-                # Try changing to psobject
-                #$AzureADMemberUsersTotal = $AzureADMemberUsersTotal | ConvertTo-Json | ConvertFrom-Json
-
-                # Sort and unique users
-                #$AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object ObjectId -Unique
-                #$AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object {[string]$_.ObjectId} -Unique
-                #$AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object {$_.ObjectId} -Unique
-                #$AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Select-Object -Unique
-                #$AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object @{Expression={$_[0].DisplayName}} -Unique #| Get-Unique
-                
-                # Return objects
+                # Sort and output
+                $AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object DisplayName -Unique
                 return $AzureADMemberUsersTotal
-            }
-            else {
-                Write-Output "No users returned with specified parameters"
             }
         }
         Catch {

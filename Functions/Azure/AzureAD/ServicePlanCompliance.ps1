@@ -52,7 +52,15 @@ function Get-AzureADMember {
             HelpMessage = "Specify account status to check"
         )]
         [Nullable[bool]]
-        $AccountEnabled
+        $AccountEnabled,
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Specify user type to check"
+        )]
+        [ValidateSet("Guest", "Member", "")]
+        [AllowNull()]
+        [String]
+        $UserType
     )
 
     Begin {
@@ -73,8 +81,10 @@ function Get-AzureADMember {
                 $AzureADMemberUsersTotal = Get-AzureADUser -All $true
             }
             else {
-                # Initialise collection
-                #$AzureADMemberUsersTotal = @()
+                # Create user collection object
+                if (!$Script:AzureADMemberUsersTotal) {
+                    $Script:AzureADMemberUsersTotal = New-Object System.Collections.Generic.List[System.Object]
+                }
                 if ($UserDisplayName) {
                     # Split and trim input
                     $UserDisplayName = $UserDisplayName.Split(",")
@@ -86,7 +96,9 @@ function Get-AzureADMember {
                     }
                     
                     # Add user objects
-                    $AzureADMemberUsersTotal = $AzureADMemberUsers
+                    $AzureADMemberUsers | Foreach-Object {
+                        $script:AzureADMemberUsersTotal.add($_)
+                    }
                 }
                 if ($UserPrincipalName) {
     
@@ -100,7 +112,9 @@ function Get-AzureADMember {
                     }
                     
                     # Add user objects
-                    $AzureADMemberUsersTotal = $AzureADMemberUsers
+                    $AzureADMemberUsers | Foreach-Object {
+                        $script:AzureADMemberUsersTotal.add($_)
+                    }
                 }
                 if ($GroupDisplayName) {
                     
@@ -120,21 +134,14 @@ function Get-AzureADMember {
                     
                     # Filter on user object type
                     $AzureADMemberUsers = $AzureADMembers | Where-Object ObjectType -eq "User"
+
+                    # Add user objects
+                    $AzureADMemberUsers | Foreach-Object {
+                        $script:AzureADMemberUsersTotal.add($_)
+                    }
                     
                     # If recurse is true, filter to member groups
                     if ($Recurse) {
-                        
-                        # Create user collection object
-                        if (!$Script:AzureADMemberUsersTotal) {
-                            $Script:AzureADMemberUsersTotal = New-Object System.Collections.Generic.List[System.Object]
-                        }
-                        
-                        # Add user objects
-                        $AzureADMemberUsers | Foreach-Object {
-                            #if ($_.ObjectId -notin $script:AzureADMemberUsersTotal.ObjectId) {
-                            $script:AzureADMemberUsersTotal.add($_)
-                            #}
-                        }
 
                         # Filter on group object type
                         $AzureADMemberGroups = $AzureADMembers | Where-Object ObjectType -eq "Group"
@@ -157,24 +164,25 @@ function Get-AzureADMember {
                             else {
                                 # Iterate through child groups
                                 $AzureADMemberGroups | ForEach-Object {
-                                    Get-AzureADMember -GroupDisplayName $_.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled
+                                    Get-AzureADMember -GroupDisplayName $_.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled -UserType $UserType
                                 }
                             }
                         }
-                        else {
-                            if ($Script:AzureADMemberUsersTotal) {
-        
-                                # Move scope
-                                $AzureADMemberUsersTotal = $Script:AzureADMemberUsersTotal
-                                
-                                # Clean up script scope variables
-                                $Script:AzureADGroupsTotal = $null
-                                $Script:AzureADMemberUsersTotal = $null
-                            }
-                        }
+                    }
+                }
+                if (!$AzureADMemberGroups) {
+                    if ($Script:AzureADMemberUsersTotal) {
+
+                        # Move scope
+                        $AzureADMemberUsersTotal = $Script:AzureADMemberUsersTotal
+                        
+                        # Clean up script scope variables
+                        $Script:AzureADGroupsTotal = $null
+                        $Script:AzureADMemberUsersTotal = $null
                     }
                     else {
-                        $AzureADMemberUsersTotal = $AzureADMemberUsers
+                        $WarningMessage = "No users returned, check parameters are correct"
+                        Write-Warning $WarningMessage
                     }
                 }
             }
@@ -185,9 +193,18 @@ function Get-AzureADMember {
                     $AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Where-Object AccountEnabled -eq $AccountEnabled
                 }
 
+                # Evaluate user type
+                if ($UserType) {
+                    $AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Where-Object UserType -eq $UserType
+                }
+
                 # Sort and output
                 $AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object DisplayName -Unique
                 return $AzureADMemberUsersTotal
+            }
+            else {
+                $VerboseMessage = "No users returned in current function iteration"
+                Write-Verbose $VerboseMessage
             }
         }
         Catch {
@@ -196,7 +213,7 @@ function Get-AzureADMember {
         }
     }
     End {
-        
+
     }
 }
 function Get-UserServicePlanCompliance {

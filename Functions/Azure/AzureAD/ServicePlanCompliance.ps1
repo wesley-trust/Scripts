@@ -75,7 +75,6 @@ function Get-AzureADMember {
 
     Process {
         try {
-            
             # If all users switch is true, get all users, else use property values
             if ($AllUsers) {
                 $AzureADMemberUsersTotal = Get-AzureADUser -All $true
@@ -86,6 +85,7 @@ function Get-AzureADMember {
                     $Script:AzureADMemberUsersTotal = New-Object System.Collections.Generic.List[System.Object]
                 }
                 if ($UserDisplayName) {
+
                     # Split and trim input
                     $UserDisplayName = $UserDisplayName.Split(",")
                     $UserDisplayName = $UserDisplayName.Trim()
@@ -147,18 +147,24 @@ function Get-AzureADMember {
                         $AzureADMemberGroups = $AzureADMembers | Where-Object ObjectType -eq "Group"
 
                         if ($AzureADMemberGroups) {
+
                             # Create group collection object
                             if (!$Script:AzureADGroupsTotal) {
                                 $Script:AzureADGroupsTotal = New-Object System.Collections.Generic.List[System.Object]
                             }
+
                             # Add group objects to object list
                             $AzureADGroups | Foreach-Object {
                                 $Script:AzureADGroupsTotal.add($_)
                             }
+
                             # Infinite loop protection
                             if ($AzureADMemberGroups.DisplayName -in $script:AzureADGroupsTotal.DisplayName) {
+
                                 $ErrorMessage = "Circular reference, child group is a member of a parent group"
+                                $WarningMessage = "Actions will not be rolled back, script scope has not been cleansed"
                                 Write-Error $ErrorMessage
+                                Write-Warning $WarningMessage
                                 throw $ErrorMessage
                             }
                             else {
@@ -170,24 +176,23 @@ function Get-AzureADMember {
                         }
                     }
                 }
-                if (!$AzureADMemberGroups) {
-                    if ($Script:AzureADMemberUsersTotal) {
-
-                        # Move scope
-                        $AzureADMemberUsersTotal = $Script:AzureADMemberUsersTotal
-                        
-                        # Clean up script scope variables
-                        $Script:AzureADGroupsTotal = $null
-                        $Script:AzureADMemberUsersTotal = $null
-                    }
-                    else {
-                        $WarningMessage = "No users returned, check parameters are correct"
-                        Write-Warning $WarningMessage
-                    }
-                }
             }
-            # Return output
-            if ($AzureADMemberUsersTotal) {
+            # If there are no nested groups
+            if (!$AzureADMemberGroups) {
+                if ($Script:AzureADMemberUsersTotal) {
+                    if ($GroupDisplayName) {
+                        $VerboseMessage = "Final iteration of group $GroupDisplayName"
+                        Write-Verbose $VerboseMessage
+                    }
+                    
+                    # Move scope
+                    $AzureADMemberUsersTotal = $Script:AzureADMemberUsersTotal
+                    
+                    # Clean up script scope variables
+                    $Script:AzureADGroupsTotal = $null
+                    $Script:AzureADMemberUsersTotal = $null
+                }
+
                 # Evaluate account enabled property
                 if (![string]::IsNullOrEmpty($AccountEnabled)) {
                     $AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Where-Object AccountEnabled -eq $AccountEnabled
@@ -198,12 +203,20 @@ function Get-AzureADMember {
                     $AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Where-Object UserType -eq $UserType
                 }
 
-                # Sort and output
+                # Sort and unique
                 $AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object DisplayName -Unique
-                return $AzureADMemberUsersTotal
+                
+                # Return output
+                if ($AzureADMemberUsersTotal) {
+                    return $AzureADMemberUsersTotal
+                }
+                else {
+                    $WarningMessage = "No users returned, check parameters are correct"
+                    Write-Warning $WarningMessage
+                }
             }
             else {
-                $VerboseMessage = "No users returned in current function iteration"
+                $VerboseMessage = "Iterating through group $GroupDisplayName that contains $($AzureADMemberGroups.count) nested group(s)"
                 Write-Verbose $VerboseMessage
             }
         }

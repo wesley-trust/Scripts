@@ -2,7 +2,7 @@
 #Script name: Disable members of RestrictedAdmins group without valid Azure AD P1 licence and check available licences and assignments
 #Creator: Wesley Trust
 #Date: 2018-05-14
-#Revision: 6
+#Revision: 7
 #References: 
 
 .Synopsis
@@ -63,7 +63,13 @@ Param(
         HelpMessage = "Specify whether to skip disconnection"
     )]
     [switch]
-    $SkipDisconnect
+    $SkipDisconnect,
+    [Parameter(
+        Mandatory = $false,
+        HelpMessage = "Specify whether to reauthenticate with different credentials"
+    )]
+    [switch]
+    $ReAuthenticate
 )
 
 Begin {
@@ -73,7 +79,9 @@ Begin {
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
             "$FunctionLocation\Toolkit\Check-RequiredModule.ps1",
-            "$FunctionLocation\Azure\AzureAD\ServicePlanCompliance.ps1"
+            "$FunctionLocation\Azure\AzureAD\ServicePlanCompliance.ps1",
+            "$FunctionLocation\Azure\AzureAD\AzureADMember.ps1"
+            "$FunctionLocation\Azure\AzureAD\Test-AzureADConnection.ps1"
         )
         # Function dot source
         foreach ($Function in $Functions) {
@@ -84,15 +92,6 @@ Begin {
         $Module = "AzureAD"
         
         Check-RequiredModule -Modules $Module
-
-        # Check for active session
-        $CurrentSession = Get-AzureADCurrentSessionInfo
-        
-        if (!$CurrentSession) {
-            # Connect to directory tenant
-            $ConnectionStatus = Connect-AzureAD -Credential $Credential
-        }
-
     }
     catch {
         Write-Error -Message $_.Exception
@@ -102,13 +101,43 @@ Begin {
 
 Process {
     try {
-        # Get user licence compliance
+
+        # Check for active connection to Azure AD
+        if (!$ReAuthenticate) {
+            $TestConnection = Test-AzureADConnection -Credential $Credential
+            
+            if ($TestConnection.reauthenticate) {
+                $ReAuthenticate = $true
+            }
+        }
+
+        # If there is an active connection, clean up if required
+        if ($TestConnection.ActiveConnection){
+            if ($ReAuthenticate -or $TestConnection.reauthenticate){
+                $TestConnection.ActiveConnection = Disconnect-AzureAD | Out-Null
+            }
+        }
+
+        # If no active connection, connect to Azure AD
+        if (!$TestConnection.ActiveConnection -or $ReAuthenticate) {
+            Write-Host "`nAuthenticating with Azure AD`n"
+            $AzureADConnection = Connect-AzureAD -Credential $Credential
+            
+            if (!$AzureADConnection) {
+                $ErrorMessage = "Unable to connect to Azure AD"
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
+            }
+        }
+
+        # Get Azure AD members
         $AzureADMembers = Get-AzureADMember `
             -GroupDisplayName $GroupDisplayName `
             -AccountEnabled $AccountEnabled
 
         # If users are retuned
         if ($AzureADMembers) {
+            
             # Get user licence compliance
             $UserServicePlanCompliance = Get-UserServicePlanCompliance `
                 -AzureADMembers $AzureADMembers `
@@ -142,13 +171,15 @@ Process {
                         $UserSkuConsumptionSummary = $FilteredUserServicePlanCompliance | Get-UserSkuConsumptionSummary -SkuConsumption $FilteredSkuConsumption
                     }
                 }
+                # Get unit total summary
+                $SkuServicePlanUnitSummary = $ServicePlanSku | Get-SkuServicePlanUnitSummary
             }
             else {
                 $WarningMessage = "No SKUs available"
                 Write-Warning $WarningMessage
             }
 
-            # Format Output
+            # Format Output for display
             Write-Host "`nUser Service Plan Compliance:`n"
             $UserServicePlanCompliance | Format-Table DisplayName, UserPrincipalName, ServicePlanName, ComplianceStatus, AccountEnabled
             
@@ -174,6 +205,9 @@ Process {
                 else {
                     Write-Verbose "No User SKU Consumption Required based on Status: $SkuConsumptionStatus"
                 }
+
+                Write-Host "`nService Plan Unit Summary:`n"
+                $SkuServicePlanUnitSummary | Format-Table ServicePlanName, TotalEnabledUnits, TotalConsumedUnits, TotalAvailableUnits, TotalWarningUnits, TotalSuspendedUnits
             }
             else {
                 Write-Output "No available SKUs with the Service Plan, an appropriate SKU, if required, should be provisioned"
@@ -192,7 +226,6 @@ Process {
 }
 End {
     if (!$SkipDisconnect) {
-        # Disconnect
         Disconnect-AzureAD 
     }
 }

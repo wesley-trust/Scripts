@@ -172,17 +172,34 @@ function Get-AzureADMember {
                                 throw $ErrorMessage
                             }
                             else {
+
+                                # Create member group collection object
+                                if (!$Script:AzureADMemberGroups) {
+                                    $Script:AzureADMemberGroups = New-Object System.Collections.Generic.List[System.Object]
+                                }
+                                
+                                # Add member group objects to object list
+                                $AzureADMemberGroups | Foreach-Object {
+                                    $Script:AzureADMemberGroups.add($_)
+                                }
+                                
                                 # Iterate through child groups
                                 $AzureADMemberGroups | ForEach-Object {
                                     Get-AzureADMember -GroupDisplayName $_.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled -UserType $UserType
+                                }
+                                
+                                # Remove member group objects from object list
+                                $AzureADMemberGroups | Foreach-Object {
+                                    [void]$Script:AzureADMemberGroups.Remove($_)
                                 }
                             }
                         }
                     }
                 }
             }
+            
             # If there are no nested groups
-            if (!$AzureADMemberGroups) {
+            if (!$Script:AzureADMemberGroups) {
                 if ($Script:AzureADMemberUsersTotal) {
                     if ($GroupDisplayName) {
                         $VerboseMessage = "Final iteration of group $GroupDisplayName"
@@ -195,6 +212,7 @@ function Get-AzureADMember {
                     # Clean up script scope variables
                     $Script:AzureADGroupsTotal = $null
                     $Script:AzureADMemberUsersTotal = $null
+                    $Script:AzureADMemberGroups = $null
                 }
 
                 # Evaluate account enabled property

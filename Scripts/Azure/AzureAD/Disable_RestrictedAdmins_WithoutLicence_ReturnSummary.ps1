@@ -27,7 +27,7 @@ Param(
         HelpMessage = "Specify the display name of group to check"
     )]
     [string]
-    $GroupDisplayName = "RestrictedAdmins",
+    $GroupDisplayName = "SecuredAdmins",
     [Parameter(
         Mandatory = $false,
         HelpMessage = "Specify the licence service plan ID to check"
@@ -58,6 +58,12 @@ Param(
     )]
     [string]
     $SkuConsumptionStatus = "Warning",
+    [Parameter(
+        Mandatory = $false,
+        HelpMessage = "Specify Sku consumption assignement status"
+    )]
+    [string]
+    $SkuConsumptionAssigned = $true,
     [Parameter(
         Mandatory = $false,
         HelpMessage = "Specify whether to skip disconnection"
@@ -167,12 +173,13 @@ Process {
                     if ($SkuConsumptionSummary.Status -eq $SkuConsumptionStatus) {
                         $FilteredSkuConsumption = $SkuConsumptionSummary | Where-Object Status -eq $SkuConsumptionStatus
                         
-                        # Get Summary of users with specified SKU consumption
-                        $UserSkuConsumptionSummary = $FilteredUserServicePlanCompliance | Get-UserSkuConsumptionSummary -SkuConsumption $FilteredSkuConsumption
+                        # Get Summary of users with specified SKU consumption and assignment
+                        $UserSkuConsumptionSummary = $FilteredUserServicePlanCompliance `
+                            | Get-UserSkuConsumptionSummary `
+                            -SkuConsumption $FilteredSkuConsumption `
+                            | Where-Object SkuAssigned -eq $SkuConsumptionAssigned
                     }
                 }
-                # Get unit total summary
-                $SkuServicePlanUnitSummary = $ServicePlanSku | Get-SkuServicePlanUnitSummary
             }
             else {
                 $WarningMessage = "No SKUs available"
@@ -181,7 +188,8 @@ Process {
 
             # Format Output for display
             Write-Host "`nUser Service Plan Compliance:`n"
-            $UserServicePlanCompliance | Format-Table DisplayName, UserPrincipalName, ServicePlanName, ComplianceStatus, AccountEnabled
+            $UserServicePlanCompliance | Format-Table DisplayName, UserPrincipalName, ServicePlanName, ComplianceStatus, AccountEnabled -GroupBy ComplianceStatus
+            Write-Host "Total: $($UserServicePlanCompliance.count)`n"
             
             if ($UserAccountEnabledOnComplianceStatus) {
                 Write-Host "`nUser Action based on Service Plan Compliance:`n"
@@ -205,9 +213,6 @@ Process {
                 else {
                     Write-Verbose "No User SKU Consumption Required based on Status: $SkuConsumptionStatus"
                 }
-
-                Write-Host "`nService Plan Unit Summary:`n"
-                $SkuServicePlanUnitSummary | Format-Table ServicePlanName, TotalEnabledUnits, TotalConsumedUnits, TotalAvailableUnits, TotalWarningUnits, TotalSuspendedUnits
             }
             else {
                 Write-Output "No available SKUs with the Service Plan, an appropriate SKU, if required, should be provisioned"

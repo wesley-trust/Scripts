@@ -103,6 +103,9 @@ function Get-UserServicePlanCompliance {
                     # Create new object per member with licence status information
                     New-Object psobject -Property $ObjectProperties
                 }
+
+                # Sort object
+                $UserComplianceStatus = $UserComplianceStatus | Sort-Object ComplianceStatus
                                 
                 # Return objects
                 return $UserComplianceStatus
@@ -438,7 +441,7 @@ function Get-SkuServicePlanUnitSummary {
             # Unique variables
             $ServicePlanId = $InputObject.ServicePlanId | Sort-Object -Unique
             $ServicePlanName = $InputObject.ServicePlanName | Sort-Object -Unique
-
+            
             # Build Totals Object
             $ServicePlanUnitSummary = [PSCustomObject]@{
                 ServicePlanName     = $ServicePlanName
@@ -449,6 +452,7 @@ function Get-SkuServicePlanUnitSummary {
                 TotalWarningUnits   = $TotalWarning
                 TotalSuspendedUnits = $TotalSuspended
             }
+
             # Return object
             return $ServicePlanUnitSummary
         }

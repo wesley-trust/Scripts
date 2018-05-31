@@ -185,7 +185,7 @@ function Get-AzureADMember {
                                     # Add member group objects to object list
                                     $Script:AzureADMemberGroups.add($_)
                                     
-                                    # Iterate through child groups
+                                    # Iterate through child group
                                     Get-AzureADMember -GroupDisplayName $_.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled -UserType $UserType
                                     
                                     # Remove member group objects from object list

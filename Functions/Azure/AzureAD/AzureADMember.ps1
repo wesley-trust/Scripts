@@ -162,34 +162,33 @@ function Get-AzureADMember {
                                 $Script:AzureADGroupsTotal.add($_)
                             }
 
-                            # Infinite loop protection
-                            if ($AzureADMemberGroups.DisplayName -in $script:AzureADGroupsTotal.DisplayName) {
-
-                                $ErrorMessage = "Circular reference, child group is a member of a parent group"
-                                $WarningMessage = "Actions will not be rolled back, script scope has not been cleansed"
-                                Write-Error $ErrorMessage
-                                Write-Warning $WarningMessage
-                                throw $ErrorMessage
+                            # Create member group collection object
+                            if (!$Script:AzureADMemberGroups) {
+                                $Script:AzureADMemberGroups = New-Object System.Collections.Generic.List[System.Object]
                             }
-                            else {
 
-                                # Create member group collection object
-                                if (!$Script:AzureADMemberGroups) {
-                                    $Script:AzureADMemberGroups = New-Object System.Collections.Generic.List[System.Object]
+                            # Infinite loop protection
+                            $AzureADMemberGroups | ForEach-Object {
+                                if ($_ -in $script:AzureADGroupsTotal) {
+
+                                    # Clean up script scope variables
+                                    $Script:AzureADGroupsTotal = $null
+                                    $Script:AzureADMemberUsersTotal = $null
+                                    $Script:AzureADMemberGroups = $null
+
+                                    # Throw Error
+                                    $ErrorMessage = "Circular reference, '$($_.DisplayName)' is a member of parent group '$GroupDisplayName'"
+                                    Write-Error $ErrorMessage
+                                    throw $ErrorMessage
                                 }
-                                
-                                # Add member group objects to object list
-                                $AzureADMemberGroups | Foreach-Object {
+                                else {
+                                    # Add member group objects to object list
                                     $Script:AzureADMemberGroups.add($_)
-                                }
-                                
-                                # Iterate through child groups
-                                $AzureADMemberGroups | ForEach-Object {
+                                    
+                                    # Iterate through child groups
                                     Get-AzureADMember -GroupDisplayName $_.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled -UserType $UserType
-                                }
-                                
-                                # Remove member group objects from object list
-                                $AzureADMemberGroups | Foreach-Object {
+                                    
+                                    # Remove member group objects from object list
                                     [void]$Script:AzureADMemberGroups.Remove($_)
                                 }
                             }
@@ -198,22 +197,21 @@ function Get-AzureADMember {
                 }
             }
             
-            # If there are no nested groups
+            # If there are no nested groups remaining to iterate
             if (!$Script:AzureADMemberGroups) {
-                if ($Script:AzureADMemberUsersTotal) {
-                    if ($GroupDisplayName) {
-                        $VerboseMessage = "Final iteration of group $GroupDisplayName"
-                        Write-Verbose $VerboseMessage
-                    }
-                    
-                    # Move scope
-                    $AzureADMemberUsersTotal = $Script:AzureADMemberUsersTotal
-                    
-                    # Clean up script scope variables
-                    $Script:AzureADGroupsTotal = $null
-                    $Script:AzureADMemberUsersTotal = $null
-                    $Script:AzureADMemberGroups = $null
+
+                if ($GroupDisplayName) {
+                    $VerboseMessage = "Final iteration of group $GroupDisplayName"
+                    Write-Verbose $VerboseMessage
                 }
+                        
+                # Move to local scope
+                $AzureADMemberUsersTotal = $Script:AzureADMemberUsersTotal
+
+                # Clean up script scope variables
+                $Script:AzureADGroupsTotal = $null
+                $Script:AzureADMemberUsersTotal = $null
+                $Script:AzureADMemberGroups = $null
 
                 # Evaluate account enabled property
                 if (![string]::IsNullOrEmpty($AccountEnabled)) {
@@ -227,15 +225,9 @@ function Get-AzureADMember {
 
                 # Sort and unique
                 $AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object DisplayName -Unique
-                
+                    
                 # Return output
-                if ($AzureADMemberUsersTotal) {
-                    return $AzureADMemberUsersTotal
-                }
-                else {
-                    $WarningMessage = "No users returned, check parameters are correct"
-                    Write-Warning $WarningMessage
-                }
+                return $AzureADMemberUsersTotal
             }
             else {
                 $VerboseMessage = "Iterating through group $GroupDisplayName that contains $($AzureADMemberGroups.count) nested group(s)"

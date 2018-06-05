@@ -2,7 +2,7 @@
 #Script name: Get Azure AD Member
 #Creator: Wesley Trust
 #Date: 2018-05-16
-#Revision: 6
+#Revision: 8
 #References: 
 
 .Synopsis
@@ -16,7 +16,9 @@
 .Example
     Get-AzureADMember -GroupDisplayName $GroupDisplayName -AccountEnabled $true -UserType "Member"
 #>
+
 function Get-AzureADMember {
+    [CmdletBinding()]
     Param(
         [Parameter(
             Mandatory = $false,
@@ -95,13 +97,13 @@ function Get-AzureADMember {
                     $UserDisplayName = $UserDisplayName.Trim()
     
                     # Get Members of Azure AD Group
-                    $AzureADMemberUsers = $UserDisplayName | ForEach-Object {
-                        Get-AzureADUser -Filter "DisplayName eq '$_'"
+                    $AzureADMemberUsers = foreach ($DisplayName in $UserDisplayName) {
+                        Get-AzureADUser -Filter "DisplayName eq '$DisplayName'"
                     }
                     
                     # Add user objects
-                    $AzureADMemberUsers | Foreach-Object {
-                        $script:AzureADMemberUsersTotal.add($_)
+                    foreach ($MemberUser in $AzureADMemberUsers) {
+                        $script:AzureADMemberUsersTotal.add($MemberUser) 
                     }
                 }
                 if ($UserPrincipalName) {
@@ -111,13 +113,13 @@ function Get-AzureADMember {
                     $UserUPN = $UserUPN.Trim()
     
                     # Get Members of Azure AD Group
-                    $AzureADMemberUsers = $UserUPN | ForEach-Object {
-                        Get-AzureADUser -Filter "UserPrincipalName eq '$_'"
+                    $AzureADMemberUsers = foreach ($UPN in $UserUPN) {
+                        Get-AzureADUser -Filter "UserPrincipalName eq '$UPN'"
                     }
                     
                     # Add user objects
-                    $AzureADMemberUsers | Foreach-Object {
-                        $script:AzureADMemberUsersTotal.add($_)
+                    foreach ($MemberUser in $AzureADMemberUsers) {
+                        $script:AzureADMemberUsersTotal.add($MemberUser) 
                     }
                 }
                 if ($GroupDisplayName) {
@@ -127,21 +129,21 @@ function Get-AzureADMember {
                     $GroupDisplayName = $GroupDisplayName.Trim()
                     
                     # Get Azure AD Group
-                    $AzureADGroups = $GroupDisplayName | Foreach-Object {
-                        Get-AzureADGroup -Filter "DisplayName eq '$_'"
+                    $AzureADGroups = foreach ($DisplayName in $GroupDisplayName) {
+                        Get-AzureADGroup -Filter "DisplayName eq '$DisplayName'"
                     }
 
                     # Get Members of Azure AD Group
-                    $AzureADMembers = $AzureADGroups | ForEach-Object {
-                        Get-AzureADGroupMember -ObjectId $_.ObjectId -All $true
+                    $AzureADMembers = foreach ($GroupMember in $AzureADGroups) {
+                        Get-AzureADGroupMember -ObjectId $GroupMember.ObjectId -All $true
                     }
                     
                     # Filter on user object type
                     $AzureADMemberUsers = $AzureADMembers | Where-Object ObjectType -eq "User"
 
                     # Add user objects
-                    $AzureADMemberUsers | Foreach-Object {
-                        $script:AzureADMemberUsersTotal.add($_)
+                    foreach ($MemberUser in $AzureADMemberUsers) {
+                        $script:AzureADMemberUsersTotal.add($MemberUser) 
                     }
                     
                     # If recurse is true, filter to member groups
@@ -149,7 +151,8 @@ function Get-AzureADMember {
 
                         # Filter on group object type
                         $AzureADMemberGroups = $AzureADMembers | Where-Object ObjectType -eq "Group"
-
+                        
+                        # If there are member groups
                         if ($AzureADMemberGroups) {
 
                             # Create group collection object
@@ -158,8 +161,8 @@ function Get-AzureADMember {
                             }
 
                             # Add group objects to object list
-                            $AzureADGroups | Foreach-Object {
-                                $Script:AzureADGroupsTotal.add($_)
+                            foreach ($ADGroup in $AzureADGroups) {
+                                $Script:AzureADGroupsTotal.add($ADGroup)
                             }
 
                             # Create member group collection object
@@ -168,22 +171,24 @@ function Get-AzureADMember {
                             }
 
                             # Infinite loop protection
-                            $AzureADMemberGroups | ForEach-Object {
-                                if ($_ -in $script:AzureADGroupsTotal) {
+                            foreach ($ADMemberGroup in $AzureADMemberGroups) {
+                                if ($ADMemberGroup -in $script:AzureADGroupsTotal) {
+                                    
                                     # Set flag and display error
                                     $Script:CircularReference = $true
-                                    $ErrorMessage = "Circular reference, '$($_.DisplayName)' is a member of parent group '$GroupDisplayName'"
+                                    $ErrorMessage = "Circular reference, '$($ADMemberGroup.DisplayName)' is a member of parent group '$GroupDisplayName'"
                                     Write-Error $ErrorMessage
                                 }
+                                # If no circular reference in any previous iteration
                                 elseif (!$Script:CircularReference) {
                                     # Add member group objects to object list
-                                    $Script:AzureADMemberGroups.add($_)
+                                    $Script:AzureADMemberGroups.add($ADMemberGroup)
                                     
                                     # Iterate through child group
-                                    Get-AzureADMember -GroupDisplayName $_.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled -UserType $UserType
+                                    Get-AzureADMember -GroupDisplayName $ADMemberGroup.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled -UserType $UserType
                                     
                                     # Remove member group objects from object list
-                                    [void]$Script:AzureADMemberGroups.Remove($_)
+                                    [void]$Script:AzureADMemberGroups.Remove($ADMemberGroup)
                                 }
                             }
                         }
@@ -198,12 +203,14 @@ function Get-AzureADMember {
                     $VerboseMessage = "Final iteration of group $GroupDisplayName"
                     Write-Verbose $VerboseMessage
                 }
-                if (!$Script:CircularReference){
+
+                # If no circular reference, move scope for output
+                if (!$Script:CircularReference) {
                     # Move to local scope
                     $AzureADMemberUsersTotal = $Script:AzureADMemberUsersTotal
                 }
+                # Move scope to clear variable
                 else {
-                    # Move scope and clean-up
                     $CircularReference = $Script:CircularReference
                     $Script:CircularReference = $null
                 }
@@ -214,8 +221,8 @@ function Get-AzureADMember {
                 $Script:AzureADMemberGroups = $null
 
                 # If there is a circular reference, throw error after variables have been cleared
-                if ($CircularReference){
-                    $ErrorMessage = "Halting script execution due to Circular Reference, script scope variables have been cleared"
+                if ($CircularReference) {
+                    $ErrorMessage = "Halting execution after clearing scope variables"
                     throw $ErrorMessage
                 }
 

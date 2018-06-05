@@ -51,7 +51,7 @@ function Get-DiskSpaceInGB {
     end {
     }
 }
-# Create array of computer names
+# Example array of computer names
 $ComputerNames = @(
     "ComputerName1",
     "ComputerName2"

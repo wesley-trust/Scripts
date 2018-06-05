@@ -170,18 +170,12 @@ function Get-AzureADMember {
                             # Infinite loop protection
                             $AzureADMemberGroups | ForEach-Object {
                                 if ($_ -in $script:AzureADGroupsTotal) {
-
-                                    # Clean up script scope variables
-                                    $Script:AzureADGroupsTotal = $null
-                                    $Script:AzureADMemberUsersTotal = $null
-                                    $Script:AzureADMemberGroups = $null
-
-                                    # Throw Error
+                                    # Set flag and display error
+                                    $Script:CircularReference = $true
                                     $ErrorMessage = "Circular reference, '$($_.DisplayName)' is a member of parent group '$GroupDisplayName'"
                                     Write-Error $ErrorMessage
-                                    throw $ErrorMessage
                                 }
-                                else {
+                                elseif (!$Script:CircularReference) {
                                     # Add member group objects to object list
                                     $Script:AzureADMemberGroups.add($_)
                                     
@@ -204,14 +198,26 @@ function Get-AzureADMember {
                     $VerboseMessage = "Final iteration of group $GroupDisplayName"
                     Write-Verbose $VerboseMessage
                 }
-                        
-                # Move to local scope
-                $AzureADMemberUsersTotal = $Script:AzureADMemberUsersTotal
-
+                if (!$Script:CircularReference){
+                    # Move to local scope
+                    $AzureADMemberUsersTotal = $Script:AzureADMemberUsersTotal
+                }
+                else {
+                    # Move scope and clean-up
+                    $CircularReference = $Script:CircularReference
+                    $Script:CircularReference = $null
+                }
+                
                 # Clean up script scope variables
                 $Script:AzureADGroupsTotal = $null
                 $Script:AzureADMemberUsersTotal = $null
                 $Script:AzureADMemberGroups = $null
+
+                # If there is a circular reference, throw error after variables have been cleared
+                if ($CircularReference){
+                    $ErrorMessage = "Halting script execution due to Circular Reference, script scope variables have been cleared"
+                    throw $ErrorMessage
+                }
 
                 # Evaluate account enabled property
                 if (![string]::IsNullOrEmpty($AccountEnabled)) {

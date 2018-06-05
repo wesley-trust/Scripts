@@ -7,7 +7,7 @@
 .Synopsis
     Script that calls a function to get disk space across multiple computers and formats for display
 .Description
-    Supports multiple computers with pipeline input by parameter name, an array or comma separated list
+    Supports multiple computers with pipeline input by property name, an array or comma separated list
 .Example
     Get-DiskSpaceInGB -ComputerName $ComputerNames
 

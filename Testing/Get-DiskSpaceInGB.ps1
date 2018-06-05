@@ -1,3 +1,17 @@
+<#
+#Script name: Get disk space in GB
+#Creator: Wesley Trust
+#Date: 2018-06-05
+#Revision: 1
+
+.Synopsis
+    Script that calls a function to get disk space across multiple computers and formats for display
+.Description
+    Supports multiple computers with pipeline input by parameter name, an array or comma separated list
+.Example
+    Get-DiskSpaceInGB -ComputerName $ComputerNames
+
+#>
 function Get-DiskSpaceInGB {
     [CmdletBinding()]
     param (

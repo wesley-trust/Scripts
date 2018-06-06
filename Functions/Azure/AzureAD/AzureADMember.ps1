@@ -32,7 +32,7 @@ function Get-AzureADMember {
             HelpMessage = "Specify whether to check group membership recursively for nested groups (default: true)"
         )]
         [bool]
-        $Recurse = $true,
+        $Recursive = $true,
         [Parameter(
             Mandatory = $false,
             HelpMessage = "Specify the display name of user to check, multiple names can be comma separated or in an array",
@@ -146,8 +146,8 @@ function Get-AzureADMember {
                         $script:AzureADMemberUsersTotal.add($MemberUser) 
                     }
 
-                    # If recurse is true, filter to member groups
-                    if ($Recurse) {
+                    # If Recursive is true, filter to member groups
+                    if ($Recursive) {
 
                         # Filter on group object type
                         $AzureADMemberGroups = $AzureADMembers | Where-Object ObjectType -eq "Group"
@@ -184,7 +184,7 @@ function Get-AzureADMember {
                                     $Script:AzureADMemberGroups.add($ADMemberGroup)
                                     
                                     # Iterate through child group
-                                    Get-AzureADMember -GroupDisplayName $ADMemberGroup.DisplayName -Recurse $Recurse -AccountEnabled $AccountEnabled -UserType $UserType
+                                    Get-AzureADMember -GroupDisplayName $ADMemberGroup.DisplayName -Recursive $Recursive -AccountEnabled $AccountEnabled -UserType $UserType
                                     
                                     # Remove member group objects from object list
                                     [void]$Script:AzureADMemberGroups.Remove($ADMemberGroup)

@@ -39,9 +39,9 @@ function Get-DiskSpaceInGB {
             foreach ($LogicalDisk in $ComputerLogicalDisk) {
                 [PSCustomObject]@{
                     ComputerName  = $Computer;
-                    DriveLetter   = $_.name;
-                    SizeInGB      = $_.Size / 1GB -as [int];
-                    FreeSpaceInGB = $_.freespace / 1GB -as [int]
+                    DriveLetter   = $LogicalDisk.name;
+                    SizeInGB      = $LogicalDisk.Size / 1GB -as [int];
+                    FreeSpaceInGB = $LogicalDisk.freespace / 1GB -as [int]
                 }
             }
         }

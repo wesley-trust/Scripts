@@ -145,7 +145,7 @@ function Get-AzureADMember {
                     foreach ($MemberUser in $AzureADMemberUsers) {
                         $script:AzureADMemberUsersTotal.add($MemberUser) 
                     }
-                    
+
                     # If recurse is true, filter to member groups
                     if ($Recurse) {
 
@@ -194,12 +194,12 @@ function Get-AzureADMember {
                     }
                 }
             }
-            
+
             # If there are no nested groups remaining to iterate
             if (!$Script:AzureADMemberGroups) {
 
                 if ($GroupDisplayName) {
-                    $VerboseMessage = "Final iteration of group $GroupDisplayName"
+                    $VerboseMessage = "Final iteration of group $GroupDisplayName, that contained $($Script:AzureADGroupsTotal.count) nested group(s) and $($AzureADMemberUsers.count) user(s)"
                     Write-Verbose $VerboseMessage
                 }
 
@@ -225,24 +225,36 @@ function Get-AzureADMember {
                     throw $ErrorMessage
                 }
 
+                $VerboseMessage = "Total unfiltered users across all parameters: $($AzureADMemberUsersTotal.count)"
+                Write-Verbose $VerboseMessage
+
                 # Evaluate account enabled property
                 if (![string]::IsNullOrEmpty($AccountEnabled)) {
                     $AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Where-Object AccountEnabled -eq $AccountEnabled
+
+                    $VerboseMessage = "Total users after filtering on account enabled '$AccountEnabled': $($AzureADMemberUsersTotal.count)"
+                    Write-Verbose $VerboseMessage
                 }
 
                 # Evaluate user type
                 if ($UserType) {
                     $AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Where-Object UserType -eq $UserType
+
+                    $VerboseMessage = "Total users after filtering on user type '$UserType': $($AzureADMemberUsersTotal.count)"
+                    Write-Verbose $VerboseMessage
                 }
 
                 # Sort and unique
                 $AzureADMemberUsersTotal = $AzureADMemberUsersTotal | Sort-Object DisplayName -Unique
+
+                $VerboseMessage = "Final user total after sorting unique: $($AzureADMemberUsersTotal.count) "
+                Write-Verbose $VerboseMessage
                     
                 # Return output
                 return $AzureADMemberUsersTotal
             }
             else {
-                $VerboseMessage = "Iterating through group $GroupDisplayName that contains $($AzureADMemberGroups.count) nested group(s)"
+                $VerboseMessage = "Iterating group $GroupDisplayName that contains $($AzureADMemberGroups.count) nested group(s) and $($AzureADMemberUsers.count) user(s)"
                 Write-Verbose $VerboseMessage
             }
         }

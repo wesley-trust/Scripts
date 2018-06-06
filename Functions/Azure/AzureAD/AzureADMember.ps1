@@ -179,8 +179,7 @@ function Get-AzureADMember {
                                     $ErrorMessage = "Circular reference, '$($ADMemberGroup.DisplayName)' is a member of parent group '$GroupDisplayName'"
                                     Write-Error $ErrorMessage
                                 }
-                                # If no circular reference in any previous iteration
-                                elseif (!$Script:CircularReference) {
+                                else {
                                     # Add member group objects to object list
                                     $Script:AzureADMemberGroups.add($ADMemberGroup)
                                     

@@ -2,7 +2,7 @@
 #Script name: Get domain controller from domain name
 #Creator: Wesley Trust
 #Date: 2017-08-28
-#Revision: 2
+#Revision: 3
 #References:
 
 .Synopsis
@@ -10,45 +10,94 @@
 .Description
     Script that resolves a domain controller from a domain name, when using an AD integrated DNS zone for the domain.
 .Example
-    Specify the fully qualified Domain Name (FQDN) and Organisational Unit (OU) by distinguished name (DN).
-    Configure-Drive -Domain $Domain -OU $OU
+    Specify the fully qualified Domain Name (DNSDomain), multiple domains can be in array format or comma separated.
 .Example
 
 #>
 
-Function Get-DC () {
+function Get-DC {
+    [CmdletBinding()]
     Param(
         [Parameter(
-            Mandatory=$True,
-            Position=0,
-            HelpMessage="Enter the FQDN",
-            ValueFromPipeLine=$true,
-            ValueFromPipeLineByPropertyName=$true)]
+            Mandatory = $True,
+            Position = 0,
+            HelpMessage = "Enter the FQDN, multiple domains can be in array format or comma separated",
+            ValueFromPipeLine = $true,
+            ValueFromPipeLineByPropertyName = $true)]
         [ValidateNotNullOrEmpty()]
-        [String]
-        $Domain
+        [string[]]
+        $DNSDomain
     )
     Begin {
+        try {
+        
+        }
+        catch {
+            Write-Error -Message $_.Exception
 
+        }
     }
+
     Process {
-        
-        # Get start of authority of domain
-        $DC = Resolve-DnsName $Domain -Type SOA
-        
-        # Update vailable with primary server
-        $DC = $DC.PrimaryServer
-        
-        # Validate
-        If (!$DC){
-            Write-Error "Unable to resolve a domain controller"
+        try {
+            # Split and trim input
+            $DNSDomain = $DNSDomain.Split(",")
+            $DNSDomain = $DNSDomain.Trim()
+
+            # For each domain, resolve a domain controller
+            $DC = foreach ($Domain in $DNSDomain) {
+
+                # Build custom object
+                $ObjectProperties = @{
+                    DNSDomain = $Domain
+                }
+                
+                # Get start of authority of domain
+                $SOA = Resolve-DnsName $Domain -Type SOA
+
+                # If record returns
+                if ($SOA) {
+                    $ObjectProperties += @{
+                        ResolvedStatus = "Success"
+                        PrimaryServer  = $SOA.PrimaryServer
+                        IP4Address     = $SOA.IP4Address
+                    }
+                    
+                    # Test ping to server
+                    $PrimaryServerTest = Test-Connection $SOA.primaryserver -Count 1 2> Out-Null
+
+                    # If successful
+                    if ($PrimaryServerTest) {
+                        $ObjectProperties += @{
+                            PingStatus   = "Success"
+                            ResponseTime = $PrimaryServerTest.responsetime
+                        }
+                    }
+                    else {
+                        $ObjectProperties += @{
+                            PingStatus = "Failed"
+                        }
+                    }
+                }
+
+                # Create object
+                New-Object -TypeName psobject -Property $ObjectProperties
+            }
+
+            return $DC
         }
-        Else {
-            Write-Host "`nResolved Domain Controller"
+        catch {
+            Write-Error -Message $_.Exception
+
         }
-        Return $DC
     }
     End {
+        try {
+        
+        }
+        catch {
+            Write-Error -Message $_.Exception
 
+        }
     }
 }

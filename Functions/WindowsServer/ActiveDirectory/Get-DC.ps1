@@ -23,7 +23,8 @@ function Get-DC {
             Position = 0,
             HelpMessage = "Enter the FQDN, multiple domains can be in array format or comma separated",
             ValueFromPipeLine = $true,
-            ValueFromPipeLineByPropertyName = $true)]
+            ValueFromPipeLineByPropertyName = $true
+        )]
         [ValidateNotNullOrEmpty()]
         [string[]]
         $DNSDomain

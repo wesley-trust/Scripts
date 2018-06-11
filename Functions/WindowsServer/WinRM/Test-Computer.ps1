@@ -1,15 +1,15 @@
 <#
-#Script name: Test connection to server
+#Script name: Test connection to computer
 #Creator: Wesley Trust
 #Date: 2017-08-28
-#Revision: 5
+#Revision: 6
 #References:
 
 .Synopsis
-    Function that tests whether a computer can be resolved and connected to remotely.
+    Function that tests whether a computer can be resolved, pinged and connected to remotely.
 
 .Description
-    Accepts multiple computers in array or comma separated, returns test status as an object, if unable to connect remotely, captures error and ping test.
+    Accepts multiple computers in array or comma separated, returns test status as an object and captures error.
 
 .Example
     Test-WSManComputer -ComputerName $ComputerName
@@ -18,7 +18,7 @@
     
 #>
 
-function Test-WSManComputer {
+function Test-Computer {
     [CmdletBinding()]
     Param(
         [Parameter(
@@ -58,7 +58,7 @@ function Test-WSManComputer {
             $ComputerName = $ComputerName.Trim()
 
             # Foreach computer
-            $WSManComputer = foreach ($Computer in $ComputerName) {
+            $TestComputer = foreach ($Computer in $ComputerName) {
                 
                 # Resolve DNS
                 $ResolvedStatus = Resolve-DnsName $Computer
@@ -75,44 +75,46 @@ function Test-WSManComputer {
                         -ComputerName $Computer `
                         -Authentication Default `
                         -Credential $Credential `
-                        -ErrorVariable WSManStatusError `
+                        -ErrorVariable WSManError `
                         2> Out-Null
 
-                    # If successful, append to object
+                    # Append result
                     if ($WSManStatus) {
                         $ObjectProperties += @{
                             WSManStatus = $true
                         }
                     }
-                    
-                    # If unsuccessful, append error
                     else {
                         $ObjectProperties += @{
                             WSManStatus      = $false
-                            WSManStatusError = $WSManStatusError.Exception
-                        }
-
-                        # Ping computer to test if alive
-                        $PingStatus = Test-Connection $Computer -Count 1 2> Out-Null
-                        
-                        # If successful, return positive, else negative
-                        if ($PingStatus) {
-                            $ObjectProperties += @{
-                                PingStatus = $true
-                            }
-                        }
-                        else {
-                            $ObjectProperties += @{
-                                PingStatus = $false
-                            }
+                            WSManError = $WSManStatusError.Exception
                         }
                     }
 
-                    # Create a new object, with the properties
-                    New-Object psobject -Property $ObjectProperties
+                    # Ping computer to test if alive
+                    $PingStatus = Test-Connection $Computer `
+                        -Count 1 `
+                        -ErrorVariable PingError `
+                        2> Out-Null
+                        
+                    # If successful, return positive, else negative
+                    if ($PingStatus) {
+                        $ObjectProperties += @{
+                            PingStatus = $true
+                        }
+                    }
+                    else {
+                        $ObjectProperties += @{
+                            PingStatus = $false
+                            PingError = $PingError.Exception
+                        }
+                    }
                 }
+
+                # Create a new object, with the properties
+                New-Object psobject -Property $ObjectProperties
             }
-            return $WSManComputer
+            return $TestComputer
         }
         catch {
             Write-Error -Message $_.Exception

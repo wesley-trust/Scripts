@@ -47,11 +47,6 @@ function Get-DC {
 
             # For each domain, resolve a domain controller
             $DC = foreach ($Domain in $DNSDomain) {
-
-                # Build custom object
-                $ObjectProperties = @{
-                    DNSDomain = $Domain
-                }
                 
                 # Get start of authority of domain
                 $SOA = Resolve-DnsName $Domain -Type SOA
@@ -59,6 +54,7 @@ function Get-DC {
                 # If record returns
                 if ($SOA) {
                     $ObjectProperties += @{
+                        DNSDomain = $Domain
                         ResolvedStatus = "Success"
                         PrimaryServer  = $SOA.PrimaryServer
                         IP4Address     = $SOA.IP4Address

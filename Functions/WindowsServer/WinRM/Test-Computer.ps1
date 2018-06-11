@@ -12,7 +12,7 @@
     Accepts multiple computers in array or comma separated, returns test status as an object and captures error.
 
 .Example
-    Test-WSManComputer -ComputerName $ComputerName
+    Test-Computer -ComputerName $ComputerName
 
 .Example
     
@@ -41,7 +41,7 @@ function Test-Computer {
 
     Begin {
         try {
-            
+
             # If no credentials, request them
             if (!$Credential) {
                 $Credential = Get-Credential -Message "Enter credential for remote computer"

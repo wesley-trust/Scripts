@@ -61,17 +61,17 @@ function Test-Computer {
             $TestComputer = foreach ($Computer in $ComputerName) {
                 
                 # Resolve DNS
-                $ResolvedStatus = Resolve-DnsName $Computer
+                $ResolveDNS = Resolve-DnsName $Computer
 
                 # If successful, build object
-                if ($ResolvedStatus) {
+                if ($ResolveDNS) {
                     $ObjectProperties = @{
                         Computer       = $Computer
                         ResolvedStatus = $true
                     }
 
                     # Test WSMan connection                    
-                    $WSManStatus = Test-WSMan `
+                    $TestWSMan = Test-WSMan `
                         -ComputerName $Computer `
                         -Authentication Default `
                         -Credential $Credential `
@@ -79,7 +79,7 @@ function Test-Computer {
                         2> Out-Null
 
                     # Append result
-                    if ($WSManStatus) {
+                    if ($TestWSMan) {
                         $ObjectProperties += @{
                             WSManStatus = $true
                         }
@@ -92,13 +92,13 @@ function Test-Computer {
                     }
 
                     # Ping computer to test if alive
-                    $PingStatus = Test-Connection $Computer `
+                    $TestConnection = Test-Connection $Computer `
                         -Count 1 `
                         -ErrorVariable PingError `
                         2> Out-Null
                         
                     # If successful, return positive, else negative
-                    if ($PingStatus) {
+                    if ($TestConnection) {
                         $ObjectProperties += @{
                             PingStatus = $true
                         }

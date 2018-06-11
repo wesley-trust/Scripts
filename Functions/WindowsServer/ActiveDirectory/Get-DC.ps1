@@ -27,7 +27,14 @@ function Get-DC {
         )]
         [ValidateNotNullOrEmpty()]
         [string[]]
-        $DNSDomain
+        $DNSDomain,
+        [Parameter(
+            HelpMessage = "Specify whether to ping test DC",
+            ValueFromPipeLineByPropertyName = $true
+        )]
+        [ValidateNotNullOrEmpty()]
+        [bool]
+        $TestConnection
     )
     Begin {
         try {
@@ -54,25 +61,32 @@ function Get-DC {
                 # If record returns
                 if ($SOA) {
                     $ObjectProperties += @{
-                        DNSDomain = $Domain
-                        ResolvedStatus = "Success"
-                        PrimaryServer  = $SOA.PrimaryServer
+                        Domain      = $Domain
+                        ResolvedStatus = $true
+                        ComputerName  = $SOA.PrimaryServer
                         IP4Address     = $SOA.IP4Address
                     }
-                    
-                    # Test ping to server
-                    $PrimaryServerTest = Test-Connection $SOA.primaryserver -Count 1 2> Out-Null
 
-                    # If successful
-                    if ($PrimaryServerTest) {
-                        $ObjectProperties += @{
-                            PingStatus   = "Success"
-                            ResponseTime = $PrimaryServerTest.responsetime
+                    # If true, test ping to server
+                    if ($TestConnection) {
+
+                        $TestConnection = Test-Connection $Computer `
+                            -Count 1 `
+                            -ErrorVariable PingError `
+                            2> Out-Null
+
+                        # If successful, return positive, else negative
+                        if ($PingStatus) {
+                            $ObjectProperties += @{
+                                PingStatus = $true
+                                ResponseTime = $TestConnection.responsetime
+                            }
                         }
-                    }
-                    else {
-                        $ObjectProperties += @{
-                            PingStatus = "Failed"
+                        else {
+                            $ObjectProperties += @{
+                                PingStatus = $false
+                                PingError = $PingError.Exception
+                            }
                         }
                     }
                 }

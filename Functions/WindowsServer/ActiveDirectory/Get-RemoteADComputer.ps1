@@ -14,7 +14,6 @@
 .Example
     
 #>
-
 Function Get-RemoteADComputer {
     [CmdletBinding()]
     Param(
@@ -47,7 +46,7 @@ Function Get-RemoteADComputer {
     
     Begin {
         try {
-            
+
             # If no credentials, request them
             if (!$Credential) {
                 $Credential = Get-Credential -Message "Enter credential for remote computer"

@@ -41,6 +41,7 @@ function Test-Computer {
 
     Begin {
         try {
+            
             # If no credentials, request them
             if (!$Credential) {
                 $Credential = Get-Credential -Message "Enter credential for remote computer"

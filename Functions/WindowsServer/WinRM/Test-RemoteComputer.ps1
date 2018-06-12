@@ -1,5 +1,5 @@
 <#
-#Script name: Test connection to computer
+#Script name: Test connection to remote computer
 #Creator: Wesley Trust
 #Date: 2017-08-28
 #Revision: 6
@@ -12,13 +12,13 @@
     Accepts multiple computers in array or comma separated, returns test status as an object and captures error.
 
 .Example
-    Test-Computer -ComputerName $ComputerName
+    Test-RemoteComputer -ComputerName $ComputerName
 
 .Example
     
 #>
 
-function Test-Computer {
+function Test-RemoteComputer {
     [CmdletBinding()]
     Param(
         [Parameter(

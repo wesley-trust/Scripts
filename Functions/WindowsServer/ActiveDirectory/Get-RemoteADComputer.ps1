@@ -10,7 +10,7 @@
 .Description
     Multiple computer names of domain controllers and OUs can be specified
 .Example
-    Get-RemoteADComputer -ComputerName $ComputerName -OU $OU
+    Get-RemoteADComputer -ComputerName $DC -OU $OU
 .Example
     
 #>
@@ -20,12 +20,12 @@ Function Get-RemoteADComputer {
         [Parameter(
             Mandatory = $True,
             Position = 0,
-            HelpMessage = "Specify the Computer Name of the domain controller, multiple DCs can be in array format or comma separated",
+            HelpMessage = "Specify the domain controller, multiple DCs can be in array format or comma separated",
             ValueFromPipeLine = $true,
             ValueFromPipeLineByPropertyName = $true
         )]
         [string[]]
-        $ComputerName,
+        $DC,
         [Parameter(
             Mandatory = $false,
             Position = 1,
@@ -59,16 +59,16 @@ Function Get-RemoteADComputer {
     Process {
         try {
             # Split and trim input
-            $ComputerName = $ComputerName.Split(",")
-            $ComputerName = $ComputerName.Trim()
+            $DC = $DC.Split(",")
+            $DC = $DC.Trim()
             $OU = $OU.Split(",")
             $OU = $OU.Trim()
 
             # Foreach computer, store output in variable
-            $SessionADComputer = foreach ($Computer in $ComputerName) {
+            $RemoteADComputer = foreach ($Server in $DC) {
                 
                 # Create remote PowerShell session to DC
-                $Session = New-PSSession -ComputerName $Computer -Credential $Credential
+                $Session = New-PSSession -ComputerName $Server -Credential $Credential
 
                 # Invoke remote command within session
                 Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
@@ -92,7 +92,7 @@ Function Get-RemoteADComputer {
                 Remove-pssession -Session $Session
             }
             
-            return $SessionADComputer
+            return $RemoteADComputer
         }
         catch {
             Write-Error -Message $_.Exception

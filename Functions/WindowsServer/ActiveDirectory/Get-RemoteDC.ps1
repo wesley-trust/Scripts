@@ -15,7 +15,7 @@
 
 #>
 
-function Get-DC {
+function Get-RemoteDC {
     [CmdletBinding()]
     Param(
         [Parameter(

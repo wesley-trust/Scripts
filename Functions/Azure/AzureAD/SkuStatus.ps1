@@ -110,7 +110,7 @@ Function Get-AzureADUserSkuStatus {
                 $SkuId = $AzureADUser.AssignedLicenses.SkuId | Select-Object -Unique
             }
 
-            # For each licenced user
+            # For each user
             $UserSkuStatus = foreach ($User in $AzureADUser) {
     
                 # Build object properties

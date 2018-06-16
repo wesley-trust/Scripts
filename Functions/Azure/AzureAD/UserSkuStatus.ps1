@@ -112,7 +112,7 @@ Function Get-AzureADUserSkuStatus {
             $UserSkuStatus = foreach ($User in $AzureADUser) {
     
                 # Build object properties
-                $ObjectProperties = @{
+                $ObjectProperties = [ordered]@{
                     DisplayName = $User.DisplayName
                     UserPrincipalName = $User.UserPrincipalName
                 }

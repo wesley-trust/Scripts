@@ -11,7 +11,6 @@
 .Example
     Get-AzureADUserSkuStatus
 #>
-
 Function Get-AzureADUserSkuStatus {
     [CmdletBinding()]
     Param(
@@ -44,7 +43,6 @@ Function Get-AzureADUserSkuStatus {
         )]
         [switch]
         $IncludeUnassignedSku
-
     )
 
     Begin {
@@ -106,7 +104,7 @@ Function Get-AzureADUserSkuStatus {
             }
             else {
                 
-                # Get unique assigned SKUs only
+                # Get unique skus assigned to users
                 $SkuId = $AzureADUser.AssignedLicenses.SkuId | Select-Object -Unique
             }
 

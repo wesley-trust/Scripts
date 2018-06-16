@@ -62,7 +62,7 @@ Begin {
         $Functions = @(
             "$FunctionLocation\Toolkit\Check-RequiredModule.ps1",
             "$FunctionLocation\Azure\AzureAD\Test-AzureADConnection.ps1"
-            "$FunctionLocation\Azure\AzureAD\SkuStatus.ps1"
+            "$FunctionLocation\Azure\AzureAD\UserSkuStatus.ps1"
         )
         foreach ($Function in $Functions) {
             . $Function

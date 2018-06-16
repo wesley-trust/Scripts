@@ -5,11 +5,9 @@
 #Revision: 1
 #References: 
 .Synopsis
-    Function to get the Sku status of users, allows specific users or skus to be specified.
+    Script to call function to get the Sku status of users, allows specific users or skus to be specified.
 .Description
-    Ay default only returns users and skus that are assigned.
-.Example
-    Get-AzureADUserSkuStatus
+    By default only returns users and skus that are assigned, formats output, tests for active connection/connects/disconnects, supports reauthentication.
 #>
 
 Param(
@@ -58,6 +56,7 @@ Param(
 
 Begin {
     try {
+
         # Dot source function definitions
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
@@ -69,7 +68,7 @@ Begin {
             . $Function
         }
         
-        # Required Module
+        # Dependency check for required module:
         $Module = "AzureAD"
         
         Check-RequiredModule -Modules $Module
@@ -108,13 +107,13 @@ Process {
         # Throw error if not connected to Azure AD
         if (!$AzureADConnection) {
             if (!$TestConnection.ActiveConnection){
-                $ErrorMessage = "Unable to connect to Azure AD"
+                $ErrorMessage = "No connection to Azure AD"
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
             }
         }
 
-        # Call function and format output
+        # Call function
         $AzureADUserSkuStatus = Get-AzureADUserSkuStatus
 
         # Output and format
@@ -135,6 +134,8 @@ Process {
 
 End {
     try {
+        
+        # Clean up active session
         if (!$SkipDisconnect) {
             Disconnect-AzureAD 
         }

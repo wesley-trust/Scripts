@@ -41,19 +41,30 @@ Param(
         ValueFromPipeLineByPropertyName = $true
     )]
     [switch]
-    $IncludeUnassignedSku
+    $IncludeUnassignedSku,
+    [Parameter(
+        Mandatory = $false,
+        HelpMessage = "Specify whether to skip disconnection"
+    )]
+    [switch]
+    $SkipDisconnect,
+    [Parameter(
+        Mandatory = $false,
+        HelpMessage = "Specify whether to reauthenticate with different credentials"
+    )]
+    [switch]
+    $ReAuthenticate
 )
 
 Begin {
     try {
-        # Function definitions
+        # Dot source function definitions
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
             "$FunctionLocation\Toolkit\Check-RequiredModule.ps1",
             "$FunctionLocation\Azure\AzureAD\Test-AzureADConnection.ps1"
             "$FunctionLocation\Azure\AzureAD\SkuStatus.ps1"
         )
-        # Function dot source
         foreach ($Function in $Functions) {
             . $Function
         }
@@ -87,6 +98,7 @@ Begin {
     }
     catch {
         Write-Error -Message $_.exception
+        throw $_.exception
     }
 }
 
@@ -107,7 +119,7 @@ Process {
 
         # Output and format
         if ($AzureADUserSkuStatus){
-            $AzureADUserSkuStatus | Format-Table
+            $AzureADUserSkuStatus | Format-Table -AutoSize
         }
         else {
             $ErrorMessage = "No user sku licence status returned"
@@ -117,14 +129,18 @@ Process {
     }
     catch {
         Write-Error -Message $_.exception
+        throw $_.exception
     }
 }
 
 End {
     try {
-
+        if (!$SkipDisconnect) {
+            Disconnect-AzureAD 
+        }
     }
     catch {
         Write-Error -Message $_.exception
+        throw $_.exception
     }
 }

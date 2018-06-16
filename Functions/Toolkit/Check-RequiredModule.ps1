@@ -2,7 +2,7 @@
 #Script name: Check-RequiredModule
 #Creator: Wesley Trust
 #Date: 2017-12-04
-#Revision: 2
+#Revision: 3
 #References: 
 
 .Synopsis
@@ -19,20 +19,20 @@ function Check-RequiredModule() {
     [CmdletBinding()]
     Param(
         [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify the PSDesktop module name(s)"
+            Mandatory = $false,
+            HelpMessage = "Specify the PSDesktop module name(s)"
         )]
         [string[]]
         $Modules,
         [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify the PSCore module name(s)"
+            Mandatory = $false,
+            HelpMessage = "Specify the PSCore module name(s)"
         )]
         [string[]]
         $ModulesCore,
         [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify whether to update module if installed"
+            Mandatory = $false,
+            HelpMessage = "Specify whether to update module if installed"
         )]
         [switch]
         $Update
@@ -52,18 +52,18 @@ function Check-RequiredModule() {
         try {
 
             # Check for PowerShell Core
-            if ($PSVersionTable.PSEdition -eq "Core"){
+            if ($PSVersionTable.PSEdition -eq "Core") {
                 # If true, update module with core version
                 $Modules = $ModulesCore
             }
 
             # Check if session is elevated
             $Elevated = ([Security.Principal.WindowsPrincipal] `
-                [Security.Principal.WindowsIdentity]::GetCurrent() `
-                ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+                    [Security.Principal.WindowsIdentity]::GetCurrent() `
+            ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
             
             # If Elevated, install for all users, otherwise, current user.
-            if ($Elevated){
+            if ($Elevated) {
                 $Scope = "AllUsers"
             }
             else {
@@ -77,32 +77,36 @@ function Check-RequiredModule() {
 
             # Clean input and create array
             $Modules = $Modules.Split(",")
-            $Modules = $Modules | ForEach-Object {$_.Trim()}
+            $Modules = $Modules.Trim()
 
-            foreach ($Module in $Modules){
-                # Check if module is installed
-                Write-Host "`nChecking if required module $Module is installed`n"
-                $ModuleCheck = Get-Module -ListAvailable | Where-Object Name -eq $Module
-                
-                # If not installed, install the module
-                if (!$ModuleCheck){
-                    write-Host "`nInstalling required module $Module for $Scope`n"
-                    Install-Module -Name $Module -AllowClobber -Force -Scope $Scope -ErrorAction Stop
-                }
-                else {
-                    if ($Update){
-                        if (!$Elevated){
-                            if ($ModuleCheck.path -like "*Program Files*"){
+            # Check if module is installed
+            Write-Host "`nPerforming Dependency Check: Required Module(s): $Modules`n"
+            $ModuleList = Get-Module -ListAvailable
+            
+            # For each module, check it is installed, if not attempt to install
+            foreach ($Module in $Modules) {
+                $ModuleCheck = $ModuleList | Where-Object Name -eq $Module
+                if ($ModuleCheck) {
+                    Write-Host "`nRequired module $Module is installed`n"
+
+                    # If update switch is specified, attempt to update
+                    if ($Update) {
+                        if (!$Elevated) {
+                            if ($ModuleCheck.path -like "*Program Files*") {
                                 $Update = $false
                                 $WarningMessage = "Skipping module update, rerun as an administrator to update this module"
                                 Write-Warning $WarningMessage
                             }
                         }
-                        if ($Update){
+                        if ($Update) {
                             write-Host "`nChecking for update to module $Module`n"
                             Update-Module -Name $Module
                         }
                     }
+                }
+                else {
+                    write-Host "`nInstalling required module $Module for $Scope`n"
+                    Install-Module -Name $Module -AllowClobber -Force -Scope $Scope -ErrorAction Stop
                 }
             }
         }

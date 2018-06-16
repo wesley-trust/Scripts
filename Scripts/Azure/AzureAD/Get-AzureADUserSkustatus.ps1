@@ -103,7 +103,17 @@ Process {
         }
 
         # Call function and format output
-        Get-AzureADUserSkuStatus | Format-Table
+        $AzureADUserSkuStatus = Get-AzureADUserSkuStatus
+
+        # Output and format
+        if ($AzureADUserSkuStatus){
+            $AzureADUserSkuStatus | Format-Table
+        }
+        else {
+            $ErrorMessage = "No user sku licence status returned"
+            Write-Error $ErrorMessage
+            throw $ErrorMessage
+        }
     }
     catch {
         Write-Error -Message $_.exception

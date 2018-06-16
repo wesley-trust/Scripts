@@ -126,7 +126,7 @@ Process {
         # Call function
         $AzureADUserSkuStatus = Get-AzureADUserSkuStatus
 
-        # Output and format
+        # Check, output and format
         if ($AzureADUserSkuStatus) {
             $AzureADUserSkuStatus | Format-Table -AutoSize
         }

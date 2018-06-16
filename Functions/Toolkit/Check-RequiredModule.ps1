@@ -87,7 +87,7 @@ function Check-RequiredModule() {
             foreach ($Module in $Modules) {
                 $ModuleCheck = $ModuleList | Where-Object Name -eq $Module
                 if ($ModuleCheck) {
-                    Write-Host "`nRequired module $Module is installed`n"
+                    Write-Host "`nModule $Module is installed`n"
 
                     # If update switch is specified, attempt to update
                     if ($Update) {
@@ -105,7 +105,7 @@ function Check-RequiredModule() {
                     }
                 }
                 else {
-                    write-Host "`nInstalling required module $Module for $Scope`n"
+                    write-Host "`nInstalling module $Module for $Scope`n"
                     Install-Module -Name $Module -AllowClobber -Force -Scope $Scope -ErrorAction Stop
                 }
             }

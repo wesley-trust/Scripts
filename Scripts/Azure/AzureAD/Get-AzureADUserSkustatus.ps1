@@ -13,7 +13,7 @@
 Param(
     [Parameter(
         Mandatory = $false,
-        HelpMessage = "Specify the UPN of user to check, multiple UPNs can be comma separated or in an array",
+        HelpMessage = "Specify the UPN of a user to check, multiple UPNs can be comma separated or in an array, accepts pipeline values",
         ValueFromPipeLine = $true,
         ValueFromPipeLineByPropertyName = $true
     )]
@@ -42,6 +42,12 @@ Param(
     $IncludeUnassignedSku,
     [Parameter(
         Mandatory = $false,
+        HelpMessage = "Specify whether to skip dependency checks"
+    )]
+    [switch]
+    $SkipDependencyCheck,
+    [Parameter(
+        Mandatory = $false,
         HelpMessage = "Specify whether to skip disconnection"
     )]
     [switch]
@@ -57,22 +63,26 @@ Param(
 Begin {
     try {
 
-        # Dot source function definitions
-        $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
-        $Functions = @(
-            "$FunctionLocation\Toolkit\Check-RequiredModule.ps1",
-            "$FunctionLocation\Azure\AzureAD\Test-AzureADConnection.ps1"
-            "$FunctionLocation\Azure\AzureAD\UserSkuStatus.ps1"
-        )
-        foreach ($Function in $Functions) {
-            . $Function
+        # Skip dependency check if switch is true
+        if (!$SkipDependencyCheck) {
+            
+            # Dot source function definitions
+            $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
+            $Functions = @(
+                "$FunctionLocation\Toolkit\Check-RequiredModule.ps1",
+                "$FunctionLocation\Azure\AzureAD\Test-AzureADConnection.ps1"
+                "$FunctionLocation\Azure\AzureAD\UserSkuStatus.ps1"
+            )
+            foreach ($Function in $Functions) {
+                . $Function
+            }
+
+            # Dependency check for required module:
+            $Module = "AzureAD"
+
+            Check-RequiredModule -Modules $Module
         }
         
-        # Dependency check for required module:
-        $Module = "AzureAD"
-        
-        Check-RequiredModule -Modules $Module
-
         # Check for active connection to Azure AD
         if (!$ReAuthenticate) {
             $TestConnection = Test-AzureADConnection -Credential $Credential
@@ -83,8 +93,8 @@ Begin {
         }
 
         # If there is an active connection, clean up if required
-        if ($TestConnection.ActiveConnection){
-            if ($ReAuthenticate -or $TestConnection.reauthenticate){
+        if ($TestConnection.ActiveConnection) {
+            if ($ReAuthenticate -or $TestConnection.reauthenticate) {
                 $TestConnection.ActiveConnection = Disconnect-AzureAD | Out-Null
             }
         }
@@ -106,7 +116,7 @@ Process {
 
         # Throw error if not connected to Azure AD
         if (!$AzureADConnection) {
-            if (!$TestConnection.ActiveConnection){
+            if (!$TestConnection.ActiveConnection) {
                 $ErrorMessage = "No connection to Azure AD"
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
@@ -117,7 +127,7 @@ Process {
         $AzureADUserSkuStatus = Get-AzureADUserSkuStatus
 
         # Output and format
-        if ($AzureADUserSkuStatus){
+        if ($AzureADUserSkuStatus) {
             $AzureADUserSkuStatus | Format-Table -AutoSize
         }
         else {

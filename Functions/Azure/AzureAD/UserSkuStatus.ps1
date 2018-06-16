@@ -7,7 +7,7 @@
 .Synopsis
     Function to get the Sku status of users, allows specific users or skus to be specified.
 .Description
-    Ay default only returns users and skus that are assigned.
+    By default only returns users and skus that are assigned.
 .Example
     Get-AzureADUserSkuStatus
 #>

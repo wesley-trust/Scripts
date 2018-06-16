@@ -41,7 +41,7 @@ function Test-AzureADConnection() {
     Process {
         try {
             # Check for active Azure AD session
-            $CurrentSession = Get-AzureADCurrentSessionInfo 2> Out-null
+            $CurrentSession = Get-AzureADCurrentSessionInfo 2> $null
             
             # If a connection exists
             if ($CurrentSession){

@@ -62,21 +62,21 @@ Param(
 
 Begin {
     try {
+            
+        # Dot source function definitions
+        $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
+        $Functions = @(
+            "$FunctionLocation\Toolkit\Check-RequiredModule.ps1",
+            "$FunctionLocation\Azure\AzureAD\Test-AzureADConnection.ps1"
+            "$FunctionLocation\Azure\AzureAD\UserSkuStatus.ps1"
+        )
+        foreach ($Function in $Functions) {
+            . $Function
+        }
 
         # Skip dependency check if switch is true
         if (!$SkipDependencyCheck) {
             
-            # Dot source function definitions
-            $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
-            $Functions = @(
-                "$FunctionLocation\Toolkit\Check-RequiredModule.ps1",
-                "$FunctionLocation\Azure\AzureAD\Test-AzureADConnection.ps1"
-                "$FunctionLocation\Azure\AzureAD\UserSkuStatus.ps1"
-            )
-            foreach ($Function in $Functions) {
-                . $Function
-            }
-
             # Dependency check for required module:
             $Module = "AzureAD"
 

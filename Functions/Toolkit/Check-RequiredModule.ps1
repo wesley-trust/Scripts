@@ -81,6 +81,7 @@ function Check-RequiredModule() {
 
             # Check if module is installed
             Write-Host "`nPerforming Dependency Check"
+            Write-Host "`nRequired Module(s): $Modules"
             $ModuleList = Get-Module -ListAvailable
             
             # For each module, check it is installed, if not attempt to install
@@ -123,6 +124,7 @@ function Check-RequiredModule() {
                     }
                 }
             }
+
             # If module is not installed, attempt to install
             $ModuleNotInstalled = $ModuleStatus | Where-Object Installed -eq $false
             foreach ($Module in $ModuleNotInstalled){

@@ -63,17 +63,15 @@ function Get-PCCustomerSubscription() {
                 
                 # For each customer
                 $SubscriptionCustomers = foreach ($Customer in $Customers) {
-                    $TenantID = $Customer.id
-                    $CustomerName = $Customer.CompanyProfile.CompanyName
-                    
+
                     # Get all subscriptions
-                    $Subscriptions = Get-PCSubscription -tenantid $TenantID -all | Where-Object offerName -eq $OfferName
+                    $Subscriptions = Get-PCSubscription -tenantid $Customer.id -all | Where-Object offerName -eq $OfferName
                     
                     # For each subscription
                     foreach ($Subscription in $Subscriptions) {
                         $ObjectProperties = @{
-                            TenantID       = $tenantid
-                            Customer       = $CustomerName
+                            TenantID       = $Customer.id
+                            Customer       = $Customer.CompanyProfile.CompanyName
                             SubscriptionId = $Subscription.id
                             Name           = $Subscription.friendlyname
                             OfferName      = $Subscription.offername

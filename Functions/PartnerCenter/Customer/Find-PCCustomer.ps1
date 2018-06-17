@@ -52,6 +52,7 @@ function Find-PCCustomer() {
     
     Process {
         try {
+            
             # Get all customers
             $PCCustomer = Get-PCCustomer -all
             

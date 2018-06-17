@@ -14,14 +14,13 @@
 .Example
     
 #>
-
 function FunctionName() {
     [cmdletbinding()]
     Param(
         [Parameter(
-            Mandatory=$false,
+            Mandatory = $false,
             Position = 0,
-            HelpMessage="Specify a PowerShell credential object"
+            HelpMessage = "Specify a PowerShell credential object"
         )]
         [pscredential]
         $Credential
@@ -47,6 +46,12 @@ function FunctionName() {
         }
     }
     End {
-        
+        try {
+
+        }
+        catch {
+            Write-Error -Message $_.Exception
+            throw $_.exception
+        }
     }
 }

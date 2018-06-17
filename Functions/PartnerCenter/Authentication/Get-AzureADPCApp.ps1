@@ -32,6 +32,8 @@ function Get-AzureADPCApp() {
     Begin {
         try {
 
+            # Connect to Azure AD
+            Connect-AzureAD -Credential $Credential | Out-Null
         }
         catch {
             Write-Error -Message $_.Exception
@@ -40,9 +42,6 @@ function Get-AzureADPCApp() {
     
     Process {
         try {
-            
-            # Connect to Azure AD
-            Connect-AzureAD -Credential $Credential | Out-Null
             
             # Retrieve CSP App ID from AzureAD
             $CSPApp = Get-AzureADApplication | Where-Object DisplayName -eq "Partner Center Native App"
@@ -61,7 +60,7 @@ function Get-AzureADPCApp() {
         }
     }
     End {
-        
+
         # Disconnect
         Disconnect-AzureAD
     }

@@ -89,10 +89,12 @@ Begin {
 
 Process {
     try {
+
         # If a credential exists, make the password read only so it can be reused
         if ($Credential){
             $Credential.Password.MakeReadOnly()
         }
+        
         # Build custom parameters
         $CustomParameters = @{}
         if ($TenantID){
@@ -110,12 +112,18 @@ Process {
                 Credential = $Credential
             }
         }
-        # Check for active connection
-        $TestConnection = Test-AzureConnection -Credential $Credential
-
+        
+        # Check for active connection to Azure RM
+        if (!$ReAuthenticate) {
+            $TestConnection = Test-AzureConnection -Credential $Credential
+            if ($TestConnection.reauthenticate) {
+                $ReAuthenticate = $true
+            }
+        }
+        
         # If there is an active connection, clean up
-        if ($TestConnection.ActiveConnection){
-            if ($ReAuthenticate -or $TestConnection.reauthenticate){
+        if ($TestConnection.ActiveConnection) {
+            if ($ReAuthenticate) {
                 $TestConnection.ActiveConnection = Disconnect-AzureRmAccount | Out-Null
             }
         }
@@ -144,8 +152,10 @@ Process {
                 Write-Verbose "No subscriptions available for active connection, including CSP subscriptions within scope"
                 $IncludeCSP = $True
             }
+            
             # Connect to Partner Center
             if ($IncludeCSP){
+                
                 # Function definitions
                 $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
                 $Functions = @(
@@ -153,10 +163,12 @@ Process {
                     "$FunctionLocation\PartnerCenter\Authentication\Connect-PartnerCenter.ps1",
                     "$FunctionLocation\PartnerCenter\Customer\Get-PCCustomerSubscription.ps1"
                 )
+                
                 # Function dot source
                 foreach ($Function in $Functions){
                     . $Function
                 }
+                
                 # Required Module
                 $Module = "PartnerCenterModule,AzureAD"
                             
@@ -169,8 +181,10 @@ Process {
                         $ReAuthenticate = $true
                     }
                 }
+                
                 # If no active connection, or reauthentication required
                 if (!$TestConnection.ActiveConnection -or $ReAuthenticate){
+                    
                     # If there are no credentials
                     if (!$Credential){
                         $Credential = Get-Credential -Message "Enter Partner Center credentials"
@@ -185,6 +199,7 @@ Process {
                     }
                 }
                 if ($PartnerCenterConnection -or $TestConnection){                    
+                    
                     # Get Parter Center Azure Subscriptions
                     $PCAzureSubscriptions = Get-PCCustomerSubscription -OfferName $OfferName -TenantId $TenantID
                     $AzureSubscriptions += $PCAzureSubscriptions
@@ -193,6 +208,7 @@ Process {
 
             # If there are Azure Subscriptions
             if ($AzureSubscriptions){
+                
                 # Filter to unique subscriptions
                 $UniqueSubscriptions = $AzureSubscriptions | Sort-Object SubscriptionID -Unique
                 $AzureSubscriptions = foreach ($Subscription in $UniqueSubscriptions) {
@@ -201,6 +217,7 @@ Process {
                     | Sort-Object Customer -Desc `
                     | Select-Object -first 1
                 }
+                
                 # Filter if a subscription name is provided
                 if ($SubscriptionName){
                     $AzureSubscriptions = $AzureSubscriptions | Where-Object Name -Like "*$SubscriptionName*"
@@ -210,6 +227,7 @@ Process {
                         throw $ErrorMessage
                     }
                 }
+                
                 # Filter if a subscription ID is provided
                 if ($SubscriptionID){
                     $AzureSubscriptions = $AzureSubscriptions | Where-Object SubscriptionID -eq $SubscriptionId
@@ -222,6 +240,7 @@ Process {
 
                 # If multiple subscriptions are returned
                 if ($AzureSubscriptions.count -gt 1){
+                    
                     # Display subscriptions
                     Write-Host "`nSubscriptions you have access to:`n"
                     $AzureSubscriptions | Sort-Object Name | Format-List Name,SubscriptionId -GroupBy Customer | Out-Host -Paging
@@ -253,6 +272,7 @@ Process {
                 
                 # Connecting to specific subscription
                 Write-Host "`nConnecting to Azure Subscription: $SubscriptionName`n"
+                
                 # Build custom parameters
                 $CustomParameters = @{}
                 $CustomParameters += @{

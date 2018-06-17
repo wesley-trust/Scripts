@@ -13,8 +13,6 @@
     when no SQL pools are specified, all databases on the server are returned (excluding master),
     includes error checking for whether the SQL server exists.
 #>
-
-
 function Get-AzureSQLDatabaseInsidePool {
     [CmdletBinding()]
     Param(

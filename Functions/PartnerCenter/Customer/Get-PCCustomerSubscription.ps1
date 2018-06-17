@@ -2,7 +2,7 @@
 #Script name: Get Partner Center Customer Subscriptions
 #Creator: Wesley Trust
 #Date: 2018-04-08
-#Revision: 1
+#Revision: 2
 #References: 
 
 .Synopsis
@@ -18,21 +18,21 @@ function Get-PCCustomerSubscription() {
     [cmdletbinding()]
     Param(
         [Parameter(
-            Mandatory=$false,
+            Mandatory = $false,
             Position = 0,
-            HelpMessage="Specify a PowerShell credential object"
+            HelpMessage = "Specify a PowerShell credential object"
         )]
         [pscredential]
         $Credential,
         [Parameter(
-            Mandatory=$false,
+            Mandatory = $false,
             Position = 0,
-            HelpMessage="Subscription name"
+            HelpMessage = "Subscription name"
         )]
         [string]
         $OfferName,
         [Parameter(
-            Mandatory=$false
+            Mandatory = $false
         )]
         [string]
         $tenantid
@@ -49,8 +49,9 @@ function Get-PCCustomerSubscription() {
 
     Process {
         try {
+            
             # Get Customer
-            if ($TenantID){
+            if ($TenantID) {
                 $customers = Get-PCCustomer -Tenantid $tenantid
             }
             else {
@@ -58,29 +59,33 @@ function Get-PCCustomerSubscription() {
             }
             
             # If there are customers
-            if ($customers){
+            if ($customers) {
+                
                 # For each customer
-                $SubscriptionCustomers = $Customers | ForEach-Object {
-                    $TenantID = $_.id
-                    $CustomerName = $_.CompanyProfile.CompanyName
+                $SubscriptionCustomers = foreach ($Customer in $Customers) {
+                    $TenantID = $Customer.id
+                    $CustomerName = $Customer.CompanyProfile.CompanyName
+                    
                     # Get all subscriptions
-                    $Subscription = Get-PCSubscription -tenantid $TenantID -all | Where-Object offerName -eq $OfferName
+                    $Subscriptions = Get-PCSubscription -tenantid $TenantID -all | Where-Object offerName -eq $OfferName
+                    
                     # For each subscription
-                    $Subscription | ForEach-Object {
+                    foreach ($Subscription in $Subscriptions) {
                         $ObjectProperties = @{
-                            TenantID = $tenantid
-                            Customer = $CustomerName
-                            SubscriptionId = $_.id
-                            Name = $_.friendlyname
-                            OfferName = $_.offername
-                            OfferID = $_.offerid
-                            State = $_.status
+                            TenantID       = $tenantid
+                            Customer       = $CustomerName
+                            SubscriptionId = $Subscription.id
+                            Name           = $Subscription.friendlyname
+                            OfferName      = $Subscription.offername
+                            OfferID        = $Subscription.offerid
+                            State          = $Subscription.status
                         }
+                        
                         # Create new object per subscription
                         New-Object psobject -Property $ObjectProperties
                     }
                 }
-                if ($SubscriptionCustomers){
+                if ($SubscriptionCustomers) {
                     return $SubscriptionCustomers
                 }
                 else {

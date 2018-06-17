@@ -18,23 +18,23 @@ function Find-PCCustomer() {
     [cmdletbinding()]
     Param(
         [Parameter(
-            Mandatory=$false,
+            Mandatory = $false,
             Position = 0,
-            HelpMessage="Specify a PowerShell credential object"
+            HelpMessage = "Specify a PowerShell credential object"
         )]
         [pscredential]
         $Credential,
         [Parameter(
-            Mandatory=$false,
+            Mandatory = $false,
             Position = 0,
-            HelpMessage="Specify a customer name"
+            HelpMessage = "Specify a customer name"
         )]
         [string]
         $Name,
         [Parameter(
-            Mandatory=$false,
+            Mandatory = $false,
             Position = 0,
-            HelpMessage="Specify a customer tenant domain"
+            HelpMessage = "Specify a customer tenant domain"
         )]
         [string]
         $Domain
@@ -56,23 +56,25 @@ function Find-PCCustomer() {
             $PCCustomer = Get-PCCustomer -all
             
             # If there are customers
-            if ($PCCustomer){
+            if ($PCCustomer) {
+                
                 # Filter by name or domain
-                if ($Name){
+                if ($Name) {
                     $PCCustomer = $PCCustomer | Where-Object {$_.companyprofile.companyname -like "*$Name*"}
                 }
-                elseif ($Domain){
+                elseif ($Domain) {
                     $PCCustomer = $PCCustomer | Where-Object {$_.companyprofile.domain -like "*$Domain*"}
                 }
 
                 # Display customer details
-                if ($PCCustomer.count -gt 1){
-                    $PCCustomer.companyprofile | Select-Object CompanyName,Domain,TenantID | Out-Host -Paging
-                    while ($TenantID -notin $PCCustomer.id){
+                if ($PCCustomer.count -gt 1) {
+                    $PCCustomer.companyprofile | Select-Object CompanyName, Domain, TenantID | Out-Host -Paging
+                    while ($TenantID -notin $PCCustomer.id) {
                         $TenantID = Read-Host "Specify Customer Tenant ID"
                     }
                     $PCCustomer = $PCCustomer | Where-Object id -EQ $TenantID
                 }
+                
                 # Get specific customer object
                 $PCCustomer = Get-PCCustomer -tenantid $PCCustomer.id
             }
@@ -80,7 +82,8 @@ function Find-PCCustomer() {
                 $ErrorMessage = "No customers returned."
                 Write-Error $ErrorMessage
             }
-        return $PCCustomer
+
+            return $PCCustomer
         }
         Catch {
             Write-Error -Message $_.exception

@@ -118,7 +118,7 @@ Process {
         }
 
         # New Azure AD External User
-        New-AzureAD-ExternalUser `
+        New-AzureADExternalUser `
             -Credential $Credential `
             -Emails $Emails `
             -UserType $UserType

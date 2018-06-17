@@ -77,7 +77,7 @@ function Test-RemoteComputer {
                         -Authentication Default `
                         -Credential $Credential `
                         -ErrorVariable WSManError `
-                        2> Out-Null
+                        2> $null
 
                     # Append result
                     if ($TestWSMan) {
@@ -96,7 +96,7 @@ function Test-RemoteComputer {
                     $TestConnection = Test-Connection $Computer `
                         -Count 1 `
                         -ErrorVariable PingError `
-                        2> Out-Null
+                        2> $null
                         
                     # If successful, return positive, else negative
                     if ($TestConnection) {

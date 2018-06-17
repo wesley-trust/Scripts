@@ -87,7 +87,7 @@ function Check-RequiredModule() {
             foreach ($Module in $Modules) {
                 $ModuleCheck = $ModuleList | Where-Object Name -eq $Module
                 if ($ModuleCheck) {
-                    Write-Host "`nModule $Module is installed`n"
+                    Write-Verbose "Module $Module is installed"
 
                     # If update switch is specified, attempt to update
                     if ($Update) {
@@ -99,7 +99,7 @@ function Check-RequiredModule() {
                             }
                         }
                         if ($Update) {
-                            write-Host "`nChecking for update to module $Module`n"
+                            write-Host "`nUpdating module $Module if update is available`n"
                             Update-Module -Name $Module
                         }
                     }

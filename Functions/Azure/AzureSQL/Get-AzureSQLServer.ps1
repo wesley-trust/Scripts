@@ -3,7 +3,7 @@
 #Script name: Get-AzureSQLDatabase
 #Creator: Wesley Trust
 #Date: 2017-12-03
-#Revision: 1
+#Revision: 2
 #References:
 
 .Synopsis
@@ -12,15 +12,9 @@
 
 #>
 
-
 function Get-AzureSQLServer() {
+    [CmdletBinding()]
     Param(
-        [Parameter(
-            Mandatory=$false,
-            HelpMessage="Enter the subscription ID"
-        )]
-        [string]
-        $SubscriptionID,    
         [Parameter(
             Mandatory=$false,
             HelpMessage="Enter the resource group that all VMs belong to"
@@ -37,15 +31,7 @@ function Get-AzureSQLServer() {
 
     Begin {
         try {
-            # Load functions
-            Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\"
-            . .\Connect-AzureRM.ps1
             
-            # Connect to Azure
-            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID
-
-            # Update subscription Id from Azure Connection
-            $SubscriptionID = $AzureConnection.Subscription.id
         }
         catch {
             Write-Error -Message $_.Exception
@@ -54,6 +40,7 @@ function Get-AzureSQLServer() {
     }
     Process {
         try {
+            
             # Get SQL Servers
             if ($ResourceGroupName){
                 $SQLServers = Get-AzureRmSqlServer -ResourceGroupName $ResourceGroupName
@@ -99,6 +86,12 @@ function Get-AzureSQLServer() {
         }
     }
     End {
-
+        try {
+            
+        }
+        catch {
+            Write-Error -Message $_.Exception
+            throw $_.exception
+        }
     }
 }

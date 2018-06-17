@@ -17,67 +17,56 @@
     
 
 #>
-
-#Include Functions
-. ..Functions\Move-ServerOU.ps1
-. ..Functions\Configure-Drive.ps1
-
-function Post-VMProvision () {
-    #Parameters
+function Post-VMProvision {
+    [CmdletBinding()]
     Param(
-        #Request Domain
         [Parameter(
             Mandatory=$true,
             Position=1,
             HelpMessage="Enter the FQDN",
             ValueFromPipeLine=$true,
-            ValueFromPipeLineByPropertyName=$true)]
+            ValueFromPipeLineByPropertyName=$true
+            )]
         [ValidateNotNullOrEmpty()]
         [String]
         $Domain,
-        
-        #Request OU
         [Parameter(
             Mandatory=$true,
             Position=2,
             HelpMessage="Enter in DN format",
             ValueFromPipeLine=$true,
-            ValueFromPipeLineByPropertyName=$true)]
+            ValueFromPipeLineByPropertyName=$true
+            )]
         [ValidateNotNullOrEmpty()]
         [String]
         $OU,
-
-        #Request New OU to move servers to
         [Parameter(
             Mandatory=$false,
             Position=3,
             HelpMessage="Enter in DN format",
             ValueFromPipeLine=$true,
-            ValueFromPipeLineByPropertyName=$true)]
+            ValueFromPipeLineByPropertyName=$true
+            )]
         [ValidateNotNullOrEmpty()]
         [String]
         $MoveOU
     )
 
-    #Credentials
-    #Prompt if no credentials stored
+    # Prompt if no credentials stored
     if ($Credential -eq $null) {
         Write-Output "Enter credentials for remote computer"
         $Credential = Get-Credential
     }
-    
-    #Get Servers
-    $ServerGroup = Get-Server -Domain $Domain -OU $OU
 
-    #Check if server requires moving to new OU
+    # Check if server requires moving to new OU
     Move-OU -Domain $Domain -OU $OU
 
-    #Update variable if new OU is specified
+    # Update variable if new OU is specified
     If ($MoveOU -ne $null{
         $OU = $MoveOU
     } 
     
-    #Check if data drives require configuration
+    # Check if data drives require configuration
     Configure-Drive -Domain $Domain -OU $OU
     
 }

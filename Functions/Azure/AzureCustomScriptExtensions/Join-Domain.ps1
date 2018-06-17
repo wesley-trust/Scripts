@@ -16,7 +16,7 @@
 #>
 
 function Join-Domain() {
-    #Parameters
+    [CmdletBinding()]
     Param(
         [Parameter(
             Mandatory=$true,
@@ -24,14 +24,12 @@ function Join-Domain() {
         )]
         [string]
         $Domain,
-
         [Parameter(
             Mandatory=$true,
             HelpMessage="Specify domain username"
         )]
         [string]
         $Username,
-
         [Parameter(
             Mandatory=$true,
             HelpMessage="Specify domain password"
@@ -69,9 +67,13 @@ function Join-Domain() {
         }
     }
     End {
+        try {
 
+        }
+        Catch {
+
+            Write-Error -Message $_.exception
+            throw $_.exception
+        }
     }
 }
-
-# Execute function
-Join-Domain

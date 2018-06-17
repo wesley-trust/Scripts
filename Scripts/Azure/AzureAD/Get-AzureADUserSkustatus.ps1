@@ -92,7 +92,6 @@ Begin {
         # Check for active connection to Azure AD
         if (!$ReAuthenticate) {
             $TestConnection = Test-AzureADConnection -Credential $Credential
-            
             if ($TestConnection.reauthenticate) {
                 $ReAuthenticate = $true
             }

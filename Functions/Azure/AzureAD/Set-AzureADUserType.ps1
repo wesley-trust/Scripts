@@ -15,49 +15,26 @@
     
 #>
 
-function Set-AzureAD-UserType() {
+function Set-AzureADUserType() {
     Param(
         [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify a PowerShell credential"
-        )]
-        [pscredential]
-        $Credential,
-        [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify email address(es) of directory to change"
+            Mandatory = $false,
+            HelpMessage = "Specify email address(es) of directory to change"
         )]
         [string[]]
         $Emails,
         [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify user type to change to (Default: Member)"
+            Mandatory = $false,
+            HelpMessage = "Specify user type to change to (Default: Member)"
         )]
-        [ValidateSet("Guest","Member")] 
+        [ValidateSet("Guest", "Member")] 
         [string]
-        $UserType = "Member",
-        [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify whether to skip authentication"
-        )]
-        [bool]
-        $SkipAuthentication = $false
+        $UserType = "Member"
     )
 
     Begin {
         try {
-            # Required Module
-            $Module = "AzureAD"
-            
-            Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
-            . .\Check-RequiredModule.ps1
-            
-            Check-RequiredModule -Modules $Module
-            
-            # Connect to directory tenant
-            if (!$SkipAuthentication) {
-                Connect-AzureAD -Credential $Credential
-            } 
+
         }
         catch {
             Write-Error -Message $_.Exception
@@ -67,11 +44,12 @@ function Set-AzureAD-UserType() {
     
     Process {
         try {
+            
             # Get Tenant domain
             $Tenant = Get-AzureADDomain | Where-Object IsInitial -eq $true
             
             # If no tenant domain
-            if (!$Tenant.name){
+            if (!$Tenant.name) {
                 $ErrorMessage = "No tenant domain returned."
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
@@ -84,21 +62,21 @@ function Set-AzureAD-UserType() {
 
             # Clean emails and create array
             $Emails = $Emails.Split(",")
-            $Emails = $Emails | ForEach-Object {$_.Trim()}
+            $Emails = $Emails.Trim()
 
-            foreach ($Email in $Emails){
+            foreach ($Email in $Emails) {
                 
                 # Get user from email
-                $ExternalEmail = $Email.replace("@","_")
-                $ExternalEmail = $ExternalEmail+"#EXT#@"+$Tenant.name
+                $ExternalEmail = $Email.replace("@", "_")
+                $ExternalEmail = $ExternalEmail + "#EXT#@" + $Tenant.name
                 $User = Get-AzureADUser -Filter "UserPrincipalName eq '$ExternalEmail'"
 
                 # If user exists
                 if ($User) {
                     
                     # Check if user is already the user type to change to
-                    $UserCheck = $User | Where-Object  {$_.UserType -EQ $UserType}
-                    if ($UserCheck){
+                    $UserCheck = $User | Where-Object {$_.UserType -EQ $UserType}
+                    if ($UserCheck) {
                         $ErrorMessage = "User $Email is already a $UserType in the directory."
                         Write-Error $ErrorMessage
                     }
@@ -122,7 +100,6 @@ function Set-AzureAD-UserType() {
         }
     }
     End {
-        # Disconnect
-        Disconnect-AzureAD
+
     }
 }

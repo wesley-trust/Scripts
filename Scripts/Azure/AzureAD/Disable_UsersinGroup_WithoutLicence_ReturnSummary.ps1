@@ -60,10 +60,16 @@ Param(
     $SkuConsumptionStatus = "Warning",
     [Parameter(
         Mandatory = $false,
-        HelpMessage = "Specify Sku consumption assignement status"
+        HelpMessage = "Specify Sku consumption assignment status"
     )]
     [string]
     $SkuConsumptionAssigned = $true,
+    [Parameter(
+        Mandatory = $false,
+        HelpMessage = "Specify whether to skip dependency checks"
+    )]
+    [switch]
+    $SkipDependencyCheck,
     [Parameter(
         Mandatory = $false,
         HelpMessage = "Specify whether to skip disconnection"
@@ -228,7 +234,15 @@ Process {
     }
 }
 End {
-    if (!$SkipDisconnect) {
-        Disconnect-AzureAD 
+    try {
+        
+        # Clean up active session
+        if (!$SkipDisconnect) {
+            Disconnect-AzureAD 
+        }
+    }
+    catch {
+        Write-Error -Message $_.exception
+        throw $_.exception
     }
 }

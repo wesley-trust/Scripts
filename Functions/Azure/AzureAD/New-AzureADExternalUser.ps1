@@ -15,25 +15,19 @@
     
 #>
 
-function New-AzureAD-ExternalUser() {
+function New-AzureADExternalUser() {
     Param(
         [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify a PowerShell credential"
-        )]
-        [pscredential]
-        $Credential,
-        [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify email address(es) comma seperated"
+            Mandatory = $false,
+            HelpMessage = "Specify email address(es) comma seperated"
         )]
         [string[]]
         $Emails,
         [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify user type (Default: Member)"
+            Mandatory = $false,
+            HelpMessage = "Specify user type (Default: Member)"
         )]
-        [ValidateSet("Guest","Member")] 
+        [ValidateSet("Guest", "Member")] 
         [string]
         $UserType
     )
@@ -50,11 +44,12 @@ function New-AzureAD-ExternalUser() {
     
     Process {
         try {
+
             # Get Tenant domain
             $Tenant = Get-AzureADDomain | Where-Object IsInitial -eq $true
             
             # If no tenant domain
-            if (!$Tenant.name){
+            if (!$Tenant.name) {
                 $ErrorMessage = "No tenant domain returned."
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
@@ -67,13 +62,13 @@ function New-AzureAD-ExternalUser() {
 
             # Clean emails and create array
             $Emails = $Emails.Split(",")
-            $Emails = $Emails | ForEach-Object {$_.Trim()}
+            $Emails = $Emails.Trim()
 
-            foreach ($Email in $Emails){
+            foreach ($Email in $Emails) {
                 
                 # Get user from email
-                $ExternalEmail = $Email.replace("@","_")
-                $ExternalEmail = $ExternalEmail+"#EXT#@"+$Tenant.name
+                $ExternalEmail = $Email.replace("@", "_")
+                $ExternalEmail = $ExternalEmail + "#EXT#@" + $Tenant.name
                 $User = Get-AzureADUser -Filter "UserPrincipalName eq '$ExternalEmail'"
 
                 # If user exists
@@ -89,14 +84,14 @@ function New-AzureAD-ExternalUser() {
                         -InviteRedirectUrl "https://portal.azure.com" `
                         -InvitedUserType $UserType
                     # Status report
-                    if ($AzureADMSInvitation.status -eq "PendingAcceptance"){
+                    if ($AzureADMSInvitation.status -eq "PendingAcceptance") {
                         return $AzureADMSInvitation
                         $SuccessMessage = "User $Email has been invited to the directory as $Usertype."
                         Write-Host $SuccessMessage
                     }
                     else {
                         # If there was a response with an unexpected status, return this
-                        if ($AzureADMSInvitation){
+                        if ($AzureADMSInvitation) {
                             return $AzureADMSInvitation
                         }
                         $ErrorMessage = "An unknown error has occurred for $Email"
@@ -111,6 +106,12 @@ function New-AzureAD-ExternalUser() {
         }
     }
     End {
-
+        try {
+            
+        }
+        catch {
+            Write-Error -Message $_.Exception
+            throw $_.exception
+        }
     }
 }

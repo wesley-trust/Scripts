@@ -40,6 +40,7 @@ function Get-AzureADPCApp() {
     
     Process {
         try {
+            
             # Connect to Azure AD
             Connect-AzureAD -Credential $Credential | Out-Null
             
@@ -60,6 +61,7 @@ function Get-AzureADPCApp() {
         }
     }
     End {
+        
         # Disconnect
         Disconnect-AzureAD
     }

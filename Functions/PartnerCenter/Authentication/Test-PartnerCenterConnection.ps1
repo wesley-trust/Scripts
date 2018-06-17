@@ -15,9 +15,7 @@
 
 .Example
 
-
 #>
-
 function Test-PartnerCenterConnection() {
     [CmdletBinding()]
     Param(
@@ -40,6 +38,7 @@ function Test-PartnerCenterConnection() {
     
     Process {
         try {
+            
             # Check to see if there is an active connection
             $PCOrganizationProfile = Get-PCOrganizationProfile
             
@@ -48,8 +47,10 @@ function Test-PartnerCenterConnection() {
                 $PCOrganizationActiveDomain = $PCOrganizationProfile.domain
                 Write-Host "`nActive Partner Center connection for $PCOrganizationActiveDomain`n"
                 $ActiveConnection = $True
+                
                 # If a credential exists
                 if ($Credential){
+                    
                     # Get domain from credential username
                     $UserDomain = ($Credential.UserName).Split("@")[1]
 

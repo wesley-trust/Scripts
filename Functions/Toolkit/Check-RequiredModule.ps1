@@ -80,34 +80,54 @@ function Check-RequiredModule() {
             $Modules = $Modules.Trim()
 
             # Check if module is installed
-            Write-Host "`nPerforming Dependency Check: Required Module(s): $Modules`n"
+            Write-Host "`nPerforming Dependency Check"
             $ModuleList = Get-Module -ListAvailable
             
             # For each module, check it is installed, if not attempt to install
-            foreach ($Module in $Modules) {
+            $ModuleStatus = foreach ($Module in $Modules) {
                 $ModuleCheck = $ModuleList | Where-Object Name -eq $Module
+                $ObjectProperties = @{
+                    Module = $Module
+                }
                 if ($ModuleCheck) {
-                    Write-Verbose "Module $Module is installed"
-
-                    # If update switch is specified, attempt to update
-                    if ($Update) {
-                        if (!$Elevated) {
-                            if ($ModuleCheck.path -like "*Program Files*") {
-                                $Update = $false
-                                $WarningMessage = "Skipping module update, rerun as an administrator to update this module"
-                                Write-Warning $WarningMessage
-                            }
-                        }
-                        if ($Update) {
-                            write-Host "`nUpdating module $Module if update is available`n"
-                            Update-Module -Name $Module
-                        }
+                    $ObjectProperties += @{
+                        Installed = $true
+                        Path = $ModuleCheck.path
                     }
                 }
                 else {
-                    write-Host "`nInstalling module $Module for $Scope`n"
-                    Install-Module -Name $Module -AllowClobber -Force -Scope $Scope -ErrorAction Stop
+                    $ObjectProperties += @{
+                        Installed = $false
+                    }
                 }
+                New-Object -TypeName psobject -Property $ObjectProperties
+            }
+            
+            # Output dependency status to host
+            $ModuleStatus | Format-Table Module,Installed -Autosize | Out-Host
+           
+            # If module is installed, update if true and where elevation allows
+            $ModuleInstalled = $ModuleStatus | Where-Object Installed -eq $true
+            if ($Update) {
+                foreach ($Module in $ModuleInstalled){
+                    if (!$Elevated) {
+                        if ($Module.path -like "*Program Files*") {
+                            $Update = $false
+                            $WarningMessage = "Skipping module update, rerun as an administrator to update this module"
+                            Write-Warning $WarningMessage
+                        }
+                    }
+                    if ($Update) {
+                        write-Host "`nUpdating module $Module`n"
+                        Update-Module -Name $Module
+                    }
+                }
+            }
+            # If module is not installed, attempt to install
+            $ModuleNotInstalled = $ModuleStatus | Where-Object Installed -eq $false
+            foreach ($Module in $ModuleNotInstalled){
+                write-Host "`nInstalling module $Module for $Scope`n"
+                Install-Module -Name $Module -AllowClobber -Force -Scope $Scope -ErrorAction Stop
             }
         }
         Catch {

@@ -17,26 +17,26 @@
 
 Param(
     [Parameter(
-        Mandatory=$false,
-        HelpMessage="Enter the subscription ID"
+        Mandatory = $false,
+        HelpMessage = "Enter the subscription ID"
     )]
     [string]
     $SubscriptionID,
     [Parameter(
-        Mandatory=$false,
-        HelpMessage="Enter the tenant ID"
+        Mandatory = $false,
+        HelpMessage = "Enter the tenant ID"
     )]
     [string]
     $TenantID,
     [Parameter(
-        Mandatory=$false,
-        HelpMessage="Specify PowerShell credential object"
+        Mandatory = $false,
+        HelpMessage = "Specify PowerShell credential object"
     )]
     [pscredential]
     $Credential,
     [Parameter(
-        Mandatory=$false,
-        HelpMessage="Specify whether to reauthenticate with different credentials"
+        Mandatory = $false,
+        HelpMessage = "Specify whether to reauthenticate with different credentials"
     )]
     [switch]
     $ReAuthenticate
@@ -52,7 +52,7 @@ Begin {
             "$FunctionLocation\Toolkit\Check-RequiredModule.ps1"
         )
         # Function dot source
-        foreach ($Function in $Functions){
+        foreach ($Function in $Functions) {
             . $Function
         }
         
@@ -70,39 +70,45 @@ Begin {
 
 Process {
     try {
+        
         # Build custom parameters
         $CustomParameters = @{}
-        if ($TenantID){
+        if ($TenantID) {
             $CustomParameters += @{
                 TenantID = $TenantID
             }
         }
-        if ($SubscriptionID){
+        if ($SubscriptionID) {
             $CustomParameters += @{
                 SubscriptionID = $SubscriptionID
             }
         }
-        if ($Credential){
+        if ($Credential) {
             $CustomParameters += @{
                 Credential = $Credential
             }
         }
 
-        # Check for active connection
-        $TestConnection = Test-AzureConnection -Credential $Credential
+        # Check for active connection to Azure RM
+        if (!$ReAuthenticate) {
+            $TestConnection = Test-AzureConnection -Credential $Credential
+            if ($TestConnection.reauthenticate) {
+                $ReAuthenticate = $true
+            }
+        }
         
         # If there is an active connection, clean up
-        if ($TestConnection.ActiveConnection){
-            if ($ReAuthenticate -or $TestConnection.reauthenticate){
+        if ($TestConnection.ActiveConnection) {
+            if ($ReAuthenticate) {
                 $TestConnection.ActiveConnection = Disconnect-AzureRmAccount | Out-Null
             }
         }
 
         # If no active connection, connect
-        if (!$TestConnection.ActiveConnection){
+        if (!$TestConnection.ActiveConnection) {
             Write-Host "`nAuthenticating with Azure`n"
             $AzureConnection = Connect-AzureRMAccount @CustomParameters
-            if ($AzureConnection){
+            if ($AzureConnection) {
                 $AzureContext = Get-AzureRmContext
             }
             else {

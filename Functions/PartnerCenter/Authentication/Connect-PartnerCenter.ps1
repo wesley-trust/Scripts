@@ -21,20 +21,20 @@ function Connect-PartnerCenter() {
     [CmdletBinding()]
     Param(
         [Parameter(
-            Mandatory=$true,
-            HelpMessage="Specify PowerShell credential object"
+            Mandatory = $true,
+            HelpMessage = "Specify PowerShell credential object"
         )]
         [pscredential]
         $Credential,
         [Parameter(
-            Mandatory=$false,
-            HelpMessage="Optionally specify a CSP App ID, if no ID is specified, an Azure AD lookup will be attemted"
+            Mandatory = $false,
+            HelpMessage = "Optionally specify a CSP App ID, if no ID is specified, an Azure AD lookup will be attemted"
         )]
         [string]
         $CSPAppID,
         [Parameter(
-            Mandatory=$false,
-            HelpMessage="Optionally specify a CSP domain, if no domain is specified, username domain is assumed"
+            Mandatory = $false,
+            HelpMessage = "Optionally specify a CSP domain, if no domain is specified, username domain is assumed"
         )]
         [string]
         $CSPDomain
@@ -51,13 +51,16 @@ function Connect-PartnerCenter() {
     
     Process {
         try {
+            
             # If a credential exists, make the password read only so it can be reused
-            if ($Credential){
+            if ($Credential) {
                 $Credential.Password.MakeReadOnly()
             }
+            
             # Get App ID
-            if (!$CSPAppID){
-                if ($Credential){
+            if (!$CSPAppID) {
+                if ($Credential) {
+                    
                     # Connect to Azure AD
                     Connect-AzureAD -Credential $Credential | Out-Null
                                 
@@ -68,7 +71,8 @@ function Connect-PartnerCenter() {
                     Disconnect-AzureAD
                     
                     # Check if app is returned
-                    if ($CSPApp){
+                    if ($CSPApp) {
+                        
                         # Update App ID
                         $CSPAppID = $CSPApp.appid
                     }
@@ -79,31 +83,38 @@ function Connect-PartnerCenter() {
                     }
                 }
             }
+            
             # Get domain
-            if (!$CSPDomain){
+            if (!$CSPDomain) {
                 $CSPDomain = ($Credential.UserName).Split("@")[1]
             }
+            
             # Create hashtable of custom parameters
             $CustomParameters = @{
                 Credential = $Credential
-                CSPAppID = $CSPAppID
-                cspDomain = $CSPDomain
+                CSPAppID   = $CSPAppID
+                cspDomain  = $CSPDomain
             }
+            
             # Connect
             Add-PCAuthentication @CustomParameters
         }
         catch [System.Management.Automation.RuntimeException] {
-            if ($CSPAppID -and $CSPDomain){
+            if ($CSPAppID -and $CSPDomain) {
                 Write-Host "`nAuthentication attempt failed, retrying with same credentials`n"
                 Add-PCAuthentication @CustomParameters
             }
         }
-        catch [System.Net.WebException]{
-            if ($CSPAppID -and $CSPDomain){
+        catch [System.Net.WebException] {
+            if ($CSPAppID -and $CSPDomain) {
                 Write-Host "`nAuthentication attempt failed, prompting for retry with new credentials`n"
                 $Credential = Get-Credential -Message "Enter Partner Center credentials"
+                
+                # Replace credential in custom parameters
                 $CustomParameters.Remove("Credential")
-                $CustomParameters.Add("Credential",$Credential)
+                $CustomParameters.Add("Credential", $Credential)
+                
+                # Connect
                 Add-PCAuthentication @CustomParameters
             }
         }

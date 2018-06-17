@@ -81,6 +81,7 @@ Begin {
 
 Process {
     try {
+        
         # Build Azure AD Tenant Domain
         $TenantDomainName = $TenantName+'.onmicrosoft.com'
         

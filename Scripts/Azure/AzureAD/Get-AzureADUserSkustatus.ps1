@@ -48,6 +48,12 @@ Param(
     $SkipDependencyCheck,
     [Parameter(
         Mandatory = $false,
+        HelpMessage = "Specify a PowerShell credential"
+    )]
+    [pscredential]
+    $Credential,
+    [Parameter(
+        Mandatory = $false,
         HelpMessage = "Specify whether to skip disconnection"
     )]
     [switch]

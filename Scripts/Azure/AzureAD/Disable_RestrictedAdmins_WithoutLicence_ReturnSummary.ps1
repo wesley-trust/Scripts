@@ -109,7 +109,7 @@ Begin {
 
         # If there is an active connection, clean up if required
         if ($TestConnection.ActiveConnection) {
-            if ($ReAuthenticate -or $TestConnection.reauthenticate) {
+            if ($ReAuthenticate) {
                 $TestConnection.ActiveConnection = Disconnect-AzureAD | Out-Null
             }
         }

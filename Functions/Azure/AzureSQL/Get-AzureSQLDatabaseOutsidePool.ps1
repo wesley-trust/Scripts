@@ -15,17 +15,12 @@
 #>
 
 
-function Get-AzureSQLDatabase() {
+function Get-AzureSQLDatabaseOutsidePool {
+    [CmdletBinding()]
     Param(
         [Parameter(
             Mandatory=$false,
-            HelpMessage="Enter the subscription ID"
-        )]
-        [string]
-        $SubscriptionID,    
-        [Parameter(
-            Mandatory=$false,
-            HelpMessage="Enter the resource group that all VMs belong to"
+            HelpMessage="Enter the resource group that SQL server belong to"
         )]
         [string]
         $ResourceGroupName,
@@ -46,7 +41,7 @@ function Get-AzureSQLDatabase() {
             HelpMessage="Specify whether to exclude database from specified pools"
         )]
         [bool]
-        $SQLPoolInclusion = $true,
+        $SQLPoolExclusion = $true,
         [Parameter(
             Mandatory=$false,
             HelpMessage="Specify whether to email results"
@@ -87,15 +82,7 @@ function Get-AzureSQLDatabase() {
 
     Begin {
         try {
-            # Load functions
-            Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Authentication\"
-            . .\Connect-AzureRM.ps1
-            
-            # Connect to Azure
-            $AzureConnection = Connect-AzureRM -SubscriptionID $SubscriptionID
 
-            # Update subscription Id from Azure Connection
-            $SubscriptionID = $AzureConnection.Subscription.id
         }
         catch {
             Write-Error -Message $_.Exception
@@ -104,32 +91,19 @@ function Get-AzureSQLDatabase() {
     }
     Process {
         try {
-            # Load functions
-            Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Azure\Azure SQL"
-            . Get-AzureSQLServer.ps1
-            
-            # Get SQL Server
-            $SQLServer = Get-AzureSQLServer `
-                -SubscriptionID $SubscriptionID `
-                -ResourceGroupName $ResourceGroupName `
-                -SQLServer $SQLServer
-            
-            if (!$SQLServer){
-                $ErrorMessage = "No SQL Server returned."
-                Write-Error $ErrorMessage
-                throw $ErrorMessage
-            }
 
             # Get all databases from SQL server
             $SQLDatabases = Get-AzureRmSqlDatabase `
-                -ResourceGroupName $SQLServer.ResourceGroupName `
-                -ServerName $SQLServer.ServerName
+                -ResourceGroupName $ResourceGroupName `
+                -ServerName $SQLServer
 
-            # If SQL Pool inclusion is true
-            if ($SQLPoolInclusion){
-    
-                # Set databases variable to only contain databases that are within a pool in the SQL pools array
-                $SQLDatabases = $SQLDatabases | Where-Object {$SQLPools -contains $($_.elasticpoolname)}
+            # If SQL Pool exclusion is true
+            if ($SQLPoolExclusion){
+
+                # For each pool, exclude the SQL Pool databases
+                foreach ($SQLPool in $SQLPools){
+                    $SQLDatabases = $SQLDatabases | Where-Object {$_.elasticpoolname -ne $SQLPool}
+                }
             }
 
             # Exclude master database
@@ -167,7 +141,7 @@ function Get-AzureSQLDatabase() {
                 }
             }
             Else {
-                Write-Output "No databases found."
+                Write-Output "No databases found"
             }
         }
         catch {
@@ -176,6 +150,12 @@ function Get-AzureSQLDatabase() {
         }
     }
     End {
+        try {
 
+        }
+        catch {
+            Write-Error -Message $_.Exception
+            throw $_.exception
+        }
     }
 }

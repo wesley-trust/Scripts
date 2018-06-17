@@ -98,6 +98,27 @@ Begin {
         $Module = "AzureAD"
         
         Check-RequiredModule -Modules $Module
+
+        # Check for active connection to Azure AD
+        if (!$ReAuthenticate) {
+            $TestConnection = Test-AzureADConnection -Credential $Credential
+            if ($TestConnection.reauthenticate) {
+                $ReAuthenticate = $true
+            }
+        }
+
+        # If there is an active connection, clean up if required
+        if ($TestConnection.ActiveConnection) {
+            if ($ReAuthenticate -or $TestConnection.reauthenticate) {
+                $TestConnection.ActiveConnection = Disconnect-AzureAD | Out-Null
+            }
+        }
+
+        # If no active connection, connect to Azure AD
+        if (!$TestConnection.ActiveConnection -or $ReAuthenticate) {
+            Write-Host "`nAuthenticating with Azure AD`n"
+            $AzureADConnection = Connect-AzureAD -Credential $Credential
+        }
     }
     catch {
         Write-Error -Message $_.Exception
@@ -107,30 +128,11 @@ Begin {
 
 Process {
     try {
-
-        # Check for active connection to Azure AD
-        if (!$ReAuthenticate) {
-            $TestConnection = Test-AzureADConnection -Credential $Credential
-            
-            if ($TestConnection.reauthenticate) {
-                $ReAuthenticate = $true
-            }
-        }
-
-        # If there is an active connection, clean up if required
-        if ($TestConnection.ActiveConnection){
-            if ($ReAuthenticate -or $TestConnection.reauthenticate){
-                $TestConnection.ActiveConnection = Disconnect-AzureAD | Out-Null
-            }
-        }
-
-        # If no active connection, connect to Azure AD
-        if (!$TestConnection.ActiveConnection -or $ReAuthenticate) {
-            Write-Host "`nAuthenticating with Azure AD`n"
-            $AzureADConnection = Connect-AzureAD -Credential $Credential
-            
-            if (!$AzureADConnection) {
-                $ErrorMessage = "Unable to connect to Azure AD"
+        
+        # Throw error if not connected to Azure AD
+        if (!$AzureADConnection) {
+            if (!$TestConnection.ActiveConnection) {
+                $ErrorMessage = "No connection to Azure AD"
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
             }
@@ -190,7 +192,6 @@ Process {
             Write-Host "`nUser Service Plan Compliance:`n"
             $UserServicePlanCompliance | Format-Table DisplayName, UserPrincipalName, ServicePlanName, ComplianceStatus, AccountEnabled -GroupBy ComplianceStatus
             Write-Host "Total: $($UserServicePlanCompliance.count)`n"
-            
             if ($UserAccountEnabledOnComplianceStatus) {
                 Write-Host "`nUser Action based on Service Plan Compliance:`n"
                 $UserAccountEnabledOnComplianceStatus | Format-Table DisplayName, ActionStatus, AccountEnabled
@@ -198,14 +199,11 @@ Process {
             else {
                 Write-Verbose "No User Action Required based on Service Plan Compliance: $ComplianceStatus"
             }
-
             if ($ServicePlanSku) {
                 Write-Host "`nSKUs with Service Plan:`n"
                 $ServicePlanSku | Format-Table SkuPartNumber, CapabilityStatus, ServicePlanName, ProvisioningStatus
-                
                 Write-Host "`nSKU Consumption Analysis:`n"
                 $SkuConsumptionSummary | Format-Table SkuPartNumber, AvailableUnits, Status, StatusDetail
-                
                 if ($UserSkuConsumptionSummary) {
                     Write-Host "`nUser SKU Assignment:`n"
                     $UserSkuConsumptionSummary | Format-Table DisplayName, UserPrincipalName, AccountEnabled, SkuPartNumber, SkuAssigned

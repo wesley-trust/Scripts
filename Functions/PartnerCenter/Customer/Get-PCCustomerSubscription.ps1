@@ -69,7 +69,7 @@ function Get-PCCustomerSubscription() {
                     
                     # For each subscription
                     foreach ($Subscription in $Subscriptions) {
-                        $ObjectProperties = @{
+                        [pscustomobject]$ObjectProperties = @{
                             TenantID       = $Customer.id
                             Customer       = $Customer.CompanyProfile.CompanyName
                             SubscriptionId = $Subscription.id
@@ -78,9 +78,6 @@ function Get-PCCustomerSubscription() {
                             OfferID        = $Subscription.offerid
                             State          = $Subscription.status
                         }
-                        
-                        # Create new object per subscription
-                        New-Object psobject -Property $ObjectProperties
                     }
                 }
                 if ($SubscriptionCustomers) {

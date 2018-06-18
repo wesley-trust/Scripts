@@ -92,9 +92,10 @@ function Get-AzureADMember {
                 }
                 if ($UserDisplayName) {
 
-                    # Split and trim input
+                    # Split, trim & unique input
                     $UserDisplayName = $UserDisplayName.Split(",")
                     $UserDisplayName = $UserDisplayName.Trim()
+                    $UserDisplayName = $UserDisplayName | Sort-Object -Unique
     
                     # Get Members of Azure AD Group
                     $AzureADMemberUsers = foreach ($DisplayName in $UserDisplayName) {
@@ -108,10 +109,11 @@ function Get-AzureADMember {
                 }
                 if ($UserPrincipalName) {
     
-                    # Split and trim input
+                    # Split, trim & unique input
                     $UserUPN = $UserUPN.Split(",")
                     $UserUPN = $UserUPN.Trim()
-    
+                    $UserUPN = $UserUPN | Sort-Object -Unique
+                    
                     # Get Members of Azure AD Group
                     $AzureADMemberUsers = foreach ($UPN in $UserUPN) {
                         Get-AzureADUser -Filter "UserPrincipalName eq '$UPN'"
@@ -124,9 +126,10 @@ function Get-AzureADMember {
                 }
                 if ($GroupDisplayName) {
                     
-                    # Split and trim input
+                    # Split, trim & unique input
                     $GroupDisplayName = $GroupDisplayName.Split(",")
                     $GroupDisplayName = $GroupDisplayName.Trim()
+                    $GroupDisplayName = $GroupDisplayName | Sort-Object -Unique
                     
                     # Get Azure AD Group
                     $AzureADGroups = foreach ($DisplayName in $GroupDisplayName) {

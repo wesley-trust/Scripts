@@ -2,7 +2,7 @@
 #Script name: Service Plan Licences and Compliance
 #Creator: Wesley Trust
 #Date: 2018-05-16
-#Revision: 6
+#Revision: 7
 #References: 
 
 .Synopsis
@@ -13,6 +13,7 @@
     
 #>
 function Get-UserServicePlanCompliance {
+    [CmdletBinding()]
     Param(
         [Parameter(
             Mandatory = $false,
@@ -49,7 +50,8 @@ function Get-UserServicePlanCompliance {
 
             # If there are members, unique input and check licence compliance for each member
             if ($AzureADMembers) {
-                #$AzureADMembers = $AzureADMembers | Sort-Object ObjectId -Unique
+                
+                # $AzureADMembers = $AzureADMembers | Sort-Object ObjectId -Unique
                 $UserComplianceStatus = foreach ($Member in $AzureADMembers) {
                     
                     # Assigned Service Plan
@@ -92,6 +94,7 @@ function Get-UserServicePlanCompliance {
                             ComplianceStatus = $true
                         }
                     }
+                    
                     # If service plan does not exist, append variable to property
                     else {
                         $ObjectProperties += @{
@@ -107,7 +110,6 @@ function Get-UserServicePlanCompliance {
                 # Sort object
                 $UserComplianceStatus = $UserComplianceStatus | Sort-Object ComplianceStatus
                                 
-                # Return objects
                 return $UserComplianceStatus
             }
             else {
@@ -120,10 +122,17 @@ function Get-UserServicePlanCompliance {
         }
     }
     End {
+        try {
 
+        }
+        Catch {
+            Write-Error -Message $_.exception
+
+        }
     }
 }
 function Set-UserAccountEnabledOnComplianceStatus {
+    [CmdletBinding()]
     Param(
         [Parameter(
             Mandatory = $false,
@@ -159,6 +168,7 @@ function Set-UserAccountEnabledOnComplianceStatus {
 
     Process {
         try {
+            
             # Invert Parameter
             $AccountEnabled = !$AccountEnabled
             
@@ -176,6 +186,7 @@ function Set-UserAccountEnabledOnComplianceStatus {
                     UserPrincipalName = $AzureADUser.UserPrincipalName
                     AccountEnabled    = $AzureADUser.AccountEnabled
                 }
+                
                 # Include action status
                 if ($AzureADUser.AccountEnabled -eq $AccountEnabled) {
                     $ObjectProperties += @{
@@ -187,10 +198,10 @@ function Set-UserAccountEnabledOnComplianceStatus {
                         ActionStatus = "Failed to change account enabled property"
                     }
                 }
+                
                 # Create object
                 $ComplianceActionStatus = New-Object psobject -Property $ObjectProperties
                 
-                # Return Compliance Action Status
                 return $ComplianceActionStatus
             }
         }
@@ -200,10 +211,17 @@ function Set-UserAccountEnabledOnComplianceStatus {
         }
     }
     End {
+        try {
 
+        }
+        Catch {
+            Write-Error -Message $_.exception
+
+        }
     }
 }
 function Get-ServicePlanSku {
+    [CmdletBinding()]
     Param(
         [Parameter(
             Mandatory = $false,
@@ -237,26 +255,26 @@ function Get-ServicePlanSku {
 
             # If there are SKUs with the service plan
             if ($AvailableServicePlan) {
-                $ServicePlanSku = $AvailableServicePlan | ForEach-Object {
+                $ServicePlanSku = foreach ($ServicePlan in $AvailableServicePlan) {
 
                     # Get prepaid units
                     $SubscribedSkuPrepaidUnits = Get-AzureADSubscribedSku `
-                        | Where-Object SkuPartNumber -eq $_.SkuPartNumber `
+                        | Where-Object SkuPartNumber -eq $ServicePlan.SkuPartNumber `
                         | Select-Object -ExpandProperty PrepaidUnits
 
                     # Calculate available within SKU
-                    $AvailableUnits = $SubscribedSkuPrepaidUnits.Enabled - $_.ConsumedUnits
+                    $AvailableUnits = $SubscribedSkuPrepaidUnits.Enabled - $ServicePlan.ConsumedUnits
                     
                     # Build object
                     [PSCustomObject]@{
-                        SkuPartNumber      = $_.SkuPartNumber
-                        SkuId              = $_.SkuId
-                        ConsumedUnits      = $_.ConsumedUnits
-                        CapabilityStatus   = $_.CapabilityStatus
-                        AppliesTo          = $_.AppliesTo
-                        ProvisioningStatus = $_.ProvisioningStatus
-                        ServicePlanId      = $_.ServicePlanId
-                        ServicePlanName    = $_.ServicePlanName
+                        SkuPartNumber      = $ServicePlan.SkuPartNumber
+                        SkuId              = $ServicePlan.SkuId
+                        ConsumedUnits      = $ServicePlan.ConsumedUnits
+                        CapabilityStatus   = $ServicePlan.CapabilityStatus
+                        AppliesTo          = $ServicePlan.AppliesTo
+                        ProvisioningStatus = $ServicePlan_.ProvisioningStatus
+                        ServicePlanId      = $ServicePlan.ServicePlanId
+                        ServicePlanName    = $ServicePlan.ServicePlanName
                         Enabled            = $SubscribedSkuPrepaidUnits.Enabled
                         Suspended          = $SubscribedSkuPrepaidUnits.Suspended
                         Warning            = $SubscribedSkuPrepaidUnits.Warning
@@ -264,7 +282,7 @@ function Get-ServicePlanSku {
                     }
                 }
             }
-            # Return object
+
             return $ServicePlanSku
         }
         Catch {
@@ -277,6 +295,7 @@ function Get-ServicePlanSku {
     }
 }
 function Get-SkuConsumptionSummary {
+    [CmdletBinding()]
     Param(
         [Parameter(
             Mandatory = $false,
@@ -300,28 +319,29 @@ function Get-SkuConsumptionSummary {
 
     Process {
         try {
+            
             # Get Summary
-            $SkuConsumptionSummary = $InputObject | ForEach-Object {
+            $SkuConsumptionSummary = foreach ($Object in $InputObject) {
                 $ObjectProperties = @{
-                    SkuPartNumber  = $_.SkuPartNumber
-                    SkuId          = $_.SkuId
-                    EnabledUnits   = $_.Enabled
-                    ConsumedUnits  = $_.ConsumedUnits
-                    AvailableUnits = $_.Available
+                    SkuPartNumber  = $Object.SkuPartNumber
+                    SkuId          = $Object.SkuId
+                    EnabledUnits   = $Object.Enabled
+                    ConsumedUnits  = $Object.ConsumedUnits
+                    AvailableUnits = $Object.Available
                 }
-                if ($_.Available -eq "0") {
+                if ($Object.Available -eq "0") {
                     $ObjectProperties += @{
                         Status       = "Caution"
                         StatusDetail = "No available units, consider capacity/demand management"
                     }
                 }
-                elseif ($_.Available -lt "0") {
+                elseif ($Object.Available -lt "0") {
                     $ObjectProperties += @{
                         Status       = "Warning"
                         StatusDetail = "Available units in deficit, licences will expire soon"
                     }
                 }
-                elseif ($_.Available -gt "0") {
+                elseif ($Object.Available -gt "0") {
                     $ObjectProperties += @{
                         Status       = "Informational"
                         StatusDetail = "Consider reducing licence count"
@@ -329,7 +349,7 @@ function Get-SkuConsumptionSummary {
                 }
                 New-Object -TypeName psobject -Property $ObjectProperties
             }
-            # Return object
+
             return $SkuConsumptionSummary
         }
         Catch {
@@ -338,10 +358,17 @@ function Get-SkuConsumptionSummary {
         }
     }
     End {
+        try {
 
+        }
+        Catch {
+            Write-Error -Message $_.exception
+
+        }
     }
 }
 function Get-UserSkuConsumptionSummary {
+    [CmdletBinding()]
     Param(
         [Parameter(
             Mandatory = $false,
@@ -373,16 +400,16 @@ function Get-UserSkuConsumptionSummary {
         try {
 
             # Get Sku consumption
-            $UserConsumptionSummary = $InputObject | ForEach-Object {
+            $UserConsumptionSummary = foreach ($Object in $InputObject) {
                 $ObjectProperties = @{
-                    ObjectId          = $_.ObjectId
-                    DisplayName       = $_.DisplayName
-                    UserPrincipalName = $_.UserPrincipalName
-                    AccountEnabled    = $_.AccountEnabled
+                    ObjectId          = $Object.ObjectId
+                    DisplayName       = $Object.DisplayName
+                    UserPrincipalName = $Object.UserPrincipalName
+                    AccountEnabled    = $Object.AccountEnabled
                     SkuPartNumber     = $SkuConsumption.SkuPartNumber
                     SkuId             = $SkuConsumption.SkuId
                 }
-                if ($_.AssignedLicenses.skuid -contains $SkuConsumption.SkuId) {
+                if ($Object.AssignedLicenses.skuid -contains $SkuConsumption.SkuId) {
                     $ObjectProperties += @{
                         SkuAssigned = $true
                     }
@@ -394,7 +421,6 @@ function Get-UserSkuConsumptionSummary {
                 }
                 New-Object -TypeName psobject -Property $ObjectProperties
             }
-            # Return object
             return $UserConsumptionSummary
         }
         Catch {
@@ -403,10 +429,17 @@ function Get-UserSkuConsumptionSummary {
         }
     }
     End {
+        try {
 
+        }
+        Catch {
+            Write-Error -Message $_.exception
+
+        }
     }
 }
 function Get-SkuServicePlanUnitSummary {
+    [CmdletBinding()]
     Param(
         [Parameter(
             Mandatory = $false,
@@ -430,14 +463,16 @@ function Get-SkuServicePlanUnitSummary {
 
     Process {
         try {
+            
             # Calculate total licences
-            $InputObject | ForEach-Object {
-                $TotalEnabled += $_.Enabled
-                $TotalConsumed += $_.ConsumedUnits
-                $TotalSuspended += $_.Suspended
-                $TotalWarning += $_.Warning
-                $TotalAvailable += $_.Available
+            foreach ($Object in $InputObject) {
+                $TotalEnabled += $Object.Enabled
+                $TotalConsumed += $Object.ConsumedUnits
+                $TotalSuspended += $Object.Suspended
+                $TotalWarning += $Object.Warning
+                $TotalAvailable += $Object.Available
             }
+            
             # Unique variables
             $ServicePlanId = $InputObject.ServicePlanId | Sort-Object -Unique
             $ServicePlanName = $InputObject.ServicePlanName | Sort-Object -Unique
@@ -452,8 +487,6 @@ function Get-SkuServicePlanUnitSummary {
                 TotalWarningUnits   = $TotalWarning
                 TotalSuspendedUnits = $TotalSuspended
             }
-
-            # Return object
             return $ServicePlanUnitSummary
         }
         Catch {
@@ -462,6 +495,12 @@ function Get-SkuServicePlanUnitSummary {
         }
     }
     End {
+        try {
 
+        }
+        Catch {
+            Write-Error -Message $_.exception
+
+        }
     }
 }

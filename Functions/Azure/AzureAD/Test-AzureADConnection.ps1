@@ -46,7 +46,7 @@ function Test-AzureADConnection() {
             Write-Host "`nRequired Connection(s): Azure AD"
 
             $ObjectProperties = @{
-                Connection = "Azure RM"
+                Connection = "Azure AD"
             }
             
             # Check for active Azure AD session

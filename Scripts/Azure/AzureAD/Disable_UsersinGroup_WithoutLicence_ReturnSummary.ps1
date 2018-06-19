@@ -90,7 +90,7 @@ Begin {
         # Function definitions
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
-            "$FunctionLocation\Toolkit\Check-RequiredModule.ps1",
+            "$FunctionLocation\Toolkit\Install-Dependency.ps1",
             "$FunctionLocation\Azure\AzureAD\ServicePlanCompliance.ps1",
             "$FunctionLocation\Azure\AzureAD\AzureADMember.ps1"
             "$FunctionLocation\Azure\AzureAD\Test-AzureADConnection.ps1"
@@ -103,7 +103,7 @@ Begin {
         # Required Module
         $Module = "AzureAD"
         
-        Check-RequiredModule -Modules $Module
+        Install-Dependency -Modules $Module
 
         # Check for active connection to Azure AD
         if (!$ReAuthenticate) {

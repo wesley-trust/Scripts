@@ -1,5 +1,5 @@
 <#
-#Script name: Check-RequiredModule
+#Script name: Install-Dependency
 #Creator: Wesley Trust
 #Date: 2017-12-04
 #Revision: 3
@@ -10,12 +10,12 @@
 .Description
 
 .Example
-    Check-RequiredModule -Modules "AzureAD"
+    Install-Dependency -Modules "AzureAD"
 .Example
     
 #>
 
-function Check-RequiredModule() {
+function Install-Dependency() {
     [CmdletBinding()]
     Param(
         [Parameter(

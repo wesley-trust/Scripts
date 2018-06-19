@@ -38,7 +38,7 @@ Begin {
         $Functions = @(
             "$FunctionLocation\PartnerCenter\Authentication\Test-PartnerCenterConnection.ps1",
             "$FunctionLocation\PartnerCenter\Authentication\Connect-PartnerCenter.ps1",
-            "$FunctionLocation\Toolkit\Check-RequiredModule.ps1"
+            "$FunctionLocation\Toolkit\Install-Dependency.ps1"
         )
         # Function dot source
         foreach ($Function in $Functions){
@@ -48,7 +48,7 @@ Begin {
         # Required Module
         $Module = "PartnerCenterModule,AzureAD"
         
-        Check-RequiredModule -Modules $Module
+        Install-Dependency -Modules $Module
         
     }
     catch {

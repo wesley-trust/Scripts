@@ -69,7 +69,7 @@ Begin {
             "$FunctionLocation\Azure\Authentication\Connect-AzureRMSubscription.ps1",
             "$FunctionLocation\PartnerCenter\Authentication\Connect-PartnerCenter.ps1",
             "$FunctionLocation\PartnerCenter\Customer\Get-PCCustomerSubscription.ps1",
-            "$FunctionLocation\Toolkit\Check-RequiredModule.ps1"
+            "$FunctionLocation\Toolkit\Install-Dependency.ps1"
         )
         # Function dot source
         foreach ($Function in $Functions){
@@ -80,7 +80,7 @@ Begin {
         $Module = "AzureRM"
         $ModuleCore = "AzureRM.Netcore"
         
-        Check-RequiredModule -Modules $Module -ModulesCore $ModuleCore
+        Install-Dependency -Modules $Module -ModulesCore $ModuleCore
     }
     catch {
         Write-Error -Message $_.Exception
@@ -108,7 +108,7 @@ Process {
             # Required Module
             $Module = "PartnerCenterModule,AzureAD"
             
-            Check-RequiredModule -Modules $Module
+            Install-Dependency -Modules $Module
             
             # Connect to Partner Center
             Connect-PartnerCenter -Credential $Credential | Out-Null

@@ -61,7 +61,7 @@ Begin {
         # Dot source function definitions
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
-            "$FunctionLocation\Toolkit\Check-RequiredModule.ps1",
+            "$FunctionLocation\Toolkit\Install-Dependency.ps1",
             "$FunctionLocation\Azure\AzureAD\Test-AzureADConnection.ps1"
             "$FunctionLocation\Azure\AzureAD\New-AzureADExternalUser.ps1"
         )
@@ -75,7 +75,7 @@ Begin {
             # Dependency check for required module:
             $Module = "AzureAD"
 
-            Check-RequiredModule -Modules $Module
+            Install-Dependency -Modules $Module
         }
         
         # Check for active connection to Azure AD

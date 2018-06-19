@@ -27,7 +27,7 @@ Param(
         HelpMessage = "Specify the display name of group to check"
     )]
     [string]
-    $GroupDisplayName = "SecuredAdmins",
+    $GroupDisplayName,
     [Parameter(
         Mandatory = $false,
         HelpMessage = "Specify the licence service plan ID to check"

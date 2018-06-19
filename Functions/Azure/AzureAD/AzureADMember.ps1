@@ -205,15 +205,17 @@ function Get-AzureADMember {
                     Write-Verbose $VerboseMessage
                 }
 
-                # If no circular reference, move scope for output
-                if (!$Script:CircularReference) {
-                    # Move to local scope
-                    $AzureADMemberUsersTotal = $Script:AzureADMemberUsersTotal
-                }
-                # Move scope to clear variable
-                else {
-                    $CircularReference = $Script:CircularReference
-                    $Script:CircularReference = $null
+                if (!$AzureADMemberUsersTotal) {
+                    # If no circular reference, move scope for output
+                    if (!$Script:CircularReference) {
+                        # Move to local scope
+                        $AzureADMemberUsersTotal = $Script:AzureADMemberUsersTotal
+                    }
+                    # Move scope to clear variable
+                    else {
+                        $CircularReference = $Script:CircularReference
+                        $Script:CircularReference = $null
+                    }
                 }
                 
                 # Clean up script scope variables

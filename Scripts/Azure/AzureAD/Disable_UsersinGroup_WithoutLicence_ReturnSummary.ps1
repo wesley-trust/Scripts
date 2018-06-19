@@ -145,10 +145,15 @@ Process {
         }
 
         # Get Azure AD members
-        $AzureADMembers = Get-AzureADMember `
+        if ($GroupDisplayName){
+            $AzureADMembers = Get-AzureADMember `
             -GroupDisplayName $GroupDisplayName `
             -AccountEnabled $AccountEnabled
-
+        }
+        else {
+            $AzureADMembers = Get-AzureADMember -AllUsers
+        }
+        
         # If users are retuned
         if ($AzureADMembers) {
             
@@ -197,7 +202,7 @@ Process {
             # Format Output for display
             Write-Host "`nUser Service Plan Compliance:`n"
             $UserServicePlanCompliance | Format-Table DisplayName, UserPrincipalName, ServicePlanName, ComplianceStatus, AccountEnabled -GroupBy ComplianceStatus
-            Write-Host "Total: $($UserServicePlanCompliance.count)`n"
+            Write-Host "Total Users (compliant and non-compliant): $($UserServicePlanCompliance.count)`n"
             if ($UserAccountEnabledOnComplianceStatus) {
                 Write-Host "`nUser Action based on Service Plan Compliance:`n"
                 $UserAccountEnabledOnComplianceStatus | Format-Table DisplayName, ActionStatus, AccountEnabled

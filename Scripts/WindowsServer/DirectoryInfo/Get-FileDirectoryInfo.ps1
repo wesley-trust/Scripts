@@ -96,13 +96,17 @@ Process {
             Attributes
 
         # Get directory permissions
-        $ChildItemPermissions = $ChildItems | ForEach-Object {Get-ACL $_.FullName}
+        $ChildItemPermissions = foreach ($Item in $ChildItems) {
+            Get-ACL $Item.FullName
+        }
 
         # Filter childitems to directories
         $ChildDirectories = $ChildItems | Where-Object {$_.Attributes -like "*Directory*"}
 
         # Get directory permissions
-        $ChildDirectoryPermissions = $ChildDirectories | ForEach-Object {Get-ACL $_.FullName}
+        $ChildDirectoryPermissions = foreach ($Directory in $ChildDirectories) {
+            Get-ACL $Directory.FullName
+        }
 
         # Display access permissions for directory
         $ChildDirectoryPermissions = $ChildDirectoryPermissions | Select-Object Path -ExpandProperty Access | Select-Object `

@@ -159,11 +159,11 @@ Process {
                 -ServicePlanProvisioningStatus $ServicePlanProvisioningStatus
 
             # Set user account status, based on the compliance status
-            $UserAccountEnabledOnComplianceStatus = $UserServicePlanCompliance | ForEach-Object {
+            $UserAccountEnabledOnComplianceStatus = foreach ($User in $UserServicePlanCompliance) {
                 Set-UserAccountEnabledOnComplianceStatus `
-                    -ObjectId $_.ObjectId `
+                    -ObjectId $User.ObjectId `
                     -AccountEnabled $AccountEnabled `
-                    -ComplianceStatus $_.ComplianceStatus
+                    -ComplianceStatus $User.ComplianceStatus
             }
 
             # Get Service Plan Skus

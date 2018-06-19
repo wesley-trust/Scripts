@@ -22,8 +22,8 @@ function Test-AzureADConnection() {
     [CmdletBinding()]
     Param(
         [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify PowerShell credential object"
+            Mandatory = $false,
+            HelpMessage = "Specify PowerShell credential object"
         )]
         [pscredential]
         $Credential
@@ -44,26 +44,26 @@ function Test-AzureADConnection() {
             $CurrentSession = Get-AzureADCurrentSessionInfo 2> $null
             
             # If a connection exists
-            if ($CurrentSession){
+            if ($CurrentSession) {
                 $CurrentSessionAccount = $CurrentSession.Account
                 Write-Host "`nActive Azure AD connection for $CurrentSessionAccount`n"
                 $ActiveConnection = $True
                 
                 # If a credential exists
-                if ($Credential){
+                if ($Credential) {
                     
                     # Get domain from credential username
                     $UserAccount = $Credential.UserName
 
                     # Check if already connected to same domain
-                    if ($UserAccount -ne $CurrentSessionAccount){
+                    if ($UserAccount -ne $CurrentSessionAccount) {
                         Write-Host "`nAccount credentials do not match active account: $UserAccount, reauthenticating`n"
                         $Reauthenticate = $true
                     }
                 }
                 $Properties = @{
                     ActiveConnection = $ActiveConnection
-                    ReAuthenticate = $ReAuthenticate
+                    ReAuthenticate   = $ReAuthenticate
                 }
                 return $Properties
             }

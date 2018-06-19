@@ -74,7 +74,7 @@ Function Get-AzureADUserSkuStatus {
             }
 
             # If switch is not true, filter to users with assigned licences only
-            if (!$IncludeUnassignedUser){
+            if (!$IncludeUnassignedUser) {
                 
                 # Filter to licenced users
                 $AzureADUser = $AzureADUser | Where-Object {$_.AssignedLicenses}

@@ -77,12 +77,14 @@ function New-AzureADExternalUser {
                     Write-Error $ErrorMessage
                 }
                 else {                       
+                    
                     # Create external user invitation
                     $AzureADMSInvitation = New-AzureADMSInvitation `
                         -InvitedUserEmailAddress $Email `
                         -SendInvitationMessage $True `
                         -InviteRedirectUrl "https://portal.azure.com" `
                         -InvitedUserType $UserType
+                    
                     # Status report
                     if ($AzureADMSInvitation.status -eq "PendingAcceptance") {
                         return $AzureADMSInvitation
@@ -90,6 +92,7 @@ function New-AzureADExternalUser {
                         Write-Host $SuccessMessage
                     }
                     else {
+                        
                         # If there was a response with an unexpected status, return this
                         if ($AzureADMSInvitation) {
                             return $AzureADMSInvitation

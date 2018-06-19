@@ -1,5 +1,5 @@
 <#
-#Script name: Install-Dependency
+#Script name: Invoke-DependencyCheck
 #Creator: Wesley Trust
 #Date: 2017-12-04
 #Revision: 3
@@ -10,12 +10,12 @@
 .Description
 
 .Example
-    Install-Dependency -Modules "AzureAD"
+    Invoke-DependencyCheck -Modules "AzureAD"
 .Example
     
 #>
 
-function Install-Dependency() {
+function Invoke-DependencyCheck() {
     [CmdletBinding()]
     Param(
         [Parameter(

@@ -76,7 +76,7 @@ Begin {
             "$FunctionLocation\PartnerCenter\Authentication\Connect-PartnerCenter.ps1",
             "$FunctionLocation\PartnerCenter\Customer\Find-PCCustomer.ps1",
             "$FunctionLocation\PartnerCenter\Order\New-PCOrderItem.ps1",
-            "$FunctionLocation\Toolkit\Install-Dependency.ps1"
+            "$FunctionLocation\Toolkit\Invoke-DependencyCheck.ps1"
         )
         # Function dot source
         foreach ($Function in $Functions){
@@ -86,7 +86,7 @@ Begin {
         # Required Module
         $Module = "PartnerCenterModule,AzureAD"
         
-        Install-Dependency -Modules $Module
+        Invoke-DependencyCheck -Modules $Module
         
         # Required Module Classes
         $ModuleClasses = "PartnerCenterModule"

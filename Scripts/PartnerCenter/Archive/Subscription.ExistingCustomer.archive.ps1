@@ -72,7 +72,7 @@ Begin {
         
         # Load functions
         Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
-        . .\Install-Dependency.ps1
+        . .\Invoke-DependencyCheck.ps1
 
         Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\PartnerCenter\Authentication"
         . .\Connect-PartnerCenter.ps1
@@ -86,7 +86,7 @@ Begin {
         # Required Module
         $Module = "PartnerCenterModule"
         
-        Install-Dependency -Modules $Module
+        Invoke-DependencyCheck -Modules $Module
 
         # Import Module Classes
         $scriptBody = "using module $Module"

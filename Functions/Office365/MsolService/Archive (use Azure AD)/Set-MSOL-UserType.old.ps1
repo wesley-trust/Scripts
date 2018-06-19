@@ -49,9 +49,9 @@ function Set-MSOL-UserType() {
             $Module = "MSOnline"
             
             Set-Location "$ENV:USERPROFILE\GitHub\Scripts\Functions\Toolkit"
-            . .\Install-Dependency.ps1
+            . .\Invoke-DependencyCheck.ps1
             
-            Install-Dependency -Modules $Module
+            Invoke-DependencyCheck -Modules $Module
             
             # Connect to directory tenant
             if (!$SkipAuthentication) {

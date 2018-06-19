@@ -68,7 +68,7 @@ Begin {
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
             "$FunctionLocation\Azure\Authentication\Test-AzureConnection.ps1",
-            "$FunctionLocation\Toolkit\Install-Dependency.ps1"
+            "$FunctionLocation\Toolkit\Invoke-DependencyCheck.ps1"
         )
         # Function dot source
         foreach ($Function in $Functions){
@@ -79,7 +79,7 @@ Begin {
         $Module = "AzureRM"
         $ModuleCore = "AzureRM.Netcore"
         
-        Install-Dependency -Modules $Module -ModulesCore $ModuleCore
+        Invoke-DependencyCheck -Modules $Module -ModulesCore $ModuleCore
     }
     catch {
         Write-Error -Message $_.Exception
@@ -172,7 +172,7 @@ Process {
                 # Required Module
                 $Module = "PartnerCenterModule,AzureAD"
                             
-                Install-Dependency -Modules $Module
+                Invoke-DependencyCheck -Modules $Module
                 
                 # Check for active connection
                 if (!$ReAuthenticate){

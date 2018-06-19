@@ -78,6 +78,12 @@ Param(
     $SkipDisconnect,
     [Parameter(
         Mandatory = $false,
+        HelpMessage = "Specify whether to skip the service plan action"
+    )]
+    [switch]
+    $SkipServicePlanAction,
+    [Parameter(
+        Mandatory = $false,
         HelpMessage = "Specify whether to reauthenticate with different credentials"
     )]
     [switch]
@@ -163,12 +169,14 @@ Process {
                 -ServicePlanId $ServicePlanId `
                 -ServicePlanProvisioningStatus $ServicePlanProvisioningStatus
 
-            # Set user account status, based on the compliance status
-            $UserAccountEnabledOnComplianceStatus = foreach ($User in $UserServicePlanCompliance) {
-                Set-UserAccountEnabledOnComplianceStatus `
-                    -ObjectId $User.ObjectId `
-                    -AccountEnabled $AccountEnabled `
-                    -ComplianceStatus $User.ComplianceStatus
+            # Set user account status, based on the compliance status, if skip is not true
+            if (!$SkipServicePlanAction){
+                $UserAccountEnabledOnComplianceStatus = foreach ($User in $UserServicePlanCompliance) {
+                    Set-UserAccountEnabledOnComplianceStatus `
+                        -ObjectId $User.ObjectId `
+                        -AccountEnabled $AccountEnabled `
+                        -ComplianceStatus $User.ComplianceStatus
+                }
             }
 
             # Get Service Plan Skus

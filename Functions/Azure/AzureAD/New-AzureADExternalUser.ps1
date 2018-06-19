@@ -14,8 +14,8 @@
 .Example
     
 #>
-
-function New-AzureADExternalUser() {
+function New-AzureADExternalUser {
+    [CmdletBinding()]
     Param(
         [Parameter(
             Mandatory = $false,
@@ -34,7 +34,7 @@ function New-AzureADExternalUser() {
 
     Begin {
         try {
-            
+
         }
         catch {
             Write-Error -Message $_.Exception

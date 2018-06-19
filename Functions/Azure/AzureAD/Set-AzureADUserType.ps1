@@ -14,8 +14,8 @@
 .Example
     
 #>
-
-function Set-AzureADUserType() {
+function Set-AzureADUserType {
+    [CmdletBinding()]
     Param(
         [Parameter(
             Mandatory = $false,
@@ -100,6 +100,12 @@ function Set-AzureADUserType() {
         }
     }
     End {
+        try {
 
+        }
+        catch {
+            Write-Error -Message $_.Exception
+            throw $_.exception
+        }
     }
 }

@@ -16,7 +16,6 @@
 .Example
     Get-AzureADMember -GroupDisplayName $GroupDisplayName -AccountEnabled $true -UserType "Member"
 #>
-
 function Get-AzureADMember {
     [CmdletBinding()]
     Param(

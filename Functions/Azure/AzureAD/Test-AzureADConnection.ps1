@@ -40,14 +40,23 @@ function Test-AzureADConnection() {
     
     Process {
         try {
+
+            # Check if module is installed
+            Write-Host "`nPerforming Connection Check"
+            Write-Host "`nRequired Connection(s): Azure AD"
+
+            $ObjectProperties = @{
+                Connection = "Azure RM"
+            }
+            
             # Check for active Azure AD session
             $CurrentSession = Get-AzureADCurrentSessionInfo 2> $null
             
             # If a connection exists
             if ($CurrentSession) {
-                $CurrentSessionAccount = $CurrentSession.Account
-                Write-Host "`nActive Azure AD connection for $CurrentSessionAccount`n"
-                $ActiveConnection = $True
+                $ObjectProperties += @{
+                    ActiveConnection = $true
+                }
                 
                 # If a credential exists
                 if ($Credential) {
@@ -57,16 +66,19 @@ function Test-AzureADConnection() {
 
                     # Check if already connected to same domain
                     if ($UserAccount -ne $CurrentSessionAccount) {
-                        Write-Host "`nAccount credentials do not match active account: $UserAccount, reauthenticating`n"
-                        $Reauthenticate = $true
+                        $ObjectProperties += @{
+                            CredentialCheck = $false
+                            Reauthenticate  = $true
+                        }
                     }
                 }
-                $Properties = @{
-                    ActiveConnection = $ActiveConnection
-                    ReAuthenticate   = $ReAuthenticate
-                }
-                return $Properties
             }
+            else {
+                $ObjectProperties += @{
+                    ActiveConnection = $false
+                }
+            }
+            New-Object -TypeName psobject -Property $ObjectProperties
         }
         Catch {
             #Write-Error -Message $_.exception

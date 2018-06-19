@@ -20,8 +20,8 @@ function Test-AzureConnection() {
     [CmdletBinding()]
     Param(
         [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify PowerShell credential object"
+            Mandatory = $false,
+            HelpMessage = "Specify PowerShell credential object"
         )]
         [pscredential]
         $Credential
@@ -38,27 +38,40 @@ function Test-AzureConnection() {
     
     Process {
         try {
+
+            # Check if module is installed
+            Write-Host "`nPerforming Connection Check"
+            Write-Host "`nRequired Connection(s): Azure RM"
+
+            $ObjectProperties = @{
+                Connection = "Azure RM"
+            }
+            
             # Check to see if there is an active connection to Azure
             $AzureContext = Get-AzureRmContext
 
             # If there is a connection
-            if ($AzureContext.account.id){
-                $ActiveAccountID = $AzureContext.Account.Id
-                Write-Host "`nActive Azure Connection for $ActiveAccountID`n"
-                $ActiveConnection = $True
+            if ($AzureContext.account.id) {
+                $ObjectProperties += @{
+                    ActiveConnection = $true
+                }
+                
                 # If there is a credential, check to see if these match
-                if ($Credential){
-                    if ($Credential.UserName -ne $ActiveAccountID){
-                        Write-Host "`nAccount credentials do not match active account, reauthenticating`n"
-                        $Reauthenticate = $true
+                if ($Credential) {
+                    if ($Credential.UserName -ne $AzureContext.account.id) {
+                        $ObjectProperties += @{
+                            CredentialCheck = $false
+                            Reauthenticate  = $true
+                        }
                     }
                 }
             }
-            $Properties = @{
-                ActiveConnection = $ActiveConnection
-                ReAuthenticate = $ReAuthenticate
+            else {
+                $ObjectProperties += @{
+                    ActiveConnection = $false
+                }
             }
-            return $Properties
+            New-Object -TypeName psobject -Property $ObjectProperties
         }
         Catch {
             Write-Error -Message $_.exception

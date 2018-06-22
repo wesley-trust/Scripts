@@ -115,7 +115,7 @@ function Remove-UserLogonScript {
                 # If user has a script path, create an object with the value and match status
                 if ($User.ValueMatch) {
                     
-                    # Set AD sciptpath property to null and return modified object
+                    # Set AD script path property to null and return modified object
                     $SetADUser = Set-ADUser Set-ADUser -Identity $User.SamAccountName -ScriptPath $null -PassThru
                     
                     # Check if the modified user object script path, no longer equals the original value, return object

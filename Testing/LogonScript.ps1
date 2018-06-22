@@ -109,7 +109,7 @@ function Remove-UserLogonScript {
     Process {
         try {
 
-            # For each user, get AD properties
+            # For each user
             foreach ($User in $UserLogonScriptObject) {
 
                 # If user has a script path, create an object with the value and match status

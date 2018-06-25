@@ -2,7 +2,7 @@
 #Script name: User Logon Functions and Script
 #Creator: Wesley Trust
 #Date: 2018-06-22
-#Revision: 1
+#Revision: 2
 .Synopsis
    Script that contains functions to retrieve user objects from AD, checks whether the logon script is a certain value, and remove it if so.
 .DESCRIPTION
@@ -33,7 +33,8 @@ function Get-UserLogonScript {
             ValueFromPipeLineByPropertyName = $true
         )]
         [Alias('Script')]
-        [string[]] $ScriptValue = "Test"
+        [string]
+        $ScriptValue
     )
 
     Begin {
@@ -51,24 +52,29 @@ function Get-UserLogonScript {
             # For each user, get AD properties
             foreach ($User in $UserName) {
                 $ADUser = Get-ADUser -Properties * -Filter "SamAccountName -eq '$Username'"
-    
+                
+                # Start building object properties
+                $ObjectProperties = @{
+                    SamAccountName = $ADUser.SamAccountName
+                    ScriptPath     = $ADUser.ScriptPath
+                }
+                
                 # If user has a script path, create an object with the value and match status
                 if ($ADUser.ScriptPath) {
                     if ($ADUser.ScriptPath -eq $ScriptValue) {
-                        [pscustomobject]@{
-                            SamAccountName = $ADUser.SamAccountName
-                            ScriptPath     = $ADUser.ScriptPath
-                            ValueMatch     = $true
+                        $ObjectProperties += @{
+                            ValueMatch = $true
                         }
                     }
                     else {
-                        [pscustomobject]@{
-                            SamAccountName = $ADUser.SamAccountName
-                            ScriptPath     = $ADUser.ScriptPath
-                            ValueMatch     = $false
+                        $ObjectProperties += @{
+                            ValueMatch = $false
                         }
                     }
                 }
+                
+                # Create the object with the properties built
+                New-Object -TypeName psobject -Property $ObjectProperties
             }
         }
         catch {
@@ -111,6 +117,12 @@ function Remove-UserLogonScript {
 
             # For each user
             foreach ($User in $UserLogonScriptObject) {
+                
+                # Start building object properties
+                $ObjectProperties = @{
+                    SamAccountName     = $User.SamAccountName
+                    OriginalScriptPath = $User.ScriptPath
+                }
 
                 # If user has a script path, create an object with the value and match status
                 if ($User.ValueMatch) {
@@ -120,33 +132,30 @@ function Remove-UserLogonScript {
                     
                     # Check if the modified user object script path, no longer equals the original value, return object
                     if ($SetADUser.ScriptPath -ne $UserScriptPath) {
-                        [pscustomobject]@{
-                            SamAccountName     = $User.SamAccountName
-                            OriginalScriptPath = $User.ScriptPath
-                            NewScriptPath      = $SetADUser.ScriptPath
-                            Success            = $true
-                            Detail             = "Successfully set new script path property"
+                        $ObjectProperties += @{
+                            NewScriptPath = $SetADUser.ScriptPath
+                            Success       = $true
+                            Detail        = "Successfully set new script path property"
                         }
                     }
                     else {
-                        [pscustomobject]@{
-                            SamAccountName     = $User.SamAccountName
-                            OriginalScriptPath = $User.ScriptPath
-                            NewScriptPath      = $null
-                            Success            = $false
-                            Detail             = "Failed to set new script path property"
+                        $ObjectProperties += @{
+                            NewScriptPath = $null
+                            Success       = $false
+                            Detail        = "Failed to set new script path property"
                         }
                     }
                 }
                 else {
-                    [pscustomobject]@{
-                        SamAccountName     = $User.SamAccountName
-                        OriginalScriptPath = $User.ScriptPath
-                        NewScriptPath      = $null
-                        Success            = $null
-                        Detail             = "No change required"
+                    $ObjectProperties += @{
+                        NewScriptPath = $null
+                        Success       = $null
+                        Detail        = "No change required as ScriptPath does not match required value"
                     }
                 }
+
+                # Create the object with the properties built
+                New-Object -TypeName psobject -Property $ObjectProperties
             }
         }
         catch {
@@ -164,7 +173,7 @@ function Remove-UserLogonScript {
 }
 
 # Get user logon script check object
-$UserLogonScriptObject = Get-UserLogonScript -Username "TestUser1"
+$UserLogonScriptObject = Get-UserLogonScript -Username "TestUser1" -ScriptValue "Test"
 
 # Remove logon script for users that match the check and return object
 $UserLogonScriptRemovalObject = Remove-UserLogonScript -UserLogonScriptObject $UserLogonScriptObject

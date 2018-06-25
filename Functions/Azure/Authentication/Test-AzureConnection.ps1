@@ -52,7 +52,7 @@ function Test-AzureConnection() {
 
             # If there is a connection
             if ($AzureContext.account.id) {
-                $ObjectProperties += @{
+                $ObjectProperties = @{
                     ActiveConnection = $true
                 }
                 
@@ -67,7 +67,7 @@ function Test-AzureConnection() {
                 }
             }
             else {
-                $ObjectProperties += @{
+                $ObjectProperties = @{
                     ActiveConnection = $false
                 }
             }

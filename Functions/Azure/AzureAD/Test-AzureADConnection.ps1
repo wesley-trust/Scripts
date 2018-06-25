@@ -54,7 +54,7 @@ function Test-AzureADConnection() {
             
             # If a connection exists
             if ($CurrentSession) {
-                $ObjectProperties += @{
+                $ObjectProperties = @{
                     ActiveConnection = $true
                 }
                 
@@ -74,7 +74,7 @@ function Test-AzureADConnection() {
                 }
             }
             else {
-                $ObjectProperties += @{
+                $ObjectProperties = @{
                     ActiveConnection = $false
                 }
             }

@@ -14,7 +14,6 @@
 .Example
     
 #>
-
 function Invoke-DependencyCheck() {
     [CmdletBinding()]
     Param(
@@ -93,24 +92,25 @@ function Invoke-DependencyCheck() {
                 if ($ModuleCheck) {
                     $ObjectProperties += @{
                         Installed = $true
-                        Path = $ModuleCheck.path
+                        Path      = $ModuleCheck.path
                     }
                 }
                 else {
                     $ObjectProperties += @{
                         Installed = $false
+                        Path      = $null
                     }
                 }
                 New-Object -TypeName psobject -Property $ObjectProperties
             }
             
             # Output dependency status to host
-            $ModuleStatus | Format-Table Module,Installed -Autosize | Out-Host
+            $ModuleStatus | Format-Table Module, Installed -Autosize | Out-Host
            
             # If module is installed, update if true and where elevation allows
             $ModuleInstalled = $ModuleStatus | Where-Object Installed -eq $true
             if ($Update) {
-                foreach ($Module in $ModuleInstalled){
+                foreach ($Module in $ModuleInstalled) {
                     if (!$Elevated) {
                         if ($Module.path -like "*Program Files*") {
                             $Update = $false
@@ -127,7 +127,7 @@ function Invoke-DependencyCheck() {
 
             # If module is not installed, attempt to install
             $ModuleNotInstalled = $ModuleStatus | Where-Object Installed -eq $false
-            foreach ($Module in $ModuleNotInstalled){
+            foreach ($Module in $ModuleNotInstalled) {
                 write-Host "`nInstalling module $Module for $Scope`n"
                 Install-Module -Name $Module -AllowClobber -Force -Scope $Scope -ErrorAction Stop
             }

@@ -18,18 +18,18 @@
 function New-RandomString() {
     Param(
         [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify the character length (maximum 92)"
+            Mandatory = $false,
+            HelpMessage = "Specify the character length (maximum 92)"
         )]
-        [ValidateRange(1,92)]
+        [ValidateRange(1, 92)]
         [int]
         $CharacterLength = 12,
         [Parameter(
-            Mandatory=$false,
-            HelpMessage="Specify whether to use lower/upper case characters only"
+            Mandatory = $false,
+            HelpMessage = "Specify whether to use lower/upper case characters only"
         )]
         [bool]
-        $Simplified = $false
+        $Simplified
     )
 
     Begin {
@@ -44,6 +44,7 @@ function New-RandomString() {
     
     Process {
         try {
+
             # Character set variables
             $LowerCase = ([char[]](97..122))
             $UpperCase = ([char[]](65..90))
@@ -51,14 +52,14 @@ function New-RandomString() {
             $Special = ([char[]](33..47))
 
             # Update length to reflect array start position
-            $CharacterLength = $CharacterLength -1
+            $CharacterLength = $CharacterLength - 1
             
             # If simplified is specified
-            if ($Simplified){
-                $CharacterSet = $LowerCase+$UpperCase
+            if ($Simplified) {
+                $CharacterSet = $LowerCase + $UpperCase
             }
             else {
-                $CharacterSet = $LowerCase+$UpperCase+$Numbers+$Special
+                $CharacterSet = $LowerCase + $UpperCase + $Numbers + $Special
             }
 
             # Randomise set

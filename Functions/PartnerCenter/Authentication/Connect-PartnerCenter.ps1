@@ -62,22 +62,29 @@ function Connect-PartnerCenter() {
                 if ($Credential) {
                     
                     # Connect to Azure AD
-                    Connect-AzureAD -Credential $Credential | Out-Null
-                                
-                    # Retrieve CSP App ID from AzureAD
-                    $CSPApp = Get-AzureADApplication | Where-Object DisplayName -eq "Partner Center Native App"
-                    
-                    # Disconnect Azure AD
-                    Disconnect-AzureAD
-                    
-                    # Check if app is returned
-                    if ($CSPApp) {
+                    $AzureADConnection = Connect-AzureAD -Credential $Credential
+                    if ($AzureADConnection){
+
+                        # Retrieve CSP App ID from AzureAD
+                        $CSPApp = Get-AzureADApplication | Where-Object DisplayName -eq "Partner Center Native App"
                         
-                        # Update App ID
-                        $CSPAppID = $CSPApp.appid
+                        # Clean-up
+                        Disconnect-AzureAD
+                        
+                        # Check if app is returned
+                        if ($CSPApp) {
+                            
+                            # Update App ID
+                            $CSPAppID = $CSPApp.appid
+                        }
+                        else {
+                            $ErrorMessage = "No Partner Center App ID is specified and an Azure AD lookup failed"
+                            Write-Error $ErrorMessage
+                            throw $ErrorMessage
+                        }
                     }
                     else {
-                        $ErrorMessage = "No Partner Center App Id is specified and an Azure AD lookup failed"
+                        $ErrorMessage = "Connection to Azure AD failed, App ID lookup not possible"
                         Write-Error $ErrorMessage
                         throw $ErrorMessage
                     }

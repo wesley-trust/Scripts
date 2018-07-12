@@ -2,11 +2,11 @@
 #Script name: Connect to Exchange Online
 #Creator: Wesley Trust
 #Date: 2018-04-10
-#Revision: 1
+#Revision: 2
 #References: 
 
 .Synopsis
-    Connects to Exchange Online
+    Connects to Exchange Online, including delegated access support.
 .Description
 
 .Example
@@ -33,7 +33,19 @@ Param(
         HelpMessage="Specify whether to confirm disconnection/reauthentication of active session"
     )]
     [switch]
-    $Confirm
+    $Confirm,
+    [Parameter(
+        Mandatory=$false,
+        HelpMessage="Specify tenant to use for delegated authentication"
+    )]
+    [string]
+    $TenantDomain,
+    [Parameter(
+        Mandatory=$false,
+        HelpMessage="Specify whether to use delegated authentication"
+    )]
+    [switch]
+    $DelegatedAuthentication
 )
 Begin {
     try {
@@ -68,6 +80,15 @@ Process {
         if ($Confirm){
             $CustomParameters += @{
                 Confirm = $true
+            }
+        }
+        if ($DelegatedAuthentication){
+            while (!$TenantDomain){
+                $TenantDomain = Read-Host "Specify Exchange Online Tenant for delegated access"
+            }
+            $CustomParameters += @{
+                DelegatedAuthentication = $true
+                Tenant = $TenantDomain
             }
         }
 

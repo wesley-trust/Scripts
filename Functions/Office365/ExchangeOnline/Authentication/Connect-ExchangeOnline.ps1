@@ -90,8 +90,8 @@ function Connect-ExchangeOnline() {
                     # Get tenant identity
                     $OrganizationConfig = Get-OrganizationConfig
                     if (!$OrganizationConfig) {
-                        Write-Verbose "Error detecting tenant, forcing reauthentication"
-                        Write-Warning "Connection will be reauthenticated as tenant has not been detected"
+                        Write-Verbose "Error detecting organisation configuration, forcing reauthentication"
+                        Write-Warning "Connection will be reauthenticated as a valid tenant has not been detected"
                         $ReAuthenticate = $True
                     }
                     else {

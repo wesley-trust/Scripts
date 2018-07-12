@@ -65,7 +65,7 @@ function Get-PCCustomerSubscription() {
                 $SubscriptionCustomers = foreach ($Customer in $Customers) {
 
                     # Get all subscriptions
-                    $Subscriptions = Get-PCSubscription -tenantid $Customer.id -all | Where-Object offerName -eq $OfferName
+                    $Subscriptions = Get-PCSubscription -tenantid $Customer.id | Where-Object offerName -eq $OfferName
                     
                     # For each subscription
                     foreach ($Subscription in $Subscriptions) {

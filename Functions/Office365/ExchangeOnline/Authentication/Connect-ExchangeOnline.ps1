@@ -189,12 +189,12 @@ function Connect-ExchangeOnline() {
             $ReminderMessage = "`nREMEMBER: Disconnect session after use, limited connections available:"
             $ReminderCommand = "`nGet-PSSession | Where-Object ComputerName -EQ ps.outlook.com | Remove-PSSession`n"
             $ConnectionUri = "https://ps.outlook.com/powershell-liveid"
-            $DelegationTenant = "?DelegatedOrg=$TenantDomain"
+            $DelegatedOrganisation = "?DelegatedOrg=$TenantDomain"
 
             # Alter connection URL if delegation is true and tenant is specified
             if ($DelegatedAuthentication) {
                 if ($TenantDomain) {
-                    $ConnectionUri = $ConnectionUri + $DelegationTenant
+                    $ConnectionUri = $ConnectionUri + $DelegatedOrganisation
                 }
                 else {
                     $ErrorMessage = "No tenant specificed for delegated authentication"

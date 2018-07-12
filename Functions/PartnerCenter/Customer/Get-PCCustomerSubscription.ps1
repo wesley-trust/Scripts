@@ -55,7 +55,7 @@ function Get-PCCustomerSubscription() {
                 $customers = Get-PCCustomer -Tenantid $tenantid
             }
             else {
-                $Customers = Get-PCCustomer -all
+                $Customers = Get-PCCustomer -ResultSize 500
             }
             
             # If there are customers

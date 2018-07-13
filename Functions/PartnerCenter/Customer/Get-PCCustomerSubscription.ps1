@@ -26,7 +26,7 @@ function Get-PCCustomerSubscription() {
         $Credential,
         [Parameter(
             Mandatory = $false,
-            Position = 0,
+            Position = 1,
             HelpMessage = "Subscription name"
         )]
         [string]
@@ -69,7 +69,7 @@ function Get-PCCustomerSubscription() {
                     
                     # For each subscription
                     foreach ($Subscription in $Subscriptions) {
-                        [pscustomobject]$ObjectProperties = @{
+                        [pscustomobject]@{
                             TenantID       = $Customer.id
                             Customer       = $Customer.CompanyProfile.CompanyName
                             SubscriptionId = $Subscription.id

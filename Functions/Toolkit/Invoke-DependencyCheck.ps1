@@ -3,7 +3,7 @@
 #Creator: Wesley Trust
 #Date: 2017-12-04
 #Revision: 3
-#References: 
+#References:
 
 .Synopsis
     Function that checks if a required module is installed, and installs if nessessary.
@@ -126,7 +126,8 @@ function Invoke-DependencyCheck() {
                         }
                     }
                     if (!$SkipUpdate) {
-                        Write-Host "`nUpdating Module $($Module.ModuleName) (if available)`nRestarting PowerShell may be required`n"
+                        Write-Host "`nUpdating Module $($Module.ModuleName) (if available)`n"
+                        Write-Verbose "Restarting PowerShell may be required"
                         Update-Module -Name $Module.ModuleName
                     }
                 }

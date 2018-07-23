@@ -35,7 +35,7 @@ function Test-AzureConnection() {
             Write-Error -Message $_.Exception
         }
     }
-    
+
     Process {
         try {
 
@@ -46,16 +46,17 @@ function Test-AzureConnection() {
             $ObjectProperties = @{
                 Connection = "Azure RM"
             }
-            
+
             # Check to see if there is an active connection to Azure
             $AzureContext = Get-AzureRmContext
 
             # If there is a connection
             if ($AzureContext.account.id) {
+                Write-Host "`nActive AzureRM connection for $($AzureContext.Account)`n"
                 $ObjectProperties = @{
                     ActiveConnection = $true
                 }
-                
+
                 # If there is a credential, check to see if these match
                 if ($Credential) {
                     if ($Credential.UserName -ne $AzureContext.account.id) {
@@ -78,6 +79,6 @@ function Test-AzureConnection() {
         }
     }
     End {
-        
+
     }
 }

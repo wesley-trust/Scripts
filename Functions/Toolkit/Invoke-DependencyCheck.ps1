@@ -12,7 +12,7 @@
 .Example
     Invoke-DependencyCheck -Modules "AzureAD"
 .Example
-    
+
 #>
 function Invoke-DependencyCheck() {
     [CmdletBinding()]
@@ -31,10 +31,10 @@ function Invoke-DependencyCheck() {
         $ModulesCore,
         [Parameter(
             Mandatory = $false,
-            HelpMessage = "Specify whether to update module if installed"
+            HelpMessage = "Specify whether to skip module update"
         )]
         [switch]
-        $Update
+        $SkipUpdate
     )
 
     Begin {
@@ -46,7 +46,7 @@ function Invoke-DependencyCheck() {
             throw $_.exception
         }
     }
-    
+
     Process {
         try {
 
@@ -60,7 +60,7 @@ function Invoke-DependencyCheck() {
             $Elevated = ([Security.Principal.WindowsPrincipal] `
                     [Security.Principal.WindowsIdentity]::GetCurrent() `
             ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-            
+
             # If Elevated, install for all users, otherwise, current user.
             if ($Elevated) {
                 $Scope = "AllUsers"
@@ -82,12 +82,12 @@ function Invoke-DependencyCheck() {
             Write-Host "`nPerforming Dependency Check"
             Write-Host "`nRequired Module(s): $Modules"
             $ModuleList = Get-Module -ListAvailable
-            
+
             # For each module, check it is installed, if not attempt to install
             $ModuleStatus = foreach ($Module in $Modules) {
                 $ModuleCheck = $ModuleList | Where-Object Name -eq $Module
                 $ObjectProperties = @{
-                    Module = $Module
+                    ModuleName = $Module
                 }
                 if ($ModuleCheck) {
                     $ObjectProperties += @{
@@ -103,24 +103,31 @@ function Invoke-DependencyCheck() {
                 }
                 New-Object -TypeName psobject -Property $ObjectProperties
             }
-            
+
             # Output dependency status to host
-            $ModuleStatus | Format-Table Module, Installed -Autosize | Out-Host
-           
+            $ModuleStatus | Format-Table ModuleName, Installed -Autosize | Out-Host
+
+            # Set PSGallery as trusted source if not set
+            $PSRepository = Get-PSRepository -Name "PSGallery"
+            if ($PSRepository.InstallationPolicy -ne "Trusted"){
+                Write-Verbose "Setting PSGallery as trusted installation source"
+                Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted
+            }
+
             # If module is installed, update if true and where elevation allows
             $ModuleInstalled = $ModuleStatus | Where-Object Installed -eq $true
-            if ($Update) {
+            if (!$SkipUpdate) {
                 foreach ($Module in $ModuleInstalled) {
                     if (!$Elevated) {
                         if ($Module.path -like "*Program Files*") {
-                            $Update = $false
+                            $SkipUpdate = $true
                             $WarningMessage = "Skipping module update, rerun as an administrator to update this module"
                             Write-Warning $WarningMessage
                         }
                     }
-                    if ($Update) {
-                        write-Host "`nUpdating module $Module`n"
-                        Update-Module -Name $Module
+                    if (!$SkipUpdate) {
+                        Write-Host "`nUpdating Module $($Module.ModuleName) (if available)`nRestarting PowerShell may be required`n"
+                        Update-Module -Name $Module.ModuleName
                     }
                 }
             }
@@ -128,8 +135,8 @@ function Invoke-DependencyCheck() {
             # If module is not installed, attempt to install
             $ModuleNotInstalled = $ModuleStatus | Where-Object Installed -eq $false
             foreach ($Module in $ModuleNotInstalled) {
-                write-Host "`nInstalling module $Module for $Scope`n"
-                Install-Module -Name $Module -AllowClobber -Force -Scope $Scope -ErrorAction Stop
+                write-Host "`nInstalling module $($Module.ModuleName) for $Scope`n"
+                Install-Module -Name $Module.ModuleName -AllowClobber -Force -Scope $Scope -ErrorAction Stop
             }
         }
         Catch {
@@ -138,6 +145,6 @@ function Invoke-DependencyCheck() {
         }
     }
     End {
-        
+
     }
 }

@@ -15,7 +15,6 @@
 
 .Example
 
-
 #>
 
 function Test-AzureADConnection() {
@@ -37,7 +36,7 @@ function Test-AzureADConnection() {
             Write-Error -Message $_.Exception
         }
     }
-    
+
     Process {
         try {
 
@@ -48,19 +47,20 @@ function Test-AzureADConnection() {
             $ObjectProperties = @{
                 Connection = "Azure AD"
             }
-            
+
             # Check for active Azure AD session
             $CurrentSession = Get-AzureADCurrentSessionInfo 2> $null
-            
+
             # If a connection exists
             if ($CurrentSession) {
+                Write-Host "`nActive AzureAD connection for $($CurrentSession.Account)`n"
                 $ObjectProperties = @{
                     ActiveConnection = $true
                 }
-                
+
                 # If a credential exists
                 if ($Credential) {
-                    
+
                     # Get domain from credential username
                     $UserAccount = $Credential.UserName
 
@@ -85,6 +85,6 @@ function Test-AzureADConnection() {
         }
     }
     End {
-        
+
     }
 }

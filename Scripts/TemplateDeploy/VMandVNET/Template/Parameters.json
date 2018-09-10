@@ -1,0 +1,70 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "environment": {
+            "value": {
+                "Settings": [
+                    {
+                        "name": "Production",
+                        "suffix": "-p",
+                        "virtualMachineSize": "Standard_D2s_v3"
+                    },
+                    {
+                        "name": "Development",
+                        "suffix": "-d",
+                        "virtualMachineSize": "Standard_F2s_v2"
+                    }
+                ]
+            }
+        },
+        "location": {
+            "value": "uksouth"
+        },
+        "virtualMachineName": {
+            "value": "Hostname"
+        },
+        "adminUsername": {
+            "value": null
+        },
+        "adminPassword": {
+            "value": null
+        },
+        "networkInterfaceName": {
+            "value": "-nic"
+        },
+        "networkSecurityGroupName": {
+            "value": "-nsg"
+        },
+        "virtualNetworkName": {
+            "value": "-vnet"
+        },
+        "diagnosticsStorageAccountName": {
+            "value": "diag"
+        },
+        "diagnosticsStorageAccountType": {
+            "value": "Standard_LRS"
+        },
+        "diagnosticsStorageAccountKind": {
+            "value": "Storage"
+        },
+        "addressPrefix": {
+            "value": "10.0.0.0/16"
+        },
+        "subnetName": {
+            "value": "-Subnet"
+        },
+        "subnetPrefix": {
+            "value": "10.0.1.0/24"
+        },
+        "publicIpAddressName": {
+            "value": "-ip"
+        },
+        "publicIpAddressType": {
+            "value": "Static"
+        },
+        "publicIpAddressSku": {
+            "value": "Basic"
+        }
+    }
+}

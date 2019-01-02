@@ -214,11 +214,18 @@ function Connect-ExchangeOnline() {
                     -Credential $Credential `
                     -Authentication Basic `
                     -AllowRedirection
-
-                # Import Session
-                Import-PSSession $Session `
-                    -DisableNameChecking `
-                    -AllowClobber
+                
+                    if ($Session) {
+                    # Import Session
+                    Import-PSSession $Session `
+                        -DisableNameChecking `
+                        -AllowClobber
+                }
+                else {
+                    $ErrorMessage = "Unable to establish session. Conditional Access may be blocking the connection. If MFA is enabled, use Connect-EXOPSSession."
+                    Write-Error $ErrorMessage
+                    throw $ErrorMessage
+                }
             }
 
             # Get Accepted Domains

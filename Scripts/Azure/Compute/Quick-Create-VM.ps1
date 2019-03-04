@@ -188,7 +188,7 @@ Process {
         foreach ($VM in 1..$VMCount) {
             
             # Create random string for VM name
-            $RandomString = New-RandomString -CharacterLength $VMRandomStringLength -Simplified $true
+            $RandomString = New-RandomString -CharacterLength $VMRandomStringLength -Alphanumeric
             $RandomVMName = $VMName + $RandomString
 
             New-AzVM `

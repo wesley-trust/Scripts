@@ -28,13 +28,13 @@ function New-RandomString() {
             Mandatory = $false,
             HelpMessage = "Specify whether to use alphabetic characters only"
         )]
-        [bool]
+        [switch]
         $Simplified,
         [Parameter(
             Mandatory = $false,
             HelpMessage = "Specify whether to use alphabetic and numeric characters only"
         )]
-        [bool]
+        [switch]
         $Alphanumeric
     )
 

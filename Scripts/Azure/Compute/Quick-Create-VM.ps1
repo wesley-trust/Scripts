@@ -80,7 +80,7 @@ Param(
         Mandatory = $false
     )]
     [int]
-    $VMCount = 1,
+    $VMCount = 10,
     [Parameter(
         Mandatory = $false
     )]
@@ -191,7 +191,7 @@ Process {
             $RandomString = New-RandomString -CharacterLength $VMRandomStringLength -Alphanumeric
             $RandomVMName = $VMName + $RandomString
 
-            New-AzVM `
+            $NewAZVM = New-AzVM `
                 -Name $RandomVMName `
                 -Location $Location `
                 -Size $VMSize `
@@ -201,10 +201,13 @@ Process {
                 -Credential $VMCredential `
                 -Image $VMImage `
                 -AsJob
+            
+            # Display as table
+            $NewAZVM | Format-Table
         }
         
         # Get all jobs and wait for completion
-        Get-Job | Wait-Job
+        Get-Job | Wait-Job | Format-Table
     }
     Catch {
         

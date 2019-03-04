@@ -12,8 +12,8 @@
                     },
                     {
                         "name": "Development",
-                        "suffix": "-d",
-                        "virtualMachineSize": "Standard_F2s_v2"
+                        "suffix": "-p",
+                        "virtualMachineSize": "Standard_D2s_v3"
                     }
                 ]
             }
@@ -43,7 +43,7 @@
             "value": "diag"
         },
         "diagnosticsStorageAccountType": {
-            "value": "Standard_LRS"
+            "value": "Premium_LRS"
         },
         "diagnosticsStorageAccountKind": {
             "value": "Storage"

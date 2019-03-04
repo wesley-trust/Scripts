@@ -97,7 +97,7 @@ Write-Host "Signing in to Azure RM"
 if ($DelegatedAuthentication){
     if ($TenantId){
         Write-Host "`nSelecting tenant '$TenantId' and subscription '$subscriptionId'"
-        Connect-AzureRmAccount -Credential $AzureCredential -TenantId $TenantId -SubscriptionId $SubscriptionId
+        Connect-AZAccount -Credential $AzureCredential -TenantId $TenantId -SubscriptionId $SubscriptionId
     }
     else {
         $ErrorMessage = "A tenant ID is not specified, unable to use delegated authentication"
@@ -106,9 +106,9 @@ if ($DelegatedAuthentication){
     }
 }
 else {
-    Connect-AzureRmAccount -Credential $AzureCredential
+    Connect-AZAccount -Credential $AzureCredential
     Write-Host "Selecting subscription '$subscriptionId'"
-    Select-AzureRmSubscription -SubscriptionID $subscriptionId
+    Set-AzContext -SubscriptionID $subscriptionId
 }
 
 # Register Resource Providers
@@ -116,27 +116,27 @@ $resourceProviders = @("microsoft.compute", "microsoft.storage", "microsoft.netw
 if ($resourceProviders) {
     Write-Host "Registering resource providers..."
     foreach ($resourceProvider in $resourceProviders) {
-        Register-AzureRmResourceProvider -ProviderNamespace $ResourceProvider
+        Register-AZResourceProvider -ProviderNamespace $ResourceProvider
     }
 }
 
 # Create or check for existing resource group
-$resourceGroup = Get-AzureRmResourceGroup -Name $resourceGroupName -ErrorAction SilentlyContinue
+$resourceGroup = Get-AZResourceGroup -Name $resourceGroupName -ErrorAction SilentlyContinue
 if (!$resourceGroup) {
     Write-Host "Resource group '$resourceGroupName' does not exist."
     Write-Host "`nCreating resource group '$resourceGroupName' in location '$resourceGroupLocation'"
-    New-AzureRmResourceGroup -Name $resourceGroupName -Location $resourceGroupLocation
+    New-AZResourceGroup -Name $resourceGroupName -Location $resourceGroupLocation
 }
 else {
     Write-Host "Using existing resource group '$resourceGroupName'"
 }
 
 # Create or check for existing key vault
-$KeyVault = Get-AzureRmResourceGroup -Name $resourceGroupName -ErrorAction SilentlyContinue
+$KeyVault = Get-AZResourceGroup -Name $resourceGroupName -ErrorAction SilentlyContinue
 if (!$KeyVault) {
     Write-Host "Key vault '$VaultName' does not exist."
     Write-Host "`nCreating Key Vault '$VaultName' in location '$resourceGroupLocation'"
-    New-AzureRmKeyVault -VaultName $VaultName -ResourceGroupName $resourceGroupName -Location $resourceGroupLocation -EnabledForTemplateDeployment
+    New-AZKeyVault -VaultName $VaultName -ResourceGroupName $resourceGroupName -Location $resourceGroupLocation -EnabledForTemplateDeployment
 }
 else {
     Write-Host "Using existing Key Vault '$resourceGroupName'"
@@ -161,12 +161,12 @@ if ($adminCredential){
 # Start the deployment
 Write-Host "`nStarting deployment..."
 if (Test-Path $parametersFilePath) {
-    New-AzureRmResourceGroupDeployment `
+    New-AZResourceGroupDeployment `
         -ResourceGroupName $resourceGroupName `
         -TemplateFile $templateFilePath `
         -TemplateParameterFile $parametersFilePath `
         @CustomParameters
 }
 else {
-    New-AzureRmResourceGroupDeployment -ResourceGroupName $resourceGroupName -TemplateFile $templateFilePath
+    New-AZResourceGroupDeployment -ResourceGroupName $resourceGroupName -TemplateFile $templateFilePath
 }

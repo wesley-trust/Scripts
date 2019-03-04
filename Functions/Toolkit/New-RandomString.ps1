@@ -26,10 +26,16 @@ function New-RandomString() {
         $CharacterLength = 12,
         [Parameter(
             Mandatory = $false,
-            HelpMessage = "Specify whether to use lower/upper case characters only"
+            HelpMessage = "Specify whether to use alphabetic characters only"
         )]
         [bool]
-        $Simplified
+        $Simplified,
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Specify whether to use alphabetic and numeric characters only"
+        )]
+        [bool]
+        $Alphanumeric
     )
 
     Begin {
@@ -57,6 +63,9 @@ function New-RandomString() {
             # If simplified is specified
             if ($Simplified) {
                 $CharacterSet = $LowerCase + $UpperCase
+            }
+            elseif ($Alphanumeric) {
+                $CharacterSet = $LowerCase + $UpperCase + $Numbers
             }
             else {
                 $CharacterSet = $LowerCase + $UpperCase + $Numbers + $Special

@@ -31,88 +31,76 @@ param(
     )]
     [pscredential]
     $AzureCredential,
-
     [Parameter(
         Mandatory = $false,
         HelpMessage = "Enter Admin credentials for deployment"
     )]
     [pscredential]
-    $adminCredential,
-
-    [Parameter(
-        Mandatory = $false
-    )]
-    [switch]
-    $DelegatedAuthentication,
-
+    $AdminCredential,
     [Parameter(
         Mandatory = $true
     )]
     [string]
-    $TenantId,
-
+    $AzADTenantID,
     [Parameter(
         Mandatory = $true
     )]
     [string]
-    $subscriptionId,
-
+    $AzSubscriptionID,
     [Parameter(
         Mandatory = $true
     )]
     [string]
-    $resourceGroupName,
-
+    $ResourceGroupName,
     [Parameter(
         Mandatory = $true
     )]
     [string]
-    $resourceGroupLocation,
-
+    $ResourceGroupLocation,
     [Parameter(
         Mandatory = $true
     )]
     [string]
-    $deploymentName,
-
+    $DeploymentName,
     [Parameter(
         Mandatory = $false
     )]
     [string]
-    $templateFilePath = "Template\template.json",
-
+    $TemplateFilePath = "Template\template.json",
     [Parameter(
         Mandatory = $false
     )]
-    $parametersFilePath = "Template\parameters.json"
+    $ParametersFilePath = "Template\parameters.json"
 )
 
 # Variables
 $ErrorActionPreference = "Stop"
-$VaultName = "$resourceGroupName-"+(Get-Random)
+$VaultName = "$resourceGroupName-" + (Get-Random)
 $VaultKey = ""
 
-# Connect to Azure and subscription
-Write-Host "Signing in to Azure RM"
-if ($DelegatedAuthentication){
-    if ($TenantId){
-        Write-Host "`nSelecting tenant '$TenantId' and subscription '$subscriptionId'"
-        Connect-AZAccount -Credential $AzureCredential -TenantId $TenantId -SubscriptionId $SubscriptionId
-    }
-    else {
-        $ErrorMessage = "A tenant ID is not specified, unable to use delegated authentication"
-        Write-Error $ErrorMessage
-        throw $ErrorMessage
+# Build custom parameters
+$CustomParameters = @{}
+if ($AzADTenantID) {
+    $CustomParameters += @{
+        TenantID = $AzADTenantID
     }
 }
-else {
-    Connect-AZAccount -Credential $AzureCredential
-    Write-Host "Selecting subscription '$subscriptionId'"
-    Set-AzContext -SubscriptionID $subscriptionId
+if ($AzSubscriptionID) {
+    $CustomParameters += @{
+        SubscriptionID = $AzSubscriptionID
+    }
+}
+if ($AzCredential) {
+    $CustomParameters += @{
+        Credential = $AzCredential
+    }
 }
 
+# Connect to Azure and subscription
+Connect-AzAccount @CustomParameters
+
 # Register Resource Providers
-$resourceProviders = @("microsoft.compute", "microsoft.storage", "microsoft.network","Microsoft.KeyVault")
+$resourceProviders = @("microsoft.compute", "microsoft.storage", "microsoft.network", "Microsoft.KeyVault")
 if ($resourceProviders) {
     Write-Host "Registering resource providers..."
     foreach ($resourceProvider in $resourceProviders) {
@@ -120,10 +108,9 @@ if ($resourceProviders) {
     }
 }
 
-# Create or check for existing resource group
+# Create resource group if it does not exist
 $resourceGroup = Get-AZResourceGroup -Name $resourceGroupName -ErrorAction SilentlyContinue
 if (!$resourceGroup) {
-    Write-Host "Resource group '$resourceGroupName' does not exist."
     Write-Host "`nCreating resource group '$resourceGroupName' in location '$resourceGroupLocation'"
     New-AZResourceGroup -Name $resourceGroupName -Location $resourceGroupLocation
 }
@@ -134,7 +121,6 @@ else {
 # Create or check for existing key vault
 $KeyVault = Get-AZResourceGroup -Name $resourceGroupName -ErrorAction SilentlyContinue
 if (!$KeyVault) {
-    Write-Host "Key vault '$VaultName' does not exist."
     Write-Host "`nCreating Key Vault '$VaultName' in location '$resourceGroupLocation'"
     New-AZKeyVault -VaultName $VaultName -ResourceGroupName $resourceGroupName -Location $resourceGroupLocation -EnabledForTemplateDeployment
 }
@@ -149,12 +135,12 @@ $VMPassword = Get-Random | ConvertTo-SecureString -AsPlainText -Force
 Set-AzureKeyVaultSecret -VaultName $VaultName -Name $VaultKey -SecretValue $VMPassword
 
 # Create custom parameters hastable
-if ($adminCredential){
+if ($adminCredential) {
     $CustomParameters = @{
         adminUsername = $adminCredential.UserName
         adminPassword = $adminCredential.Password
-        VaultName = $VaultName
-        VaultKey = $VaultKey
+        VaultName     = $VaultName
+        VaultKey      = $VaultKey
     }
 }
 

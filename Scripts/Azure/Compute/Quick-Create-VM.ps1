@@ -118,18 +118,19 @@ Begin {
         # Check for active connection
         if (!$SkipConnectionCheck) {             
             $AzContext = Get-AzContext
-
-            # Safety check
-            $Options = [System.Management.Automation.Host.ChoiceDescription[]] @('&Yes', '&No')
-            $Title = "Active Azure Connection - $($AzContext.Name)"
-            $Message = "Do you want to continue?"
-            $Result = $host.ui.PromptForChoice($title, $message, $options, 0)
+            while ($AzContext) {
+                # Safety check
+                $Options = [System.Management.Automation.Host.ChoiceDescription[]] @('&Yes', '&No')
+                $Title = "Active Azure Connection - $($AzContext.Name)"
+                $Message = "Do you want to continue?"
+                $Result = $host.ui.PromptForChoice($title, $message, $options, 0)
             
-            # If no is chosen (Index 1), disconnect active Azure account
-            switch ($Result) {
-                1 {
-                    $AzContext | Disconnect-AzAccount
-                    $AzContext = Get-AzContext
+                # If no is chosen (Index 1), disconnect active Azure account
+                switch ($Result) {
+                    1 {
+                        $AzContext | Disconnect-AzAccount
+                        $AzContext = Get-AzContext
+                    }
                 }
             }
         }
@@ -157,7 +158,7 @@ Begin {
 
             Connect-AzAccount @CustomParameters -ErrorAction Ignore | Tee-Object -Variable AzAccount
             
-            # If connection fails, retry without specified credentials
+            # If connection fails, retry without specified parameters
             if (!$AzAccount) {
                 Write-Verbose "Attempting connection without specified parameters"
                 Connect-AzAccount

@@ -6,7 +6,7 @@
 #References: 
 
 .Synopsis
-    Quickly create a VM, using parallel jobs with the new simplified parameters of the Az module command.
+    Quickly create a VM, using parallel jobs with the new simplified parameters of the Az module, supports guest and delegated access via AzADTenantID
 .Description
 
 .Example
@@ -119,13 +119,27 @@ Begin {
         if (!$SkipConnectionCheck) {             
             $AzContext = Get-AzContext
             while ($AzContext) {
+                
                 # Safety check
-                $Options = [System.Management.Automation.Host.ChoiceDescription[]] @('&Yes', '&No')
+                # Specify label and help text, '&' represents keyboard shortcut, default choice is array index
+                $Choices = @(
+                    ("&Yes", "Continue with the active Azure account"),
+                    ("&No", "Disconnect the active Azure account then continue")
+                )
                 $Title = "Active Azure Connection - $($AzContext.Name)"
                 $Message = "Do you want to continue?"
-                $Result = $host.ui.PromptForChoice($title, $message, $options, 0)
+                $DefaultChoice = 0
+
+                # Create choice collection and generate choice descriptions from choices array
+                $Options = New-Object System.Collections.ObjectModel.Collection[System.Management.Automation.Host.ChoiceDescription]
+                for ($Choiceindex = 0; $ChoiceIndex -lt $Choices.length; $ChoiceIndex++) {
+                    $Options.Add((New-Object System.Management.Automation.Host.ChoiceDescription $Choices[$ChoiceIndex]))
+                }
+                
+                # Prompt user
+                $Result = $Host.UI.PromptForChoice($Title, $Message, $Options, $DefaultChoice)
             
-                # If no is chosen (Index 1), disconnect active Azure account
+                # If 'no' is chosen (Index 1), disconnect active Azure account, otherwise continue
                 switch ($Result) {
                     1 {
                         $AzContext | Disconnect-AzAccount

@@ -186,13 +186,13 @@ Process {
         }
         
         # Deploy VM as parallel jobs
-        foreach ($VM in 1..$VMCount) {
+        $NewAzVM = foreach ($VM in 1..$VMCount) {
             
             # Create random string for VM name
             $RandomString = New-RandomString -CharacterLength $VMRandomStringLength -Alphanumeric
             $RandomVMName = $VMName + $RandomString
 
-            $NewAZVM = New-AzVM `
+            New-AzVM `
                 -Name $RandomVMName `
                 -Location $Location `
                 -Size $VMSize `
@@ -202,11 +202,11 @@ Process {
                 -Credential $VMCredential `
                 -Image $VMImage `
                 -AsJob
-            
-            # Display as table
-            $NewAZVM | Format-Table
         }
-        
+                    
+        # Display as table
+        $NewAZVM | Format-Table
+
         # Get all jobs and wait for completion
         Get-Job | Wait-Job | Format-Table
     }

@@ -121,13 +121,13 @@ Begin {
             while ($AzContext) {
                 
                 # Safety check
-                # Specify label and help text, '&' represents keyboard shortcut, default choice is array index
+                # Specify label and help text in array, '&' represents keyboard shortcut character, default choice is array index
                 $Choices = @(
-                    ("&Yes", "Continue with the active Azure account"),
+                    ("&Yes", "Continue with the active Azure account and subscription"),
                     ("&No", "Disconnect the active Azure account then continue")
                 )
                 $Title = "Active Azure Connection - $($AzContext.Name)"
-                $Message = "Do you want to continue?"
+                $Message = "Do you want to continue with this subscription?"
                 $DefaultChoice = 0
 
                 # Create choice collection and generate choice descriptions from choices array

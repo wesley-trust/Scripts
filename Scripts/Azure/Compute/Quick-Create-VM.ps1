@@ -135,10 +135,8 @@ Begin {
             }
         }
 
-        # If no active connection, connect to Azure with any custom parameters
+        # If no active connection, build parameters and connect to Azure
         if (!$AzContext) {
-            
-            # Build custom parameters
             $CustomParameters = @{}
             if ($AzADTenantID) {
                 $CustomParameters += @{
@@ -155,7 +153,6 @@ Begin {
                     Credential = $AzCredential
                 }
             }
-
             Connect-AzAccount @CustomParameters -ErrorAction Ignore | Tee-Object -Variable AzAccount
             
             # If connection fails, retry without specified parameters
@@ -203,7 +200,7 @@ Process {
                 -Image $VMImage `
                 -AsJob
         }
-                    
+
         # Display as table
         $NewAZVM | Format-Table
 

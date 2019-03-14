@@ -24,12 +24,17 @@ Param(
     [Parameter(
         Mandatory = $false
     )]
-    [pscredential]
+    [string]
+    $AzADDomain,
+    [Parameter(
+        Mandatory = $false
+    )]
+    [string]
     $AzADTenantID,
     [Parameter(
         Mandatory = $false
     )]
-    [pscredential]
+    [string]
     $AzSubscriptionID,
     [Parameter(
         Mandatory = $false

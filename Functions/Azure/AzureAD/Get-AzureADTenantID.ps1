@@ -17,7 +17,7 @@ function Get-AzureADTenantID {
     Param(
         [Parameter(
             Mandatory = $false,
-            HelpMessage = "Specify the Azure AD domain to query"
+            HelpMessage = "Specify the Azure AD domain to query for a valid tenant and return ID"
         )]
         [string]
         $AzureADDomain
@@ -40,19 +40,33 @@ function Get-AzureADTenantID {
             $OpenIDConfig = "/.well-known/openid-configuration"
             $QueryURL = "$MicrosoftLogin$AzureADDomain$OpenIDConfig"
             
-            # Query
-            $WebRequest = Invoke-WebRequest $QueryURL
-
-            # Check if query was successful
-            if ($WebRequest.StatusCode -eq "200"){
-                $TenantId = $WebRequest.Content.Split("/")[3]
+            # Query for valid tenant, catching terminating error, checking for correct GUID length
+            try {
+                $WebRequest = Invoke-WebRequest $QueryURL
+                if ($WebRequest.StatusCode -eq "200") {
+                    $TenantId = $WebRequest.Content.Split("/")[3]
+                    if ($TenantID.Length -eq 36) {
+                        $TenantDiscovered = $true
+                    }
+                    else {
+                        $TenantId = $null
+                        $ErrorMessage = "Query has not returned a valid 36 character GUID."
+                        Write-Error $ErrorMessage
+                        throw $ErrorMessage
+                    }
+                }
             }
-            else {
-                $ErrorMessage = "No Azure AD tenant for $AzureADDomain"
-                Write-Error $ErrorMessage
+            catch {
+                $TenantDiscovered = $false
             }
 
-            return $TenantId
+            # Build object
+            $TenantObject = [PSCustomObject]@{
+                Domain           = $AzureADDomain
+                TenantDiscovered = $TenantDiscovered
+                TenantID         = $TenantId
+            }
+            return $TenantObject
         }
         Catch {
             Write-Error -Message $_.exception

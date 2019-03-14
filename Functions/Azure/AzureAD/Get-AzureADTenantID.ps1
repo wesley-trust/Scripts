@@ -49,6 +49,7 @@ function Get-AzADTenantID {
                         $TenantDiscovered = $true
                     }
                     else {
+                        $TenantDiscovered = $false
                         $TenantId = $null
                         $ErrorMessage = "Query has not returned a valid 36 character GUID."
                         Write-Error $ErrorMessage

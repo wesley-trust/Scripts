@@ -12,7 +12,7 @@
 .Example
     
 #>
-function Get-AzureADTenantID {
+function Get-AzADTenantID {
     [CmdletBinding()]
     Param(
         [Parameter(
@@ -20,7 +20,7 @@ function Get-AzureADTenantID {
             HelpMessage = "Specify the Azure AD domain to query for a valid tenant and return ID"
         )]
         [string]
-        $AzureADDomain
+        $AzADDomain
     )
 
     Begin {
@@ -38,7 +38,7 @@ function Get-AzureADTenantID {
             # Variables
             $MicrosoftLogin = "https://login.microsoftonline.com/"
             $OpenIDConfig = "/.well-known/openid-configuration"
-            $QueryURL = "$MicrosoftLogin$AzureADDomain$OpenIDConfig"
+            $QueryURL = "$MicrosoftLogin$AzADDomain$OpenIDConfig"
             
             # Query for valid tenant, catching terminating error, checking for correct GUID length
             try {
@@ -62,7 +62,7 @@ function Get-AzureADTenantID {
 
             # Build object
             $TenantObject = [PSCustomObject]@{
-                Domain           = $AzureADDomain
+                Domain           = $AzADDomain
                 TenantDiscovered = $TenantDiscovered
                 TenantID         = $TenantId
             }

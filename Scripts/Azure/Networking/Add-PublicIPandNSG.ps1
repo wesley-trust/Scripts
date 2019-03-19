@@ -36,19 +36,7 @@ Param(
     [Parameter(
         Mandatory = $false
     )]
-    [string]$ResourceGroupName,
-    [Parameter(
-        Mandatory = $false
-    )]
-    [string]$VariableResourceGroupName,
-    [Parameter(
-        Mandatory = $false
-    )]
-    [string]$VariableNetworkSecurityGroupName,
-    [Parameter(
-        Mandatory = $false
-    )]
-    [string]$VariablePublicIPAddressName
+    [string]$ResourceGroupName
 )
 
 try {
@@ -102,52 +90,61 @@ Catch {
 }
 
 try {
-    # Check if there is a recovery plan context
-    if ($RecoveryPlanContext){
-        
-        # Get variable values from Azure Automation
-        $RecoveryPlanResourceGroupName  = Get-AzAutomationVariable `
-            -AutomationAccountName $ConnectionName `
-            -Name $RecoveryPlanContext.RecoveryPlanName+$VariableResourceGroupName `
-            -ResourceGroupName $ResourceGroupName
-        
-        $RecoveryPlanNetworkSecurityGroupName = Get-AzAutomationVariable `
-            -AutomationAccountName $ConnectionName `
-            -Name $RecoveryPlanContext.RecoveryPlanName+$VariableNetworkSecurityGroupName `
-            -ResourceGroupName $ResourceGroupName
 
-        $RecoveryPlanPublicIPAddressName = Get-AzAutomationVariable `
-            -AutomationAccountName $ConnectionName `
-            -Name $RecoveryPlanContext.RecoveryPlanName+$VariablePublicIPAddressName `
-            -ResourceGroupName $ResourceGroupName
+    # Check if there is a recovery plan context
+    if ($RecoveryPlanContext) {
+
+        # Filter to just the note properties and expand the nested property, which is the VMID
+        $VMIDs = $RecoveryPlanContext.VmMap | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name
 
         # For each VM identifier in the array of VMs
-        foreach ($VMID in $RecoveryPlanContext.VmMap){
-            
+        foreach ($VMID in $VMIDs) {
+
+            # Get variable values from Azure Automation
+            $RecoveryPlanVMResourceGroupName = Get-AzAutomationVariable `
+                -AutomationAccountName $ConnectionName `
+                -Name ($RecoveryPlanContext.RecoveryPlanName+"-"+$RecoveryPlanContext.VmMap.$VMID.RoleName+"-rg") `
+                -ResourceGroupName $ResourceGroupName
+
+            $RecoveryPlanVMNetworkSecurityGroupName = Get-AzAutomationVariable `
+                -AutomationAccountName $ConnectionName `
+                -Name ($RecoveryPlanContext.RecoveryPlanName+"-"+$RecoveryPlanContext.VmMap.$VMID.RoleName+"-nsg") `
+                -ResourceGroupName $ResourceGroupName
+
+            $RecoveryPlanVMPublicIPAddressName = Get-AzAutomationVariable `
+                -AutomationAccountName $ConnectionName `
+                -Name ($RecoveryPlanContext.RecoveryPlanName+"-"+$RecoveryPlanContext.VmMap.$VMID.RoleName+"-ip") `
+                -ResourceGroupName $ResourceGroupName
+
+            if ($RecoveryPlanContext.FailoverType -eq "Test") {
+                $VMSuffix = "-Test"
+            }
+
             # Get Virtual Machine
             $AzVM = Get-AzVM `
                 -ResourceGroupName $RecoveryPlanContext.VmMap.$VMID.ResourceGroupName `
-                -Name $RecoveryPlanContext.VmMap.$VMID.RoleName
-            
+                -Name ($RecoveryPlanContext.VmMap.$VMID.RoleName+$VMSuffix)
+
             # Get NIC for VM
-            $VMNetworkInterface = Get-AzResource -ResourceId $AzVM.NetworkInterfaceIDs[0]
+            $VMNetworkInterface = Get-AzResource -ResourceId $AzVM.NetworkProfile.NetworkInterfaces.id
             $VMNetworkInterfaceObject = Get-AzNetworkInterface `
                 -Name $VMNetworkInterface.Name `
                 -ResourceGroupName $VMNetworkInterface.ResourceGroupName
             
-            if ($RecoveryPlanContext.FailoverType -eq "Test"){
+            # Check type of failover
+            if ($RecoveryPlanContext.FailoverType -ne "Test") {
                 
                 # Create new Public IP
-                $PublicIPObject = New-AzPublicIpAddress `
+                <#                 $PublicIPObject = New-AzPublicIpAddress `
                     -Name $AzVM.Name `
                     -ResourceGroupName $RecoveryPlanContext.VmMap.$VMID.ResourceGroupName `
                     -Location $AzVM.Location `
                     -AllocationMethod Static `
-                    -Confirm:$false
+                    -Confirm:$false #>
             }
             else {
                 $PublicIPObject = Get-AzPublicIpAddress `
-                    -Name $RecoveryPlanPublicIPAddressName `
+                    -Name $RecoveryPlanVMPublicIPAddressName `
                     -ResourceGroupName $RecoveryPlanContext.VmMap.$VMID.ResourceGroupName
             }
 
@@ -157,10 +154,10 @@ try {
             }
             
             # If there are NSG values, add to object
-            if (($RecoveryPlanNetworkSecurityGroupName.value) -And ($RecoveryPlanResourceGroupName.value)) {
+            if ($RecoveryPlanVMNetworkSecurityGroupName.Value -And $RecoveryPlanVMResourceGroupName.Value) {
                 $NetworkSecurityGroupObject = Get-AzNetworkSecurityGroup `
-                    -Name $RecoveryPlanNetworkSecurityGroupName.Value `
-                    -ResourceGroupName $RecoveryPlanResourceGroupName.Value
+                    -Name $RecoveryPlanVMNetworkSecurityGroupName.Value `
+                    -ResourceGroupName $RecoveryPlanVMResourceGroupName.Value
                 
                 # Update object
                 $VMNetworkInterfaceObject.NetworkSecurityGroup = $NetworkSecurityGroupObject

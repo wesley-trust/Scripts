@@ -116,20 +116,17 @@ try {
                 -Name ($RecoveryPlanContext.RecoveryPlanName+"-"+$RecoveryPlanContext.VmMap.$VMID.RoleName+"-ip") `
                 -ResourceGroupName $ResourceGroupName
 
-            if ($RecoveryPlanContext.FailoverType -eq "Test") {
-                $VMSuffix = "-Test"
-            }
-
             # Get Virtual Machine
             $AzVM = Get-AzVM `
                 -ResourceGroupName $RecoveryPlanContext.VmMap.$VMID.ResourceGroupName `
-                -Name ($RecoveryPlanContext.VmMap.$VMID.RoleName+$VMSuffix)
+                -Name $RecoveryPlanContext.VmMap.$VMID.RoleName
 
             # Get NIC for VM
             $VMNetworkInterface = Get-AzResource -ResourceId $AzVM.NetworkProfile.NetworkInterfaces.id
+
             $VMNetworkInterfaceObject = Get-AzNetworkInterface `
-                -Name $VMNetworkInterface.Name `
-                -ResourceGroupName $VMNetworkInterface.ResourceGroupName
+                -Name ($VMNetworkInterface.Name) `
+                -ResourceGroupName ($VMNetworkInterface.ResourceGroupName)
             
             # Check type of failover
             if ($RecoveryPlanContext.FailoverType -ne "Test") {
@@ -144,7 +141,7 @@ try {
             }
             else {
                 $PublicIPObject = Get-AzPublicIpAddress `
-                    -Name $RecoveryPlanVMPublicIPAddressName `
+                    -Name $RecoveryPlanVMPublicIPAddressName.Value `
                     -ResourceGroupName $RecoveryPlanContext.VmMap.$VMID.ResourceGroupName
             }
 

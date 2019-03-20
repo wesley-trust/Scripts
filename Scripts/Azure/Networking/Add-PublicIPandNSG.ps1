@@ -32,6 +32,10 @@ Param(
     [Parameter(
         Mandatory = $false
     )]
+    [string]$AutomationAccountName,
+    [Parameter(
+        Mandatory = $false
+    )]
     [string]$AzSubscriptionID,
     [Parameter(
         Mandatory = $false
@@ -94,26 +98,27 @@ try {
     # Check if there is a recovery plan context
     if ($RecoveryPlanContext) {
 
-        # Filter to just the note properties and expand the nested property, which is the VMID
+        # Filter to just the note properties then expand the nested property, selecting the 'name' which is the VM identifier
         $VMIDs = $RecoveryPlanContext.VmMap | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name
 
         # For each VM identifier in the array of VMs
         foreach ($VMID in $VMIDs) {
-
-            # Get variable values from Azure Automation
+            
+            # Get variable values from Azure Automation, in the format "RecoveryPlanName-VMName-ResourceType"
+            # When testing failover, the VM name will be suffixed with "-test"
             $RecoveryPlanVMResourceGroupName = Get-AzAutomationVariable `
-                -AutomationAccountName $ConnectionName `
-                -Name ($RecoveryPlanContext.RecoveryPlanName+"-"+$RecoveryPlanContext.VmMap.$VMID.RoleName+"-rg") `
+                -AutomationAccountName $AutomationAccountName `
+                -Name "$($RecoveryPlanContext.RecoveryPlanName)-$($RecoveryPlanContext.VmMap.$VMID.RoleName)-rg" `
                 -ResourceGroupName $ResourceGroupName
 
             $RecoveryPlanVMNetworkSecurityGroupName = Get-AzAutomationVariable `
-                -AutomationAccountName $ConnectionName `
-                -Name ($RecoveryPlanContext.RecoveryPlanName+"-"+$RecoveryPlanContext.VmMap.$VMID.RoleName+"-nsg") `
+                -AutomationAccountName $AutomationAccountName `
+                -Name "$($RecoveryPlanContext.RecoveryPlanName)-$($RecoveryPlanContext.VmMap.$VMID.RoleName)-nsg" `
                 -ResourceGroupName $ResourceGroupName
 
             $RecoveryPlanVMPublicIPAddressName = Get-AzAutomationVariable `
-                -AutomationAccountName $ConnectionName `
-                -Name ($RecoveryPlanContext.RecoveryPlanName+"-"+$RecoveryPlanContext.VmMap.$VMID.RoleName+"-ip") `
+                -AutomationAccountName $AutomationAccountName `
+                -Name "$($RecoveryPlanContext.RecoveryPlanName)-$($RecoveryPlanContext.VmMap.$VMID.RoleName)-ip" `
                 -ResourceGroupName $ResourceGroupName
 
             # Get Virtual Machine
@@ -123,10 +128,9 @@ try {
 
             # Get NIC for VM
             $VMNetworkInterface = Get-AzResource -ResourceId $AzVM.NetworkProfile.NetworkInterfaces.id
-
             $VMNetworkInterfaceObject = Get-AzNetworkInterface `
-                -Name ($VMNetworkInterface.Name) `
-                -ResourceGroupName ($VMNetworkInterface.ResourceGroupName)
+                -Name $VMNetworkInterface.Name `
+                -ResourceGroupName $VMNetworkInterface.ResourceGroupName
             
             # Check type of failover
             if ($RecoveryPlanContext.FailoverType -ne "Test") {
@@ -140,16 +144,17 @@ try {
                     -Confirm:$false #>
             }
             else {
+
                 $PublicIPObject = Get-AzPublicIpAddress `
                     -Name $RecoveryPlanVMPublicIPAddressName.Value `
-                    -ResourceGroupName $RecoveryPlanContext.VmMap.$VMID.ResourceGroupName
+                    -ResourceGroupName $RecoveryPlanVMResourceGroupName.Value
             }
 
             # If there is a public IP, add to object
             If ($PublicIPObject) {
                 $VMNetworkInterfaceObject.IpConfigurations[0].PublicIpAddress = $PublicIPObject
             }
-            
+
             # If there are NSG values, add to object
             if ($RecoveryPlanVMNetworkSecurityGroupName.Value -And $RecoveryPlanVMResourceGroupName.Value) {
                 $NetworkSecurityGroupObject = Get-AzNetworkSecurityGroup `

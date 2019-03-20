@@ -95,17 +95,17 @@ Catch {
 
 try {
 
-    # Check if there is a recovery plan context
+    # Check if there is a recovery plan context inserted from Azure Site Recovery
     if ($RecoveryPlanContext) {
 
-        # Filter to just the note properties then expand the nested property, selecting the 'name' which is the VM identifier
+        # Filter to just the note properties, then expand the nested property selecting the 'name', which is the VM identifier
         $VMIDs = $RecoveryPlanContext.VmMap | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name
 
         # For each VM identifier in the array of VMs
         foreach ($VMID in $VMIDs) {
             
             # Get variable values from Azure Automation, in the format "RecoveryPlanName-VMName-ResourceType"
-            # When testing failover, the VM name will be suffixed with "-test"
+            # When testing failover, the VM name will be suffixed "-test", which can be used to specify test variables
             $RecoveryPlanVMResourceGroupName = Get-AzAutomationVariable `
                 -AutomationAccountName $AutomationAccountName `
                 -Name "$($RecoveryPlanContext.RecoveryPlanName)-$($RecoveryPlanContext.VmMap.$VMID.RoleName)-rg" `
@@ -121,56 +121,68 @@ try {
                 -Name "$($RecoveryPlanContext.RecoveryPlanName)-$($RecoveryPlanContext.VmMap.$VMID.RoleName)-ip" `
                 -ResourceGroupName $ResourceGroupName
 
-            # Get Virtual Machine
-            $AzVM = Get-AzVM `
-                -ResourceGroupName $RecoveryPlanContext.VmMap.$VMID.ResourceGroupName `
-                -Name $RecoveryPlanContext.VmMap.$VMID.RoleName
-
-            # Get NIC for VM
-            $VMNetworkInterface = Get-AzResource -ResourceId $AzVM.NetworkProfile.NetworkInterfaces.id
-            $VMNetworkInterfaceObject = Get-AzNetworkInterface `
-                -Name $VMNetworkInterface.Name `
-                -ResourceGroupName $VMNetworkInterface.ResourceGroupName
-            
-            # Check type of failover
-            if ($RecoveryPlanContext.FailoverType -ne "Test") {
+            # If there is an automation variable for the resource group name
+            if ($RecoveryPlanVMResourceGroupName) {
                 
-                # Create new Public IP
-                <#                 $PublicIPObject = New-AzPublicIpAddress `
-                    -Name $AzVM.Name `
+                # Get the failover Virtual Machine object
+                $AzVM = Get-AzVM `
                     -ResourceGroupName $RecoveryPlanContext.VmMap.$VMID.ResourceGroupName `
-                    -Location $AzVM.Location `
-                    -AllocationMethod Static `
-                    -Confirm:$false #>
+                    -Name $RecoveryPlanContext.VmMap.$VMID.RoleName
+
+                # Get the failover NIC from the VM object
+                $VMNetworkInterface = Get-AzResource -ResourceId $AzVM.NetworkProfile.NetworkInterfaces.id
+                $VMNetworkInterfaceObject = Get-AzNetworkInterface `
+                    -Name $VMNetworkInterface.Name `
+                    -ResourceGroupName $VMNetworkInterface.ResourceGroupName
+                
+                # Check type of failover, in case an action should be performed
+                if ($RecoveryPlanContext.FailoverType -ne "Test") {
+                    
+                    # Create new Public IP for failover testing only
+                    <#                 $PublicIPObject = New-AzPublicIpAddress `
+                        -Name $AzVM.Name `
+                        -ResourceGroupName $RecoveryPlanContext.VmMap.$VMID.ResourceGroupName `
+                        -Location $AzVM.Location `
+                        -AllocationMethod Static `
+                        -Confirm:$false #>
+                }
+                else {
+
+                    # If there is an automation variable, get exisiting public IP
+                    if ($RecoveryPlanVMPublicIPAddressName) {
+                        $PublicIPObject = Get-AzPublicIpAddress `
+                            -Name $RecoveryPlanVMPublicIPAddressName.Value `
+                            -ResourceGroupName $RecoveryPlanVMResourceGroupName.Value
+                    }
+                }
+
+                # If there is a public IP, add to the network interface object
+                If ($PublicIPObject) {
+                    $VMNetworkInterfaceObject.IpConfigurations[0].PublicIpAddress = $PublicIPObject
+                }
+
+                # If there is an automation variable for the NSG, get the NSG object
+                if ($RecoveryPlanVMNetworkSecurityGroupName) {
+                    $NetworkSecurityGroupObject = Get-AzNetworkSecurityGroup `
+                        -Name $RecoveryPlanVMNetworkSecurityGroupName.Value `
+                        -ResourceGroupName $RecoveryPlanVMResourceGroupName.Value
+                    
+                    # Update the network interface object with the NSG
+                    $VMNetworkInterfaceObject.NetworkSecurityGroup = $NetworkSecurityGroupObject
+                }
+                
+                # Update VM network interface
+                Set-AzNetworkInterface -NetworkInterface $VMNetworkInterfaceObject
             }
             else {
-
-                $PublicIPObject = Get-AzPublicIpAddress `
-                    -Name $RecoveryPlanVMPublicIPAddressName.Value `
-                    -ResourceGroupName $RecoveryPlanVMResourceGroupName.Value
+                $ErrorMessage = "No Azure Automation variable defined for the Resource Group Name"
+                Write-Error $ErrorMessage
+                throw $ErrorMessage
             }
-
-            # If there is a public IP, add to object
-            If ($PublicIPObject) {
-                $VMNetworkInterfaceObject.IpConfigurations[0].PublicIpAddress = $PublicIPObject
-            }
-
-            # If there are NSG values, add to object
-            if ($RecoveryPlanVMNetworkSecurityGroupName.Value -And $RecoveryPlanVMResourceGroupName.Value) {
-                $NetworkSecurityGroupObject = Get-AzNetworkSecurityGroup `
-                    -Name $RecoveryPlanVMNetworkSecurityGroupName.Value `
-                    -ResourceGroupName $RecoveryPlanVMResourceGroupName.Value
-                
-                # Update object
-                $VMNetworkInterfaceObject.NetworkSecurityGroup = $NetworkSecurityGroupObject
-            }
-            
-            # Update VM network interface
-            Set-AzNetworkInterface -NetworkInterface $VMNetworkInterfaceObject
         }
     }
     else {
-        $ErrorMessage = "No recovery plan object"
+        $ErrorMessage = "No Recovery Plan Context from Azure Site Recovery available"
         Write-Error $ErrorMessage
         throw $ErrorMessage
     }

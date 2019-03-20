@@ -134,26 +134,12 @@ try {
                 $VMNetworkInterfaceObject = Get-AzNetworkInterface `
                     -Name $VMNetworkInterface.Name `
                     -ResourceGroupName $VMNetworkInterface.ResourceGroupName
-                
-                # Check type of failover, in case an action should be performed
-                if ($RecoveryPlanContext.FailoverType -ne "Test") {
-                    
-                    # Create new Public IP for failover testing only
-                    <#                 $PublicIPObject = New-AzPublicIpAddress `
-                        -Name $AzVM.Name `
-                        -ResourceGroupName $RecoveryPlanContext.VmMap.$VMID.ResourceGroupName `
-                        -Location $AzVM.Location `
-                        -AllocationMethod Static `
-                        -Confirm:$false #>
-                }
-                else {
 
-                    # If there is an automation variable, get exisiting public IP
-                    if ($RecoveryPlanVMPublicIPAddressName) {
-                        $PublicIPObject = Get-AzPublicIpAddress `
-                            -Name $RecoveryPlanVMPublicIPAddressName.Value `
-                            -ResourceGroupName $RecoveryPlanVMResourceGroupName.Value
-                    }
+                # If there is an automation variable, get exisiting public IP
+                if ($RecoveryPlanVMPublicIPAddressName) {
+                    $PublicIPObject = Get-AzPublicIpAddress `
+                        -Name $RecoveryPlanVMPublicIPAddressName.Value `
+                        -ResourceGroupName $RecoveryPlanVMResourceGroupName.Value
                 }
 
                 # If there is a public IP, add to the network interface object

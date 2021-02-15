@@ -40,7 +40,12 @@ function Connect-MSGraphAPI {
     )
     Begin {
         try {
-
+            # Variables
+            $SigninUrl = "https://login.microsoft.com"
+            $ResourceUrl = "https://graph.microsoft.com"
+                        
+            # Force TLS 1.2
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         }
         catch {
             Write-Error -Message $_.Exception
@@ -49,13 +54,6 @@ function Connect-MSGraphAPI {
     }
     Process {
         try {
-            # Variables
-            $SigninUrl = "https://login.microsoft.com"
-            $ResourceUrl = "https://graph.microsoft.com"
-            
-            # Force TLS 1.2
-            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-            
             # Compose and invoke REST request
             $Body = @{
                 grant_type    = "client_credentials";
@@ -64,11 +62,16 @@ function Connect-MSGraphAPI {
                 client_secret = $ClientSecret 
             }
             $OAuth2 = Invoke-RestMethod -Method Post -Uri $SigninUrl/$TenantDomain/oauth2/token?api-version=1.0 -Body $Body
-            
+
+            # If an access token is returned, build and return an access token object
             if ($OAuth2.access_token) {
-                # Return the access token
                 Write-Host "`nSuccessfully obtained access token`n"
-                $OAuth2.access_token
+                $ObjectProperties = [pscustomobject]@{
+                    TenantDomain = $TenantDomain
+                    ClientID     = $ClientID
+                    AccessToken  = $OAuth2.access_token
+                }
+                $ObjectProperties
             }
             else {
                 $ErrorMessage = "Unable to obtain access token"

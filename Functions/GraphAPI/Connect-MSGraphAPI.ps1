@@ -24,16 +24,20 @@ function Connect-MSGraphAPI {
     param (
         [parameter(
             Mandatory = $true,
+            ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "Client ID for the Azure AD service principal with Conditional Access Graph permissions"
         )]
         [string]$ClientID,
+        
         [parameter(
             Mandatory = $true,
+            ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "Client secret for the Azure AD service principal with Conditional Access Graph permissions"
         )]
         [string]$ClientSecret,
         [parameter(
             Mandatory = $true,
+            ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "The initial domain (onmicrosoft.com) of the tenant"
         )]
         [string]$TenantDomain

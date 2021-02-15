@@ -1,8 +1,8 @@
 <#
 .Synopsis
-    Function to connect to Microsoft Graph using a service principal
+    Function to connect to Microsoft Graph using a service principal and obtain and an access token
 .Description
-    Connects to Microsoft Graph and returns an access token
+    Connects to Microsoft Graph and returns an access token object, accepts pipeline input for multiple token requests
 .PARAMETER ClientID
     Client ID for the Azure AD service principal with Conditional Access Graph permissions
 .PARAMETER ClientSecret
@@ -16,27 +16,28 @@
 .NOTES
     Reference: https://danielchronlund.com/2018/11/19/fetch-data-from-microsoft-graph-with-powershell-paging-support/
 .Example
-    $MSGraphAPIAccessToken = Connect-MSGraphAPI -ClientID "" -ClientSecret "" -TenantDomain ""
+    $MSGraphAccessToken = Get-MSGraphAccessToken -ClientID "" -ClientSecret "" -TenantDomain ""
+    $MSGraphAccessToken = $ServicePrincipalObject | Get-MSGraphAccessToken
 #>
 
-function Connect-MSGraphAPI {
+function Get-MSGraphAccessToken {
     [cmdletbinding()]
     param (
         [parameter(
-            Mandatory = $true,
+            Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "Client ID for the Azure AD service principal with Conditional Access Graph permissions"
         )]
         [string]$ClientID,
         
         [parameter(
-            Mandatory = $true,
+            Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "Client secret for the Azure AD service principal with Conditional Access Graph permissions"
         )]
         [string]$ClientSecret,
         [parameter(
-            Mandatory = $true,
+            Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "The initial domain (onmicrosoft.com) of the tenant"
         )]
@@ -69,7 +70,6 @@ function Connect-MSGraphAPI {
 
             # If an access token is returned, build and return an access token object
             if ($OAuth2.access_token) {
-                Write-Host "`nSuccessfully obtained access token`n"
                 $ObjectProperties = [pscustomobject]@{
                     TenantDomain = $TenantDomain
                     ClientID     = $ClientID
@@ -78,14 +78,14 @@ function Connect-MSGraphAPI {
                 $ObjectProperties
             }
             else {
-                $ErrorMessage = "Unable to obtain access token"
+                $ErrorMessage = "Unable to obtain an access token for $TenantDomain but an exception has not occurred"
                 Write-Error $ErrorMessage
-                throw $ErrorMessage
             }
         }
         catch {
+            $ErrorMessage = "Unable to obtain an access token for $TenantDomain, an exception has occurred which may have more information"
+            Write-Error $ErrorMessage
             Write-Error -Message $_.Exception
-            throw $_.exception
         }
     }
     End {

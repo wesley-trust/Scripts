@@ -71,7 +71,7 @@ function Connect-MSGraphAPI {
                 $OAuth2.access_token
             }
             else {
-                $ErrorMessage = "`nUnable to obtain access token`n"
+                $ErrorMessage = "Unable to obtain access token"
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
             }

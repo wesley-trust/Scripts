@@ -13,8 +13,12 @@
     Client ID for the Azure AD service principal with Conditional Access Graph permissions
 .PARAMETER ClientSecret
     Client secret for the Azure AD service principal with Conditional Access Graph permissions
+.PARAMETER TenantName
+    The initial domain (onmicrosoft.com) of the tenant
 .PARAMETER FilePath
-    The file path where the new JSON file will be created. When not specified, this defaults to the current directory.
+    The file path where the new JSON file will be created. When not specified, this defaults to the current directory
+.PARAMETER AccessToken
+    The access token, obtained from executing Get-MSGraphAccessToken
 .INPUTS
     None
 .OUTPUTS
@@ -28,6 +32,7 @@
                 FilePath = ""
     }
     Export-CAPolicy @Parameters
+    $AccessToken | Export-CAPolicy
 #>
 
 function Export-CAPolicy {
@@ -60,7 +65,7 @@ function Export-CAPolicy {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "The file path where the new JSON file will be created. When not specified, this defaults to the current directory."
+            HelpMessage = "The file path where the new JSON file will be created. When not specified, this defaults to the current directory"
         )]
         [string]$FilePath
     )
@@ -70,7 +75,7 @@ function Export-CAPolicy {
             $ResourceUrl = "https://graph.microsoft.com"
             $Method = "Get"
             $Uri = "beta/identity/conditionalAccess/policies"
-            
+
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         }
@@ -98,7 +103,7 @@ function Export-CAPolicy {
 
                 # Cleanup file
                 $CleanUp = Get-Content $FilePath | Select-String -Pattern '"id":', '"createdDateTime":', '"modifiedDateTime":' -notmatch
-            
+
                 $CleanUp | Out-File -Force:$true -FilePath $FilePath
             }
             else {

@@ -68,13 +68,9 @@ function Export-CAPolicy {
         try {
             # Variables
             $ResourceUrl = "https://graph.microsoft.com"
-            $ContentType = "application/json"
             $Method = "Get"
             $Uri = "beta/identity/conditionalAccess/policies"
-            $HeaderParameters = @{
-                "Content-Type"  = "application\json"
-                "Authorization" = "Bearer $AccessToken"
-            }
+            
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         }

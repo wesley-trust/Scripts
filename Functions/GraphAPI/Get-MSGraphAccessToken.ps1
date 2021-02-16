@@ -24,20 +24,19 @@ function Get-MSGraphAccessToken {
     [cmdletbinding()]
     param (
         [parameter(
-            Mandatory = $false,
+            Mandatory = $true,
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "Client ID for the Azure AD service principal with Conditional Access Graph permissions"
         )]
         [string]$ClientID,
-        
         [parameter(
-            Mandatory = $false,
+            Mandatory = $true,
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "Client secret for the Azure AD service principal with Conditional Access Graph permissions"
         )]
         [string]$ClientSecret,
         [parameter(
-            Mandatory = $false,
+            Mandatory = $true,
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "The initial domain (onmicrosoft.com) of the tenant"
         )]
@@ -48,6 +47,8 @@ function Get-MSGraphAccessToken {
             # Variables
             $SigninUrl = "https://login.microsoft.com"
             $ResourceUrl = "https://graph.microsoft.com"
+            $GrantType = "client_credentials"
+            $Uri = "oauth2/token?api-version=1.0"
                         
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -61,12 +62,12 @@ function Get-MSGraphAccessToken {
         try {
             # Compose and invoke REST request
             $Body = @{
-                grant_type    = "client_credentials";
+                grant_type    = $GrantType;
                 resource      = $ResourceUrl;
                 client_id     = $ClientID;
                 client_secret = $ClientSecret 
             }
-            $OAuth2 = Invoke-RestMethod -Method Post -Uri $SigninUrl/$TenantDomain/oauth2/token?api-version=1.0 -Body $Body
+            $OAuth2 = Invoke-RestMethod -Method Post -Uri $SigninUrl/$TenantDomain/$Uri -Body $Body
 
             # If an access token is returned, build and return an access token object
             if ($OAuth2.access_token) {

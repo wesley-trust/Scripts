@@ -29,6 +29,7 @@
     $Parameters = @{
                 ClientID = ""
                 ClientSecret = ""
+                TenantDomain = ""
                 FilePath = ""
     }
     Export-CAPolicy @Parameters

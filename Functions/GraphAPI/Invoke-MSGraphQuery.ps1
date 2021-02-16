@@ -6,7 +6,7 @@
 .PARAMETER Method
     The HTTP method for the Graph call, like GET, POST, PUT, PATCH, DELETE. Default is GET
 .PARAMETER Uri
-    The Uniform Resource Identifier for the Microsoft Graph API call, for example: "/v1.0/users/"
+    The Uniform Resource Identifier for the Microsoft Graph API call, for example: "v1.0/users/"
 .PARAMETER Body
     The request body of the Microsoft Graph API call. Used with methods such as POST, PUT and PATCH. Not required for GET.
 .PARAMETER AccessToken

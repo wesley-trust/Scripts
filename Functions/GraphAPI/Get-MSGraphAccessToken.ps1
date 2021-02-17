@@ -45,7 +45,7 @@ function Get-MSGraphAccessToken {
     Begin {
         try {
             # Variables
-            $SigninUrl = "https://login.microsoft.com"
+            $AuthenticationUrl = "https://login.microsoft.com"
             $ResourceUrl = "https://graph.microsoft.com"
             $GrantType = "client_credentials"
             $Uri = "oauth2/token?api-version=1.0"
@@ -67,7 +67,10 @@ function Get-MSGraphAccessToken {
                 client_id     = $ClientID;
                 client_secret = $ClientSecret 
             }
-            $OAuth2 = Invoke-RestMethod -Method Post -Uri $SigninUrl/$TenantDomain/$Uri -Body $Body
+            $OAuth2 = Invoke-RestMethod `
+                -Method Post `
+                -Uri $AuthenticationUrl/$TenantDomain/$Uri `
+                -Body $Body
 
             # If an access token is returned, build and return an access token object
             if ($OAuth2.access_token) {

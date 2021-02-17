@@ -56,10 +56,7 @@ function Invoke-MSGraphQuery {
             # Variables
             $ResourceUrl = "https://graph.microsoft.com"
             $ContentType = "application/json"
-            $HeaderParameters = @{
-                "Content-Type"  = "application\json"
-                "Authorization" = "Bearer $AccessToken"
-            }
+
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         }
@@ -72,6 +69,11 @@ function Invoke-MSGraphQuery {
         try {
             if ($AccessToken) {
 
+                $HeaderParameters = @{
+                    "Content-Type"  = "application\json"
+                    "Authorization" = "Bearer $AccessToken"
+                }
+
                 # Create an empty array to store the result
                 $QueryRequest = @()
                 $QueryResult = @()
@@ -80,7 +82,7 @@ function Invoke-MSGraphQuery {
                 if ($Method -eq "GET") {
                     $QueryRequest = Invoke-RestMethod `
                         -Headers $HeaderParameters `
-                        -Uri $ResourceUrl/$Uri `
+                        -Uri "$ResourceUrl/$Uri" `
                         -UseBasicParsing `
                         -Method $Method `
                         -ContentType $ContentType

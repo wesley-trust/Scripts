@@ -181,7 +181,7 @@ function Import-CAPolicy {
                     }
                 }
                 else {
-                    $ErrorMessage = "No Conditional Access policies specified in file"
+                    $ErrorMessage = "No Conditional Access policies to be imported, check the import file"
                     Write-Error $ErrorMessage
                     throw $ErrorMessage
                 }

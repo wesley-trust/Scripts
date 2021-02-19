@@ -114,7 +114,7 @@ function Import-CAPolicy {
 
             # Variables
             $Method = "Post"
-            $ApiVersion = "beta"
+            $ApiVersion = "beta" # If preview features are in use, the "beta" API must be used
             $Uri = "identity/conditionalAccess/policies"
 
             # Force TLS 1.2
@@ -135,7 +135,7 @@ function Import-CAPolicy {
                     -TenantDomain $TenantDomain
             }
             if ($AccessToken) {
-                
+
                 # Change the API version if features in preview are to be excluded
                 if ($ExcludePreviewFeatures) {
                     $ApiVersion = "v1.0"

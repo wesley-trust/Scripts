@@ -19,6 +19,8 @@
     The access token, obtained from executing Get-MSGraphAccessToken
 .PARAMETER FilePath
     The file path (including file name) of where the new JSON file will be created
+.PARAMETER ExcludePreviewFeatures
+    Specify whether to exclude features in preview, a production API version will then be used instead
 .INPUTS
     None
 .OUTPUTS
@@ -66,9 +68,15 @@ function Export-CAPolicy {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "The file path (including file name) of where the new JSON file will be created"
+            HelpMessage = "The file path where the new JSON file will be created"
         )]
-        [string]$FilePath
+        [string]$FilePath,
+        [parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "Specify whether to exclude features in preview, a production API version will then be used instead"
+        )]
+        [switch]$ExcludePreviewFeatures
     )
     Begin {
         try {
@@ -86,7 +94,7 @@ function Export-CAPolicy {
 
             # Variables
             $Method = "Get"
-            $ApiVersion = "v1.0"
+            $ApiVersion = "beta" # If preview features are in use, the "beta" API must be used
             $Uri = "identity/conditionalAccess/policies"
 
             # Force TLS 1.2
@@ -107,6 +115,11 @@ function Export-CAPolicy {
                     -TenantDomain $TenantDomain
             }
             if ($AccessToken) {
+                # Change the API version if features in preview are to be excluded
+                if ($ExcludePreviewFeatures){
+                    $ApiVersion = "v1.0"
+                }
+
                 $Query = $AccessToken | Invoke-MSGraphQuery `
                     -Method $Method `
                     -Uri $ApiVersion/$Uri
@@ -114,12 +127,12 @@ function Export-CAPolicy {
                 # If a response is returned that was not an error
                 if ($Query) {
                     # Sort and export query
-                    $Query | Sort-Object createdDateTime | ConvertTo-Json -Depth 10 | Out-File -Force:$true -FilePath $FilePath
+                    $Query | Sort-Object createdDateTime | ConvertTo-Json -Depth 10 | Out-File -Force:$true -FilePath "$FilePath\$TenantDomain.json"
 
                     # Cleanup file
-                    $CleanUp = Get-Content $FilePath | Select-String -Pattern '"id":', '"createdDateTime":', '"modifiedDateTime":' -notmatch
+                    $CleanUp = Get-Content "$FilePath\$TenantDomain.json" | Select-String -Pattern '"id":', '"createdDateTime":', '"modifiedDateTime":' -notmatch
 
-                    $CleanUp | Out-File -Force:$true -FilePath $FilePath
+                    $CleanUp | Out-File -Force:$true -FilePath "$FilePath\$TenantDomain.json"
                 }
                 else {
                     $ErrorMessage = "Microsoft Graph did not return a valid query"

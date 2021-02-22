@@ -1,8 +1,8 @@
 <#
 .Synopsis
-    Export all Conditional Access policies to JSON
+    Get Conditional Access policies deployed in the Azure AD tenant
 .Description
-    This function exports the Conditional Access policies to JSON using the Microsoft Graph API.
+    This function gets the Conditional Access policies from Azure AD using the Microsoft Graph API.
     The following Microsoft Graph API permissions are required for the service principal used for authentication:
         Policy.ReadWrite.ConditionalAccess
         Policy.Read.All
@@ -17,14 +17,12 @@
     The initial domain (onmicrosoft.com) of the tenant
 .PARAMETER AccessToken
     The access token, obtained from executing Get-MSGraphAccessToken
-.PARAMETER FilePath
-    The file path (including file name) of where the new JSON file will be created
 .PARAMETER ExcludePreviewFeatures
     Specify whether to exclude features in preview, a production API version will then be used instead
 .INPUTS
-    None
-.OUTPUTS
     JSON file with all Conditional Access policies
+.OUTPUTS
+    None
 .NOTES
     Reference: https://danielchronlund.com/2018/11/19/fetch-data-from-microsoft-graph-with-powershell-paging-support/
 .Example
@@ -32,13 +30,12 @@
                 ClientID = ""
                 ClientSecret = ""
                 TenantDomain = ""
-                FilePath = ""
     }
-    Export-CAPolicy @Parameters
-    $AccessToken | Export-CAPolicy
+    Get-CAPolicy @Parameters
+    $AccessToken | Get-CAPolicy
 #>
 
-function Export-CAPolicy {
+function Get-CAPolicy {
     [cmdletbinding()]
     param (
         [parameter(
@@ -69,15 +66,15 @@ function Export-CAPolicy {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "The file path where the new JSON file will be created"
+            HelpMessage = "Specify whether to exclude features in preview, a production API version will then be used instead"
         )]
-        [string]$FilePath,
+        [switch]$ExcludePreviewFeatures,
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "Specify whether to exclude features in preview, a production API version will then be used instead"
+            HelpMessage = "Specify whether to exclude tag processing of policies"
         )]
-        [switch]$ExcludePreviewFeatures
+        [switch]$ExcludeTagging
     )
     Begin {
         try {
@@ -85,14 +82,20 @@ function Export-CAPolicy {
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-MSGraphAccessToken.ps1",
-                "$FunctionLocation\GraphAPI\Invoke-MSGraphQuery.ps1",
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-CAPolicy.ps1"
+                "$FunctionLocation\GraphAPI\Invoke-MSGraphQuery.ps1"
             )
 
             # Function dot source
             foreach ($Function in $Functions) {
                 . $Function
             }
+
+            # Variables
+            $Method = "Get"
+            $ApiVersion = "beta" # If preview features are in use, the "beta" API must be used
+            $Uri = "identity/conditionalAccess/policies"
+            $Delimiter = ":"
+            $Tags = @("REF", "VER", "ENV")
 
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -112,25 +115,50 @@ function Export-CAPolicy {
                     -TenantDomain $TenantDomain
             }
             if ($AccessToken) {
-                if ($ExcludePreviewFeatures){
-                    $ConditionalAccessPolicies = $AccessToken | Get-CAPolicy -ExcludeTagging -ExcludePreviewFeatures
+
+                # Change the API version if features in preview are to be excluded
+                if ($ExcludePreviewFeatures) {
+                    $ApiVersion = "v1.0"
+                }
+
+                # Get all existing policies if specified, and policies exist
+                $ConditionalAccessPolicies = $AccessToken | Invoke-MSGraphQuery `
+                    -Method $Method `
+                    -Uri $ApiVersion/$Uri
+
+                # If there are policies, check whether policy tagging should be performed
+                if ($ConditionalAccessPolicies.value) {
+                    if ($ExcludeTagging) {
+                        $ConditionalAccessPolicies
+                    }
+                    else {
+                        foreach ($Policy in $ConditionalAccessPolicies) {
+
+                            # Split out policy information by defined delimeter and tags
+                            $PolicySplit = $Policy.displayName.split($Delimiter)
+                            $ConditionalAccessPolicy = [ordered]@{}
+                            foreach ($Tag in $Tags) {
+
+                                # If the tag exists, get the index, increment by one to obtain the tag's value index, then add to hashtable
+                                if ($PolicySplit -contains $Tag) {
+                                    $TagIndex = $PolicySplit.IndexOf($Tag)
+                                    $TagValueIndex = $TagIndex + 1
+                                    $TagValue = $PolicySplit[$TagValueIndex]
+                                    $ConditionalAccessPolicy.Add($Tag, $TagValue)
+                                }
+                            }
+
+                            # Add useful policy values, including the original definition, and return object
+                            $ConditionalAccessPolicy.Add("DisplayName", $Policy.displayName)
+                            $ConditionalAccessPolicy.Add("State", $Policy.state)
+                            $ConditionalAccessPolicy.Add("PolicyDefinition", $Policy )
+    
+                            [pscustomobject]$ConditionalAccessPolicy
+                        }
+                    }
                 }
                 else {
-                    $ConditionalAccessPolicies = $AccessToken | Get-CAPolicy -ExcludeTagging
-                }
-                
-                # If a response is returned that was not an error
-                if ($ConditionalAccessPolicies) {
-                    # Sort and export query
-                    $ConditionalAccessPolicies | Sort-Object createdDateTime | ConvertTo-Json -Depth 10 | Out-File -Force:$true -FilePath "$FilePath\$TenantDomain.json"
-
-                    # Cleanup file
-                    $CleanUp = Get-Content "$FilePath\$TenantDomain.json" | Select-String -Pattern '"id":', '"createdDateTime":', '"modifiedDateTime":' -notmatch
-
-                    $CleanUp | Out-File -Force:$true -FilePath "$FilePath\$TenantDomain.json"
-                }
-                else {
-                    $ErrorMessage = "Microsoft Graph did not return a valid query"
+                    $ErrorMessage = "No Conditional Access policies exist"
                     Write-Error $ErrorMessage
                 }
             }

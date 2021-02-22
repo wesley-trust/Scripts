@@ -47,6 +47,7 @@ function Invoke-MSGraphQuery {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
+            ValueFromPipeLine = $true,
             HelpMessage = "The access token, obtained from executing Get-MSGraphAccessToken"
         )]
         [string]$AccessToken

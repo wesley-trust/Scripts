@@ -66,6 +66,7 @@ function Import-CAPolicy {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
+            ValueFromPipeLine = $true,
             HelpMessage = "The access token, obtained from executing Get-MSGraphAccessToken"
         )]
         [string]$AccessToken,
@@ -104,7 +105,8 @@ function Import-CAPolicy {
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-MSGraphAccessToken.ps1",
-                "$FunctionLocation\GraphAPI\Invoke-MSGraphQuery.ps1"
+                "$FunctionLocation\GraphAPI\Invoke-MSGraphQuery.ps1",
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-CAPolicy.ps1"
             )
 
             # Function dot source
@@ -155,9 +157,12 @@ function Import-CAPolicy {
 
                     # Remove all existing policies if specified, and policies exist
                     if ($RemoveAllExistingPolicies) {
-                        $ExistingPolicies = $AccessToken | Invoke-MSGraphQuery `
-                            -Method "Get" `
-                            -Uri $ApiVersion/$Uri
+                        if ($ExcludePreviewFeatures){
+                            $ExistingPolicies = $AccessToken | Get-CAPolicy -ExcludeTagging -ExcludePreviewFeatures
+                        }
+                        else {
+                            $ExistingPolicies = $AccessToken | Get-CAPolicy -ExcludeTagging
+                        }
                         if ($ExistingPolicies.value) {
                             foreach ($Policy in $ExistingPolicies) {
                                 Start-Sleep -Seconds 1

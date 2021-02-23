@@ -21,8 +21,8 @@
     The file path to the JSON file that will be imported
 .PARAMETER PolicyState
     Modify the policy state when imported, when not specified the policy will maintain state
-.PARAMETER FilePath
-    Specify whether existing policies will be removed during the import operation
+.PARAMETER RemoveAllExistingPolicies
+    Specify whether all existing policies deployed in the tenant will be removed
 .PARAMETER ExcludePreviewFeatures
     Specify whether to exclude features in preview, a production API version will then be used instead
 .INPUTS

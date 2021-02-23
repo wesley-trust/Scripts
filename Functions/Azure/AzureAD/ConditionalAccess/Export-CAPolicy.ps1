@@ -62,7 +62,6 @@ function Export-CAPolicy {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            ValueFromPipeLine = $true,
             HelpMessage = "The access token, obtained from executing Get-MSGraphAccessToken"
         )]
         [string]$AccessToken,
@@ -106,17 +105,17 @@ function Export-CAPolicy {
         try {
             # If there is no access token, obtain one
             if (!$AccessToken) {
-                [pscustomobject]$AccessToken = Get-MSGraphAccessToken `
+                $AccessToken = Get-MSGraphAccessToken `
                     -ClientID $ClientID `
                     -ClientSecret $ClientSecret `
                     -TenantDomain $TenantDomain
             }
             if ($AccessToken) {
-                if ($ExcludePreviewFeatures){
-                    $ConditionalAccessPolicies = $AccessToken | Get-CAPolicy -ExcludeTagging -ExcludePreviewFeatures
+                if ($ExcludePreviewFeatures) {
+                    $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation -ExcludePreviewFeatures
                 }
                 else {
-                    $ConditionalAccessPolicies = $AccessToken | Get-CAPolicy -ExcludeTagging
+                    $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation
                 }
                 
                 # If a response is returned that was not an error

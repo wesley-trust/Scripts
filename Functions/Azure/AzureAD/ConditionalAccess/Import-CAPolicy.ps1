@@ -130,7 +130,7 @@ function Import-CAPolicy {
         try {
             # If there is no access token, obtain one
             if (!$AccessToken) {
-                [pscustomobject]$AccessToken = Get-MSGraphAccessToken `
+                $AccessToken = Get-MSGraphAccessToken `
                     -ClientID $ClientID `
                     -ClientSecret $ClientSecret `
                     -TenantDomain $TenantDomain

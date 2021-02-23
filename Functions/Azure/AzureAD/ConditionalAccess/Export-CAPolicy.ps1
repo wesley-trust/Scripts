@@ -128,13 +128,20 @@ function Export-CAPolicy {
                 
                 # If a response is returned that was not an error
                 if ($ConditionalAccessPolicies) {
-                    # Sort and export query
-                    $ConditionalAccessPolicies | Sort-Object createdDateTime | ConvertTo-Json -Depth 10 | Out-File -Force:$true -FilePath "$FilePath\$TenantDomain.json"
-
-                    # Cleanup file
-                    $CleanUp = Get-Content "$FilePath\$TenantDomain.json" | Select-String -Pattern '"id":', '"createdDateTime":', '"modifiedDateTime":' -notmatch
-
-                    $CleanUp | Out-File -Force:$true -FilePath "$FilePath\$TenantDomain.json"
+                    
+                    # Sort and filter (if applicable) policies
+                    $ConditionalAccessPolicies = $ConditionalAccessPolicies | Sort-Object displayName
+                    if (!$ExcludeExportCleanup) {
+<#                         $ConditionalAccessPolicies | Foreach-object {
+                            $_.PsObject.Properties.Remove("id")
+                            $_.PSObject.Properties.Remove("createdDateTime")
+                            $_.PSObject.Properties.Remove("modifiedDateTime")
+                        } #>
+                    }
+                    
+                    # Export to JSON
+                    $ConditionalAccessPolicies | ConvertTo-Json -Depth 10 `
+                    | Out-File -Force:$true -FilePath "$FilePath\$TenantDomain.json"
                 }
                 else {
                     $ErrorMessage = "Microsoft Graph did not return a valid response"

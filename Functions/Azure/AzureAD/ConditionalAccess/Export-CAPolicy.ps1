@@ -21,6 +21,8 @@
     The file path (including file name) of where the new JSON file will be created
 .PARAMETER ExcludePreviewFeatures
     Specify whether to exclude features in preview, a production API version will then be used instead
+.PARAMETER ExcludeExportCleanup
+    Specify whether to exclude the cleanup operations of the policies to be exported
 .INPUTS
     None
 .OUTPUTS
@@ -76,7 +78,13 @@ function Export-CAPolicy {
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "Specify whether to exclude features in preview, a production API version will then be used instead"
         )]
-        [switch]$ExcludePreviewFeatures
+        [switch]$ExcludePreviewFeatures,
+        [parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "Specify whether to exclude the cleanup operations of the policies to be exported"
+        )]
+        [switch]$ExcludeExportCleanup
     )
     Begin {
         try {

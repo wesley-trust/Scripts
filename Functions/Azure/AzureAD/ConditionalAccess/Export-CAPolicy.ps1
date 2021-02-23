@@ -129,7 +129,7 @@ function Export-CAPolicy {
                     $CleanUp | Out-File -Force:$true -FilePath "$FilePath\$TenantDomain.json"
                 }
                 else {
-                    $ErrorMessage = "Microsoft Graph did not return a valid query"
+                    $ErrorMessage = "Microsoft Graph did not return a valid response"
                     Write-Error $ErrorMessage
                 }
             }

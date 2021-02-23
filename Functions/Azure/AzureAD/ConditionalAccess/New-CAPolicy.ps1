@@ -123,9 +123,16 @@ function New-CAPolicy {
                     $ApiVersion = "v1.0"
                 }
 
-                # If there are policies to deploy, create each of them, one second apart
+                # If there are policies to deploy, for each
                 if ($ConditionalAccessPolicies) {
                     foreach ($Policy in $ConditionalAccessPolicies) {
+                        
+                        # Remove properties that cannot exist when creating new policies
+                        $Policy.PsObject.Properties.Remove("id")
+                        $Policy.PSObject.Properties.Remove("createdDateTime")
+                        $Policy.PSObject.Properties.Remove("modifiedDateTime")
+                        
+                        # Create policy, with one second intervals to prevent throttling
                         Start-Sleep -Seconds 1
                         $AccessToken | Invoke-MSGraphQuery `
                             -Method $Method `

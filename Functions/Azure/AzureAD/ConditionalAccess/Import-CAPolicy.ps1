@@ -1,6 +1,6 @@
 <#
 .Synopsis
-    Import all Conditional Access policies to JSON
+    Import all Conditional Access policies from JSON definition
 .Description
     This function imports the Conditional Access policies from JSON using the Microsoft Graph API.
     The following Microsoft Graph API permissions are required for the service principal used for authentication:
@@ -39,7 +39,7 @@
                 FilePath = ""
     }
     Import-CAPolicy @Parameters
-    $AccessToken | Import-CAPolicy
+    Import-CAPolicy -AccessToken $AccessToken -FilePath ""
 #>
 
 function Import-CAPolicy {
@@ -156,7 +156,7 @@ function Import-CAPolicy {
 
                     # Remove all existing policies if specified
                     if ($RemoveAllExistingPolicies) {
-                        if ($ExcludePreviewFeatures){
+                        if ($ExcludePreviewFeatures) {
                             Remove-CAPolicy -AccessToken $AccessToken -ExcludePreviewFeatures -RemoveAllExistingPolicies
                         }
                         else {

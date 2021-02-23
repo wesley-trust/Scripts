@@ -140,6 +140,10 @@ function Remove-CAPolicy {
                             | Out-Null
                         }
                     }
+                    else {
+                        $ErrorMessage = "There are no Conditional Access policies in Azure AD to be removed"
+                        Write-Error $ErrorMessage
+                    }
                 }
             }
             else {

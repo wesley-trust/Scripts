@@ -1,8 +1,8 @@
 <#
 .Synopsis
-    Import all Conditional Access policies from JSON definition
+    Create new Conditional Access policies in the Azure AD tenant
 .Description
-    This function imports the Conditional Access policies from JSON using the Microsoft Graph API.
+    This function gets the Conditional Access policies from Azure AD using the Microsoft Graph API.
     The following Microsoft Graph API permissions are required for the service principal used for authentication:
         Policy.ReadWrite.ConditionalAccess
         Policy.Read.All
@@ -17,16 +17,12 @@
     The initial domain (onmicrosoft.com) of the tenant
 .PARAMETER AccessToken
     The access token, obtained from executing Get-MSGraphAccessToken
-.PARAMETER FilePath
-    The file path to the JSON file that will be imported
-.PARAMETER PolicyState
-    Modify the policy state when imported, when not specified the policy will maintain state
-.PARAMETER RemoveAllExistingPolicies
-    Specify whether all existing policies deployed in the tenant will be removed
 .PARAMETER ExcludePreviewFeatures
     Specify whether to exclude features in preview, a production API version will then be used instead
+.PARAMETER ConditionalAccessPolicies
+    Specify the Conditional Access policies to create
 .INPUTS
-    JSON file with all Conditional Access policies
+    None
 .OUTPUTS
     None
 .NOTES
@@ -36,13 +32,12 @@
                 ClientID = ""
                 ClientSecret = ""
                 TenantDomain = ""
-                FilePath = ""
     }
-    Import-CAPolicy @Parameters
-    Import-CAPolicy -AccessToken $AccessToken -FilePath ""
+    Get-CAPolicy @Parameters
+    $AccessToken | Get-CAPolicy
 #>
 
-function Import-CAPolicy {
+function New-CAPolicy {
     [cmdletbinding()]
     param (
         [parameter(
@@ -72,31 +67,16 @@ function Import-CAPolicy {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "The file path to the JSON file that will be imported"
+            HelpMessage = "Specify whether to exclude features in preview, a production API version will then be used instead"
         )]
-        [string]$FilePath,
-        [Parameter(
-            Mandatory = $false,
-            ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "If a policy is enabled, modify the policy state when imported if specified"
-        )]
-        [ValidateSet("enabledForReportingButNotEnforced", "disabled", "")]
-        [AllowNull()]
-        [String]
-        $PolicyState,
-        [Parameter(
-            Mandatory = $false,
-            ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "Specify whether all existing policies deployed in the tenant will be removed"
-        )]
-        [switch]
-        $RemoveAllExistingPolicies,
+        [switch]$ExcludePreviewFeatures,
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "Specify whether to exclude features in preview, a production API version will then be used instead"
+            ValueFromPipeLine = $true,
+            HelpMessage = "Specify the Conditional Access policies to create"
         )]
-        [switch]$ExcludePreviewFeatures
+        [pscustomobject]$ConditionalAccessPolicies
     )
     Begin {
         try {
@@ -104,15 +84,18 @@ function Import-CAPolicy {
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-MSGraphAccessToken.ps1",
-                "$FunctionLocation\GraphAPI\Invoke-MSGraphQuery.ps1",
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Remove-CAPolicy.ps1",
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\New-CAPolicy.ps1"
+                "$FunctionLocation\GraphAPI\Invoke-MSGraphQuery.ps1"
             )
 
             # Function dot source
             foreach ($Function in $Functions) {
                 . $Function
             }
+
+            # Variables
+            $Method = "Post"
+            $ApiVersion = "beta" # If preview features are in use, the "beta" API must be used
+            $Uri = "identity/conditionalAccess/policies"
 
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -124,6 +107,7 @@ function Import-CAPolicy {
     }
     Process {
         try {
+
             # If there is no access token, obtain one
             if (!$AccessToken) {
                 $AccessToken = Get-MSGraphAccessToken `
@@ -133,38 +117,25 @@ function Import-CAPolicy {
             }
             if ($AccessToken) {
 
-                # Import policies from JSON file
-                $ConditionalAccessPolicies = Get-Content -Raw -Path $FilePath
+                # Change the API version if features in preview are to be excluded
+                if ($ExcludePreviewFeatures) {
+                    $ApiVersion = "v1.0"
+                }
+
+                # If there are policies to deploy, create each of them, one second apart
                 if ($ConditionalAccessPolicies) {
-
-                    # Modify enabled policies to report-only or disabled, if specified
-                    if ($PolicyState -eq "enabledForReportingButNotEnforced") {
-                        $ConditionalAccessPolicies = $ConditionalAccessPolicies -replace '"enabled"', '"enabledForReportingButNotEnforced"'
+                    foreach ($Policy in $ConditionalAccessPolicies) {
+                        Start-Sleep -Seconds 1
+                        $AccessToken | Invoke-MSGraphQuery `
+                            -Method $Method `
+                            -Uri $ApiVersion/$Uri `
+                            -Body ($Policy `
+                            | ConvertTo-Json -Depth 10) | Out-Null
                     }
-                    elseif ($PolicyState -eq "disabled") {
-                        $ConditionalAccessPolicies = $ConditionalAccessPolicies -replace '"enabled"', '"disabled"'
-                    }
-
-                    # Convert from JSON to an object for deployment
-                    $ConditionalAccessPolicies = $ConditionalAccessPolicies | ConvertFrom-Json
-
-                    # Remove all existing policies if specified
-                    if ($RemoveAllExistingPolicies) {
-                        if ($ExcludePreviewFeatures) {
-                            Remove-CAPolicy -AccessToken $AccessToken -ExcludePreviewFeatures -RemoveAllExistingPolicies
-                        }
-                        else {
-                            Remove-CAPolicy -AccessToken $AccessToken -RemoveAllExistingPolicies
-                        }
-                    }
-
-                    # Create policies
-                    $ConditionalAccessPolicies | New-CAPolicy -AccessToken $AccessToken
                 }
                 else {
-                    $ErrorMessage = "No Conditional Access policies to be imported, check the import file"
+                    $ErrorMessage = "There are no Conditional Access policies to be created"
                     Write-Error $ErrorMessage
-                    throw $ErrorMessage
                 }
             }
             else {

@@ -72,14 +72,9 @@ function Get-MSGraphAccessToken {
                 -Uri $AuthenticationUrl/$TenantDomain/$Uri `
                 -Body $Body
 
-            # If an access token is returned, build and return an access token object
-            if ($OAuth2.access_token) {
-                $ObjectProperties = [pscustomobject]@{
-                    TenantDomain = $TenantDomain
-                    ClientID     = $ClientID
-                    AccessToken  = $OAuth2.access_token
-                }
-                $ObjectProperties
+            # If an access token is returned, return this
+            if ($OAuth2.access_token){
+                $OAuth2.access_token
             }
             else {
                 $ErrorMessage = "Unable to obtain an access token for $TenantDomain but an exception has not occurred"

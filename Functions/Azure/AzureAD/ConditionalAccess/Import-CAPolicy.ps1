@@ -105,7 +105,7 @@ function Import-CAPolicy {
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-MSGraphAccessToken.ps1",
                 "$FunctionLocation\GraphAPI\Invoke-MSGraphQuery.ps1",
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-CAPolicy.ps1"
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Remove-CAPolicy.ps1"
             )
 
             # Function dot source
@@ -154,22 +154,13 @@ function Import-CAPolicy {
                         $ConditionalAccessPolicies = $ConditionalAccessPolicies -replace '"enabled"', '"disabled"'
                     }
 
-                    # Remove all existing policies if specified, and policies exist
+                    # Remove all existing policies if specified
                     if ($RemoveAllExistingPolicies) {
                         if ($ExcludePreviewFeatures){
-                            $ExistingPolicies = $AccessToken | Get-CAPolicy -ExcludeTagging -ExcludePreviewFeatures
+                            Remove-CAPolicy -AccessToken $AccessToken -ExcludePreviewFeatures -RemoveAllExistingPolicies
                         }
                         else {
-                            $ExistingPolicies = $AccessToken | Get-CAPolicy -ExcludeTagging
-                        }
-                        if ($ExistingPolicies.value) {
-                            foreach ($Policy in $ExistingPolicies) {
-                                Start-Sleep -Seconds 1
-                                $AccessToken | Invoke-MSGraphQuery `
-                                    -Method "DELETE" `
-                                    -Uri "$ApiVersion/$Uri/$($Policy.id)" `
-                                | Out-Null
-                            }
+                            Remove-CAPolicy -AccessToken $AccessToken -RemoveAllExistingPolicies
                         }
                     }
 

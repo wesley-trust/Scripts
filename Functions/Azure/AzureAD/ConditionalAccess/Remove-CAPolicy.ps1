@@ -21,8 +21,10 @@
     Specify whether all existing policies deployed in the tenant will be removed
 .PARAMETER ExcludePreviewFeatures
     Specify whether to exclude features in preview, a production API version will then be used instead
+.PARAMETER ConditionalAccessPolicies
+    The Conditional Access policies to remove
 .INPUTS
-    JSON file with all Conditional Access policies
+    None
 .OUTPUTS
     None
 .NOTES
@@ -76,7 +78,14 @@ function Remove-CAPolicy {
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "Specify whether to exclude features in preview, a production API version will then be used instead"
         )]
-        [switch]$ExcludePreviewFeatures
+        [switch]$ExcludePreviewFeatures,
+        [parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            ValueFromPipeLine = $true,
+            HelpMessage = "The Conditional Access policies to remove"
+        )]
+        [pscustomobject]$ConditionalAccessPolicies
     )
     Begin {
         try {
@@ -123,27 +132,29 @@ function Remove-CAPolicy {
                     $ApiVersion = "v1.0"
                 }
 
-                # Remove all existing policies if specified, and policies exist
+                # Get all existing policies to be removed if specified
                 if ($RemoveAllExistingPolicies) {
                     if ($ExcludePreviewFeatures) {
-                        $ExistingPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation -ExcludePreviewFeatures
+                        $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation -ExcludePreviewFeatures
                     }
                     else {
-                        $ExistingPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation
+                        $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation
                     }
-                    if ($ExistingPolicies.value) {
-                        foreach ($Policy in $ExistingPolicies) {
-                            Start-Sleep -Seconds 1
-                            $AccessToken | Invoke-MSGraphQuery `
-                                -Method $Method `
-                                -Uri "$ApiVersion/$Uri/$($Policy.id)" `
-                            | Out-Null
-                        }
+                }
+
+                # If there are policies to be removed, remove each of them, one second apart
+                if ($ConditionalAccessPolicies) {
+                    foreach ($Policy in $ConditionalAccessPolicies) {
+                        Start-Sleep -Seconds 1
+                        $AccessToken | Invoke-MSGraphQuery `
+                            -Method $Method `
+                            -Uri "$ApiVersion/$Uri/$($Policy.id)" `
+                        | Out-Null
                     }
-                    else {
-                        $ErrorMessage = "There are no Conditional Access policies in Azure AD to be removed"
-                        Write-Error $ErrorMessage
-                    }
+                }
+                else {
+                    $ErrorMessage = "There are no Conditional Access policies to be removed"
+                    Write-Error $ErrorMessage
                 }
             }
             else {

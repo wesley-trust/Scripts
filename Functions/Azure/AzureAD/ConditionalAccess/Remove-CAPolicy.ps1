@@ -126,10 +126,10 @@ function Remove-CAPolicy {
                 # Remove all existing policies if specified, and policies exist
                 if ($RemoveAllExistingPolicies) {
                     if ($ExcludePreviewFeatures) {
-                        $ExistingPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagging -ExcludePreviewFeatures
+                        $ExistingPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation -ExcludePreviewFeatures
                     }
                     else {
-                        $ExistingPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagging 
+                        $ExistingPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation
                     }
                     if ($ExistingPolicies.value) {
                         foreach ($Policy in $ExistingPolicies) {

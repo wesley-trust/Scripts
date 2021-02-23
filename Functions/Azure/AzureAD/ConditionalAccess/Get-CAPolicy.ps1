@@ -59,7 +59,6 @@ function Get-CAPolicy {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            ValueFromPipeLine = $true,
             HelpMessage = "The access token, obtained from executing Get-MSGraphAccessToken"
         )]
         [string]$AccessToken,
@@ -107,9 +106,10 @@ function Get-CAPolicy {
     }
     Process {
         try {
+
             # If there is no access token, obtain one
             if (!$AccessToken) {
-                [pscustomobject]$AccessToken = Get-MSGraphAccessToken `
+                $AccessToken = Get-MSGraphAccessToken `
                     -ClientID $ClientID `
                     -ClientSecret $ClientSecret `
                     -TenantDomain $TenantDomain

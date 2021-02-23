@@ -16,8 +16,8 @@
 .NOTES
     Reference: https://danielchronlund.com/2018/11/19/fetch-data-from-microsoft-graph-with-powershell-paging-support/
 .Example
-    $MSGraphAccessToken = Get-MSGraphAccessToken -ClientID "" -ClientSecret "" -TenantDomain ""
-    $MSGraphAccessToken = $ServicePrincipalObject | Get-MSGraphAccessToken
+    $AccessToken = Get-MSGraphAccessToken -ClientID "" -ClientSecret "" -TenantDomain ""
+    $AccessToken = $ServicePrincipalObject | Get-MSGraphAccessToken
 #>
 
 function Get-MSGraphAccessToken {

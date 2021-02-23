@@ -76,7 +76,7 @@ function New-CAPolicy {
             ValueFromPipeLine = $true,
             HelpMessage = "Specify the Conditional Access policies to create"
         )]
-        [Alias('ConditionalAccessPolicy','PolicyDefinition')]
+        [Alias('ConditionalAccessPolicy', 'PolicyDefinition')]
         [pscustomobject]$ConditionalAccessPolicies
     )
     Begin {

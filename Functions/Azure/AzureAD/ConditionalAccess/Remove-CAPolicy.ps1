@@ -85,6 +85,7 @@ function Remove-CAPolicy {
             ValueFromPipeLine = $true,
             HelpMessage = "The Conditional Access policies to remove"
         )]
+        [Alias('ConditionalAccessPolicy','PolicyDefinition')]
         [pscustomobject]$ConditionalAccessPolicies
     )
     Begin {

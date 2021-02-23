@@ -160,7 +160,7 @@ function Get-CAPolicy {
                     }
                 }
                 else {
-                    $ErrorMessage = "No Conditional Access policies exist"
+                    $ErrorMessage = "No Conditional Access policies exist in Azure AD"
                     Write-Error $ErrorMessage
                 }
             }

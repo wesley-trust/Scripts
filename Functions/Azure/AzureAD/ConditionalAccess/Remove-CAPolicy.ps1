@@ -33,8 +33,8 @@
                 ClientSecret = ""
                 TenantDomain = ""
     }
-    Get-CAPolicy @Parameters
-    $AccessToken | Get-CAPolicy
+    Remove-CAPolicy @Parameters -RemoveAllExistingPolicies
+    Remove-CAPolicy -AccessToken $AccessToken -RemoveAllExistingPolicies
 #>
 
 function Remove-CAPolicy {

@@ -19,6 +19,8 @@
     The access token, obtained from executing Get-MSGraphAccessToken
 .PARAMETER ExcludePreviewFeatures
     Specify whether to exclude features in preview, a production API version will then be used instead
+.PARAMETER ExcludeTagEvaluation
+    Specify whether to exclude features in preview, a production API version will then be used instead
 .INPUTS
     JSON file with all Conditional Access policies
 .OUTPUTS
@@ -73,7 +75,7 @@ function Get-CAPolicy {
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "Specify whether to exclude tag processing of policies"
         )]
-        [switch]$ExcludeTagging
+        [switch]$ExcludeTagEvaluation
     )
     Begin {
         try {
@@ -128,7 +130,7 @@ function Get-CAPolicy {
 
                 # If there are policies, check whether policy tagging should be performed
                 if ($ConditionalAccessPolicies.value) {
-                    if ($ExcludeTagging) {
+                    if ($ExcludeTagEvaluation) {
                         $ConditionalAccessPolicies
                     }
                     else {

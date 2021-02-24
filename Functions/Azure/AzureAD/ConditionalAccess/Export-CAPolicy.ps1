@@ -106,9 +106,16 @@ function Export-CAPolicy {
             foreach ($Function in $Functions) {
                 . $Function
             }
-
+            # Variables
+            $CleanUpProperties = (
+                "id",
+                "createdDateTime",
+                "modifiedDateTime"
+            )
+            
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            
         }
         catch {
             Write-Error -Message $_.Exception
@@ -125,12 +132,13 @@ function Export-CAPolicy {
                     -TenantDomain $TenantDomain
             }
             if ($AccessToken) {
-                if ($ExcludePreviewFeatures) {
-                    $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation -ExcludePreviewFeatures
-                }
-                else {
-                    $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation
-                }
+                if ($ExcludeTagEvaluation) {
+                    if ($ExcludePreviewFeatures) {
+                        $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation -ExcludePreviewFeatures
+                    }
+                    else {
+                        $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation
+                    }
                 }
                 else {
                     if ($ExcludePreviewFeatures) {
@@ -140,21 +148,25 @@ function Export-CAPolicy {
                         $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken
                     }
                 }
-                
+
                 # If a response is returned that was not an error
                 if ($ConditionalAccessPolicies) {
                     
                     # Sort and filter (if applicable) policies
                     $ConditionalAccessPolicies = $ConditionalAccessPolicies | Sort-Object displayName
                     if (!$ExcludeExportCleanup) {
-<#                         $ConditionalAccessPolicies | Foreach-object {
-                            $_.PsObject.Properties.Remove("id")
-                            $_.PSObject.Properties.Remove("createdDateTime")
-                            $_.PSObject.Properties.Remove("modifiedDateTime")
-                        } #>
+                        $ConditionalAccessPolicies | Foreach-object {
+                            
+                            # Cleanup properties for export
+                            foreach ($Property in $CleanUpProperties) {
+                                $_.PSObject.Properties.Remove("$Property")
+                            }
+                        }
                     }
-                    
+
                     # Export to JSON
+                    Write-Host "Exporting Conditional Access Policies"
+                    
                     $ConditionalAccessPolicies | ConvertTo-Json -Depth 10 `
                     | Out-File -Force:$true -FilePath "$FilePath\$TenantDomain.json"
                 }
@@ -175,6 +187,6 @@ function Export-CAPolicy {
         }
     }
     End {
-        
+
     }
 }

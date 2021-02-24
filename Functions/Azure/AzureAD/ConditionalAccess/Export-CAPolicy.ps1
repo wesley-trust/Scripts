@@ -84,7 +84,13 @@ function Export-CAPolicy {
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "Specify whether to exclude the cleanup operations of the policies to be exported"
         )]
-        [switch]$ExcludeExportCleanup
+        [switch]$ExcludeExportCleanup,
+        [parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "Specify whether to exclude tag processing of policies"
+        )]
+        [switch]$ExcludeTagEvaluation
     )
     Begin {
         try {

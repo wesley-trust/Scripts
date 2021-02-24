@@ -118,6 +118,8 @@ function Invoke-MSGraphQuery {
                         $QueryResult += $QueryRequest.value
                     }
                 }
+                
+                # Return query result
                 $QueryResult
             }
             else {

@@ -77,7 +77,16 @@ function New-CAPolicy {
             HelpMessage = "Specify the Conditional Access policies to create"
         )]
         [Alias('ConditionalAccessPolicy', 'PolicyDefinition')]
-        [pscustomobject]$ConditionalAccessPolicies
+        [pscustomobject]$ConditionalAccessPolicies,
+        [Parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "Override the policy state when value specified"
+        )]
+        [ValidateSet("enabled", "enabledForReportingButNotEnforced", "disabled", "")]
+        [AllowNull()]
+        [String]
+        $PolicyState
     )
     Begin {
         try {

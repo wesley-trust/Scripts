@@ -72,18 +72,31 @@ function Import-CAPolicy {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "The file path to the JSON file that will be imported"
+            HelpMessage = "The file path to the JSON file(s) that will be imported"
         )]
-        [string]$FilePath,
+        [string[]]$FilePath,
+        [parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "The directory path(s) of which all JSON file(s) will be imported"
+        )]
+        [string[]]$DirectoryPath,
         [Parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "If a policy is enabled, modify the policy state when imported if specified"
         )]
-        [ValidateSet("enabledForReportingButNotEnforced", "disabled", "")]
+        [ValidateSet("enabled", "enabledForReportingButNotEnforced", "disabled", "")]
         [AllowNull()]
         [String]
         $PolicyState,
+        [Parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "Specify whether to replace existing policies deployed in the tenant, where the IDs match"
+        )]
+        [switch]
+        $UpdateExistingPolicies,
         [Parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
@@ -107,6 +120,7 @@ function Import-CAPolicy {
                 "$FunctionLocation\GraphAPI\Invoke-MSGraphQuery.ps1",
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Remove-CAPolicy.ps1",
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\New-CAPolicy.ps1"
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Update-CAPolicy.ps1"
             )
 
             # Function dot source
@@ -116,6 +130,7 @@ function Import-CAPolicy {
 
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
         }
         catch {
             Write-Error -Message $_.Exception
@@ -133,17 +148,20 @@ function Import-CAPolicy {
             }
             if ($AccessToken) {
 
-                # Import policies from JSON file
-                $ConditionalAccessPolicies = Get-Content -Raw -Path $FilePath
-                if ($ConditionalAccessPolicies) {
+                # For each directory, get the file path of all JSON files within the directory
+                if ($DirectoryPath){
+                    $FilePath = foreach ($Directory in $DirectoryPath){
+                        (Get-ChildItem -Path $Directory -Filter "*.json").FullName
+                    }
+                }
 
-                    # Modify enabled policies to report-only or disabled, if specified
-                    if ($PolicyState -eq "enabledForReportingButNotEnforced") {
-                        $ConditionalAccessPolicies = $ConditionalAccessPolicies -replace '"enabled"', '"enabledForReportingButNotEnforced"'
-                    }
-                    elseif ($PolicyState -eq "disabled") {
-                        $ConditionalAccessPolicies = $ConditionalAccessPolicies -replace '"enabled"', '"disabled"'
-                    }
+                # Import policies from JSON file
+                $ConditionalAccessPolicies = foreach ($File in $FilePath){
+                    Get-Content -Raw -Path $File
+                }
+                
+                if ($ConditionalAccessPolicies) {
+                    Write-Host "Importing Conditional Access Policies"
 
                     # Convert from JSON to an object for deployment
                     $ConditionalAccessPolicies = $ConditionalAccessPolicies | ConvertFrom-Json

@@ -100,6 +100,10 @@ function Get-CAPolicy {
 
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+            # Output current activity
+            Write-Host "Getting Conditional Access Policies"
+
         }
         catch {
             Write-Error -Message $_.Exception
@@ -122,7 +126,7 @@ function Get-CAPolicy {
                 if ($ExcludePreviewFeatures) {
                     $ApiVersion = "v1.0"
                 }
-
+                
                 # Get all existing policies if specified, and policies exist
                 $ConditionalAccessPolicies = $AccessToken | Invoke-MSGraphQuery `
                     -Method $Method `
@@ -134,6 +138,10 @@ function Get-CAPolicy {
                         $ConditionalAccessPolicies
                     }
                     else {
+                        
+                        # Get policy properties
+                        $PolicyProperties = ($ConditionalAccessPolicies | Get-Member -MemberType NoteProperty).name
+
                         foreach ($Policy in $ConditionalAccessPolicies) {
 
                             # Split out policy information by defined delimeter and tags
@@ -141,20 +149,23 @@ function Get-CAPolicy {
                             $ConditionalAccessPolicy = [ordered]@{}
                             foreach ($Tag in $Tags) {
 
-                                # If the tag exists, get the index, increment by one to obtain the tag's value index, then add to hashtable
+                                # If the tag exists, get the index, increment by one to obtain the tag's value index, then add value to hashtable
                                 if ($PolicySplit -contains $Tag) {
                                     $TagIndex = $PolicySplit.IndexOf($Tag)
                                     $TagValueIndex = $TagIndex + 1
                                     $TagValue = $PolicySplit[$TagValueIndex]
                                     $ConditionalAccessPolicy.Add($Tag, $TagValue)
                                 }
+                                else {
+                                    $ConditionalAccessPolicy.Add($Tag, $null)
+                                }
+                            }
+                            
+                            # Append all Conditional Access properties and return object
+                            foreach ($Property in $PolicyProperties) {
+                                $ConditionalAccessPolicy.Add("$Property", $Policy.$Property)
                             }
 
-                            # Add useful policy values, including the original definition, and return object
-                            $ConditionalAccessPolicy.Add("DisplayName", $Policy.displayName)
-                            $ConditionalAccessPolicy.Add("State", $Policy.state)
-                            $ConditionalAccessPolicy.Add("PolicyDefinition", $Policy )
-    
                             [pscustomobject]$ConditionalAccessPolicy
                         }
                     }

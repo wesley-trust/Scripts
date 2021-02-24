@@ -22,7 +22,7 @@
 .PARAMETER ExcludePreviewFeatures
     Specify whether to exclude features in preview, a production API version will then be used instead
 .PARAMETER ConditionalAccessPolicies
-    The Conditional Access policies to remove
+    The Conditional Access policies to remove, a policy must have a valid id
 .INPUTS
     None
 .OUTPUTS
@@ -83,9 +83,9 @@ function Remove-CAPolicy {
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
             ValueFromPipeLine = $true,
-            HelpMessage = "The Conditional Access policies to remove"
+            HelpMessage = "The Conditional Access policies to remove, a policy must have a valid id"
         )]
-        [Alias('ConditionalAccessPolicy','PolicyDefinition')]
+        [Alias('ConditionalAccessPolicy', 'PolicyDefinition')]
         [pscustomobject]$ConditionalAccessPolicies
     )
     Begin {
@@ -110,6 +110,10 @@ function Remove-CAPolicy {
 
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+            # Output current activity
+            Write-Host "Removing Conditional Access Policies"
+
         }
         catch {
             Write-Error -Message $_.Exception
@@ -143,14 +147,25 @@ function Remove-CAPolicy {
                     }
                 }
 
-                # If there are policies to be removed, remove each of them, one second apart
+                # If there are policies to be removed, remove each of them
                 if ($ConditionalAccessPolicies) {
+                    
                     foreach ($Policy in $ConditionalAccessPolicies) {
-                        Start-Sleep -Seconds 1
-                        $AccessToken | Invoke-MSGraphQuery `
-                            -Method $Method `
-                            -Uri "$ApiVersion/$Uri/$($Policy.id)" `
-                        | Out-Null
+                        
+                        # Update policy ID, and if exists continue
+                        $PolicyID = $Policy.id
+                        if ($PolicyID) {
+                            Write-Host "Processing Policy ID: $PolicyID"
+                            Start-Sleep -Seconds 1
+                            $AccessToken | Invoke-MSGraphQuery `
+                                -Method $Method `
+                                -Uri "$ApiVersion/$Uri/$PolicyID" `
+                            | Out-Null
+                        }
+                        else {
+                            $ErrorMessage = "The Conditional Access policy does not contain an id, so cannot be removed"
+                            Write-Error $ErrorMessage
+                        }
                     }
                 }
                 else {

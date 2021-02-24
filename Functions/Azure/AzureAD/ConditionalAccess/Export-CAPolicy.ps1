@@ -131,6 +131,15 @@ function Export-CAPolicy {
                 else {
                     $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation
                 }
+                }
+                else {
+                    if ($ExcludePreviewFeatures) {
+                        $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludePreviewFeatures
+                    }
+                    else {
+                        $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken
+                    }
+                }
                 
                 # If a response is returned that was not an error
                 if ($ConditionalAccessPolicies) {

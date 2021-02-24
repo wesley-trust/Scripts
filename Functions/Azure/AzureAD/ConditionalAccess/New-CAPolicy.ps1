@@ -136,10 +136,12 @@ function New-CAPolicy {
                 if ($ConditionalAccessPolicies) {
                     foreach ($Policy in $ConditionalAccessPolicies) {
                         
-                        # Remove properties that cannot exist when creating new policies
-                        $Policy.PsObject.Properties.Remove("id")
-                        $Policy.PSObject.Properties.Remove("createdDateTime")
-                        $Policy.PSObject.Properties.Remove("modifiedDateTime")
+
+                        # Override policy state 
+                        if ($PolicyState) {
+                            $Policy.state = "$PolicyState"
+                        }
+
                         
                         # Create policy, with one second intervals to prevent throttling
                         Start-Sleep -Seconds 1

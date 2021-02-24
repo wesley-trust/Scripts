@@ -2,7 +2,7 @@
 .Synopsis
     Create new Conditional Access policies in the Azure AD tenant
 .Description
-    This function gets the Conditional Access policies from Azure AD using the Microsoft Graph API.
+    This function creates the Conditional Access policies in Azure AD using the Microsoft Graph API.
     The following Microsoft Graph API permissions are required for the service principal used for authentication:
         Policy.ReadWrite.ConditionalAccess
         Policy.Read.All
@@ -33,8 +33,8 @@
                 ClientSecret = ""
                 TenantDomain = ""
     }
-    Get-CAPolicy @Parameters
-    $AccessToken | Get-CAPolicy
+    New-CAPolicy @Parameters -CondionalAccessPolicies $CondionalAccessPolicies
+    $CondionalAccessPolicies | New-CAPolicy -AccessToken $AccessToken
 #>
 
 function New-CAPolicy {
@@ -106,9 +106,21 @@ function New-CAPolicy {
             $Method = "Post"
             $ApiVersion = "beta" # If preview features are in use, the "beta" API must be used
             $Uri = "identity/conditionalAccess/policies"
+            $CleanUpProperties = (
+                "id",
+                "createdDateTime",
+                "modifiedDateTime",
+                "REF",
+                "VER",
+                "ENV"
+            )
 
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+            # Output current activity
+            Write-Host "Creating Conditional Access Policies"
+
         }
         catch {
             Write-Error -Message $_.Exception
@@ -134,22 +146,33 @@ function New-CAPolicy {
 
                 # If there are policies to deploy, for each
                 if ($ConditionalAccessPolicies) {
+                    
                     foreach ($Policy in $ConditionalAccessPolicies) {
+
+                        # Remove properties that are not valid for when creating new policies
+                        foreach ($Property in $CleanUpProperties) {
+                            $Policy.PSObject.Properties.Remove("$Property")
+                        }
                         
+                        # Update displayname variable prior to object converstion to JSON
+                        $PolicyDisplayName = $Policy.displayName
 
                         # Override policy state 
                         if ($PolicyState) {
                             $Policy.state = "$PolicyState"
                         }
 
-                        
+                        # Convert policy object to JSON
+                        $Policy = $Policy | ConvertTo-Json -Depth 10
+
                         # Create policy, with one second intervals to prevent throttling
+                        Write-Host "Processing Policy: $PolicyDisplayName"
                         Start-Sleep -Seconds 1
                         $AccessToken | Invoke-MSGraphQuery `
                             -Method $Method `
                             -Uri $ApiVersion/$Uri `
-                            -Body ($Policy `
-                            | ConvertTo-Json -Depth 10) | Out-Null
+                            -Body $Policy `
+                        | Out-Null
                     }
                 }
                 else {

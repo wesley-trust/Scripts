@@ -119,6 +119,7 @@ function Export-CAPolicy {
             foreach ($Function in $Functions) {
                 . $Function
             }
+            
             # Variables
             $CleanUpProperties = (
                 "id",
@@ -126,6 +127,7 @@ function Export-CAPolicy {
                 "modifiedDateTime"
             )
             $UnsupportedCharactersRegEx = '[\\\/:*?"<>|]'
+            $Counter = 1
             
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -188,7 +190,7 @@ function Export-CAPolicy {
                     }
 
                     # Export to JSON
-                    Write-Host "Exporting Conditional Access Policies"
+                    Write-Host "Exporting Conditional Access Policies (Count: $($ConditionalAccessPolicies.count))"
                     
                     # If a file path is specified, output all policies in one JSON formatted file
                     if ($FilePath) {
@@ -201,10 +203,17 @@ function Export-CAPolicy {
                             # Remove characters not supported in Windows file names
                             $PolicyDisplayName = $Policy.displayname -replace $UnsupportedCharactersRegEx, "_"
                             
+                            # Output current status
+                            Write-Host "Processing Policy $Counter with file name: $PolicyDisplayName.json"
+                            
                             # Output individual policy JSON file
                             $Policy | ConvertTo-Json -Depth 10 `
                             | Out-File -Force:$true -FilePath "$Path\$PolicyDisplayName.json"
 
+                            # Increment counter
+                            $Counter++
+                        }
+                    }
                 }
                 else {
                     $ErrorMessage = "Microsoft Graph did not return a valid response"

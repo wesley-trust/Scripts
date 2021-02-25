@@ -166,27 +166,36 @@ function Import-CAPolicy {
                     # Convert from JSON to an object for deployment
                     $ConditionalAccessPolicies = $ConditionalAccessPolicies | ConvertFrom-Json
 
-                    # Remove all existing or remove duplicate policies if specified
-                    if ($RemoveAllExistingPolicies) {
-                        if ($ExcludePreviewFeatures) {
-                            Remove-CAPolicy -AccessToken $AccessToken -ExcludePreviewFeatures -RemoveAllExistingPolicies
-                        }
-                        else {
-                            Remove-CAPolicy -AccessToken $AccessToken -RemoveAllExistingPolicies
+
+                    # Build Parameters
+                    $Parameters = @{}
+                    $Parameters = @{
+                        AccessToken = $AccessToken
+                    }
+                    if ($ExcludePreviewFeatures) {
+                        $Parameters += @{
+                            ExcludePreviewFeatures = $true
                         }
                     }
+
+                    # Remove all existing policies if specified
+                    if ($RemoveAllExistingPolicies) {
+                        Remove-CAPolicy @Parameters -RemoveAllExistingPolicies
+                    }
                     elseif ($UpdateExistingPolicies) {
+
+                        # Update parameters
+                        if ($PolicyState) {
+                            $Parameters += @{
+                                PolicyState = $PolicyState
+                            }
+                        }
                         
                         # Filter for policies that contain an id, which is required to update a policy
                         $UpdatePolicies = $ConditionalAccessPolicies | Where-Object id -NE $null
 
-                        if ($ExcludePreviewFeatures) {
-                            $UpdatePolicies | Update-CAPolicy -AccessToken $AccessToken -ExcludePreviewFeatures -PolicyState $PolicyState
-                        }
-                        else {
-                            $UpdatePolicies | Update-CAPolicy -AccessToken $AccessToken -PolicyState $PolicyState
-                        }
-                        
+                        Update-CAPolicy @Parameters -ConditionalAccessPolicies $UpdatePolicies
+
                         # Filter for policies that do not contain an id, and so are policies that should be created
                         $CreatePolicies = $ConditionalAccessPolicies | Where-Object id -EQ $null
                     }
@@ -195,18 +204,19 @@ function Import-CAPolicy {
                     # If any of the policies contain existing ids, these are not validated when creating policies, so duplicates may be created
                     if (!$UpdateExistingPolicies) {
                         $CreatePolicies = $ConditionalAccessPolicies
+
+                        # Update parameters
+                        if ($PolicyState) {
+                            $Parameters += @{
+                                PolicyState = $PolicyState
+                            }
+                        }
                     }
 
                     # If there are new policies to be created, create them, passing through the policy state
                     if ($CreatePolicies) {
-                        if ($ExcludePreviewFeatures) {
-                            $CreatePolicies | New-CAPolicy -AccessToken $AccessToken -ExcludePreviewFeatures -PolicyState $PolicyState
-                        }
-                        else {
-                            $CreatePolicies | New-CAPolicy -AccessToken $AccessToken -PolicyState $PolicyState
-                        }
+                        New-CAPolicy @Parameters -ConditionalAccessPolicies $CreatePolicies
                     }
-
                 }
                 else {
                     $ErrorMessage = "No Conditional Access policies to be imported, check the import file"

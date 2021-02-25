@@ -95,7 +95,8 @@ function Get-CAPolicy {
             $Method = "Get"
             $ApiVersion = "beta" # If preview features are in use, the "beta" API must be used
             $Uri = "identity/conditionalAccess/policies"
-            $Delimiter = ":"
+            $MajorDelimiter = ";"
+            $MinorDelimiter = "-"
             $Tags = @("REF", "VER", "ENV")
 
             # Force TLS 1.2
@@ -144,8 +145,8 @@ function Get-CAPolicy {
 
                         foreach ($Policy in $ConditionalAccessPolicies) {
 
-                            # Split out policy information by defined delimeter and tags
-                            $PolicySplit = $Policy.displayName.split($Delimiter)
+                            # Split out policy information by defined delimeter(s) and tag(s)
+                            $PolicySplit = ($Policy.displayName.split($MajorDelimiter)).Split($MinorDelimiter)
                             $ConditionalAccessPolicy = [ordered]@{}
                             foreach ($Tag in $Tags) {
 

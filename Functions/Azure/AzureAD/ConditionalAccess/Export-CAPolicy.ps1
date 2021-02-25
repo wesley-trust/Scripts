@@ -112,6 +112,7 @@ function Export-CAPolicy {
                 "createdDateTime",
                 "modifiedDateTime"
             )
+            $UnsupportedCharactersRegEx = '[\\\/:*?"<>|]'
             
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -177,7 +178,9 @@ function Export-CAPolicy {
                     Write-Host "Exporting Conditional Access Policies"
                     
                     $ConditionalAccessPolicies | ConvertTo-Json -Depth 10 `
-                    | Out-File -Force:$true -FilePath "$FilePath\$TenantDomain.json"
+
+                            # Remove characters not supported in Windows file names
+                            $PolicyDisplayName = $Policy.displayname -replace $UnsupportedCharactersRegEx, "_"
                 }
                 else {
                     $ErrorMessage = "Microsoft Graph did not return a valid response"

@@ -167,15 +167,15 @@ function Get-CAPolicy {
                         foreach ($Policy in $ConditionalAccessPolicies) {
 
                             # Split out policy information by defined delimeter(s) and tag(s)
-                            $PolicySplit = ($Policy.displayName.split($MajorDelimiter)).Split($MinorDelimiter)
+                            $PolicyDisplayNameSplit = ($Policy.displayName.split($MajorDelimiter)).Split($MinorDelimiter)
                             $ConditionalAccessPolicy = [ordered]@{}
                             foreach ($Tag in $Tags) {
 
                                 # If the tag exists, get the index, increment by one to obtain the tag's value index, then add value to hashtable
-                                if ($PolicySplit -contains $Tag) {
-                                    $TagIndex = $PolicySplit.IndexOf($Tag)
+                                if ($PolicyDisplayNameSplit -contains $Tag) {
+                                    $TagIndex = $PolicyDisplayNameSplit.IndexOf($Tag)
                                     $TagValueIndex = $TagIndex + 1
-                                    $TagValue = $PolicySplit[$TagValueIndex]
+                                    $TagValue = $PolicyDisplayNameSplit[$TagValueIndex]
                                     $ConditionalAccessPolicy.Add($Tag, $TagValue)
                                 }
                                 else {

@@ -161,11 +161,10 @@ function Import-CAPolicy {
                 }
                 
                 if ($ConditionalAccessPolicies) {
-                    Write-Host "Importing Conditional Access Policies"
-                    
-                    # Convert from JSON to an object for deployment
                     $ConditionalAccessPolicies = $ConditionalAccessPolicies | ConvertFrom-Json
 
+                    # Output current action
+                    Write-Host "Importing Conditional Access Policies (Count: $($ConditionalAccessPolicies.count))"
 
                     # Build Parameters
                     $Parameters = @{}

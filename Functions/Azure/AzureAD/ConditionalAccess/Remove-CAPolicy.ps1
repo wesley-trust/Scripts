@@ -137,12 +137,21 @@ function Remove-CAPolicy {
                     $ApiVersion = "v1.0"
                 }
 
+                # Build Parameters
+                $Parameters = @{}
+                $Parameters = @{
+                    AccessToken = $AccessToken
+                }
+                if ($ExcludePreviewFeatures) {
+                    $Parameters += @{
+                        ExcludePreviewFeatures = $true
+                    }
+                }
+
                 # Get all existing policies to be removed if specified
                 if ($RemoveAllExistingPolicies) {
-                    if ($ExcludePreviewFeatures) {
-                        $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation -ExcludePreviewFeatures
-                    }
-                    else {
+                    $ConditionalAccessPolicies = Get-CAPolicy @Parameters -ExcludeTagEvaluation
+
                         $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation
                     }
                 }

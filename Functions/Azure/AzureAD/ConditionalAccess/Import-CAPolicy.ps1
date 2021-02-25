@@ -80,7 +80,7 @@ function Import-CAPolicy {
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "The directory path(s) of which all JSON file(s) will be imported"
         )]
-        [string[]]$DirectoryPath,
+        [string[]]$Path,
         [Parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
@@ -149,17 +149,18 @@ function Import-CAPolicy {
             if ($AccessToken) {
                 
                 # For each directory, get the file path of all JSON files within the directory
-                if ($DirectoryPath){
-                    $FilePath = foreach ($Directory in $DirectoryPath){
+                if ($Path) {
+                    $FilePath = foreach ($Directory in $Path) {
                         (Get-ChildItem -Path $Directory -Filter "*.json").FullName
                     }
                 }
 
                 # Import policies from JSON file
-                $ConditionalAccessPolicies = foreach ($File in $FilePath){
+                $ConditionalAccessPolicies = foreach ($File in $FilePath) {
                     Get-Content -Raw -Path $File
                 }
                 
+                # If a file has been imported, convert from JSON to an object for deployment
                 if ($ConditionalAccessPolicies) {
                     $ConditionalAccessPolicies = $ConditionalAccessPolicies | ConvertFrom-Json
 

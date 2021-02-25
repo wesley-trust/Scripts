@@ -131,23 +131,32 @@ function Export-CAPolicy {
                     -ClientSecret $ClientSecret `
                     -TenantDomain $TenantDomain
             }
+
             if ($AccessToken) {
+
+                # Build Parameters
+                $Parameters = @{}
+                $Parameters = @{
+                    AccessToken = $AccessToken
+                }
                 if ($ExcludeTagEvaluation) {
-                    if ($ExcludePreviewFeatures) {
-                        $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation -ExcludePreviewFeatures
-                    }
-                    else {
-                        $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation
+                    $Parameters += @{
+                        ExcludeTagEvaluation = $true
                     }
                 }
-                else {
-                    if ($ExcludePreviewFeatures) {
-                        $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludePreviewFeatures
-                    }
-                    else {
-                        $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken
+                if ($ExcludePreviewFeatures) {
+                    $Parameters += @{
+                        ExcludePreviewFeatures = $true
                     }
                 }
+                if ($PolicyIDs) {
+                    $Parameters += @{
+                        PolicyIDs = $PolicyIDs
+                    }
+                }
+
+                # Get policies based on specified parameters
+                $ConditionalAccessPolicies = Get-CAPolicy @Parameters
 
                 # If a response is returned that was not an error
                 if ($ConditionalAccessPolicies) {

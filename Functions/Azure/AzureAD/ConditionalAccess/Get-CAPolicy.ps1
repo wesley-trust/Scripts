@@ -75,7 +75,15 @@ function Get-CAPolicy {
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "Specify whether to exclude tag processing of policies"
         )]
-        [switch]$ExcludeTagEvaluation
+        [switch]$ExcludeTagEvaluation,
+        [parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            ValueFromPipeLine = $true,
+            HelpMessage = "The Conditional Access policies to get, this must contain valid id(s)"
+        )]
+        [Alias("id", "PolicyID")]
+        [string[]]$PolicyIDs
     )
     Begin {
         try {

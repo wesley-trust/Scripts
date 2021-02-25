@@ -106,6 +106,7 @@ function Get-CAPolicy {
             $MajorDelimiter = ";"
             $MinorDelimiter = "-"
             $Tags = @("REF", "VER", "ENV")
+            $Counter = 1
 
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -136,10 +137,22 @@ function Get-CAPolicy {
                     $ApiVersion = "v1.0"
                 }
                 
-                # Get all existing policies if specified, and policies exist
-                $ConditionalAccessPolicies = $AccessToken | Invoke-MSGraphQuery `
-                    -Method $Method `
-                    -Uri $ApiVersion/$Uri
+                        # Output progress
+                        if ($PolicyIDs.count -gt 1) {
+                            Write-Host "Processing Policy $Counter of $($PolicyIDs.count) with ID: $PolicyID"
+                                                
+                            # Create progress bar
+                            $PercentComplete = (($counter / $PolicyIDs.count) * 100)
+                            Write-Progress -Activity "Getting Conditional Access Policy" `
+                                -PercentComplete $PercentComplete `
+                                -CurrentOperation $PolicyDisplayName
+                        }
+                        else {
+                            Write-Host "Processing Policy $Counter with ID: $PolicyID"
+                        }
+
+                        # Increment counter
+                        $counter++
 
                 # If there are policies, check whether policy tagging should be performed
                 if ($ConditionalAccessPolicies.value) {

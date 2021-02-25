@@ -190,10 +190,21 @@ function Export-CAPolicy {
                     # Export to JSON
                     Write-Host "Exporting Conditional Access Policies"
                     
-                    $ConditionalAccessPolicies | ConvertTo-Json -Depth 10 `
+                    # If a file path is specified, output all policies in one JSON formatted file
+                    if ($FilePath) {
+                        $ConditionalAccessPolicies | ConvertTo-Json -Depth 10 `
+                        | Out-File -Force:$true -FilePath $FilePath
+                    }
+                    else {
+                        foreach ($Policy in $ConditionalAccessPolicies) {
 
                             # Remove characters not supported in Windows file names
                             $PolicyDisplayName = $Policy.displayname -replace $UnsupportedCharactersRegEx, "_"
+                            
+                            # Output individual policy JSON file
+                            $Policy | ConvertTo-Json -Depth 10 `
+                            | Out-File -Force:$true -FilePath "$Path\$PolicyDisplayName.json"
+
                 }
                 else {
                     $ErrorMessage = "Microsoft Graph did not return a valid response"

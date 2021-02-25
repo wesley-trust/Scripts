@@ -137,6 +137,10 @@ function Get-CAPolicy {
                     $ApiVersion = "v1.0"
                 }
                 
+                # If specific policies are specified, get each, otherwise, get all policies
+                if ($PolicyIDs) {
+                    $ConditionalAccessPolicies = foreach ($PolicyID in $PolicyIDs) {
+                        
                         # Output progress
                         if ($PolicyIDs.count -gt 1) {
                             Write-Host "Processing Policy $Counter of $($PolicyIDs.count) with ID: $PolicyID"
@@ -153,6 +157,18 @@ function Get-CAPolicy {
 
                         # Increment counter
                         $counter++
+
+                        # Get policy
+                        $AccessToken | Invoke-MSGraphQuery `
+                            -Method $Method `
+                            -Uri $ApiVersion/$Uri/$PolicyID
+                    }
+                }
+                else {
+                    $ConditionalAccessPolicies = $AccessToken | Invoke-MSGraphQuery `
+                        -Method $Method `
+                        -Uri $ApiVersion/$Uri
+                }
 
                 # If there are policies, check whether policy tagging should be performed
                 if ($ConditionalAccessPolicies.value) {

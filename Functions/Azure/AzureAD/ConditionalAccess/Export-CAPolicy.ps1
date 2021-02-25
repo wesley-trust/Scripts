@@ -70,7 +70,13 @@ function Export-CAPolicy {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "The file path where the new JSON file will be created"
+            HelpMessage = "The path where the JSON file(s) will be created"
+        )]
+        [string]$Path,
+        [parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "The file path where the JSON file will be created"
         )]
         [string]$FilePath,
         [parameter(
@@ -90,7 +96,14 @@ function Export-CAPolicy {
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "Specify whether to exclude tag processing of policies"
         )]
-        [switch]$ExcludeTagEvaluation
+        [switch]$ExcludeTagEvaluation,
+        [parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "The Conditional Access policies to get, this must contain valid id(s), when not specified, all policies are returned"
+        )]
+        [Alias("id", "PolicyID")]
+        [string[]]$PolicyIDs
     )
     Begin {
         try {

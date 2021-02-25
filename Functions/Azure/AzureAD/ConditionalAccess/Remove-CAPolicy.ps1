@@ -83,10 +83,10 @@ function Remove-CAPolicy {
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
             ValueFromPipeLine = $true,
-            HelpMessage = "The Conditional Access policies to remove, a policy must have a valid id"
+            HelpMessage = "The Conditional Access policies to remove, this must contain valid id(s)"
         )]
-        [Alias('ConditionalAccessPolicy', 'PolicyDefinition')]
-        [pscustomobject]$ConditionalAccessPolicies
+        [Alias("id", "PolicyID")]
+        [string[]]$PolicyIDs
     )
     Begin {
         try {

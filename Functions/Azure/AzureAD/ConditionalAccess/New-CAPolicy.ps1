@@ -114,6 +114,7 @@ function New-CAPolicy {
                 "VER",
                 "ENV"
             )
+            $Counter = 1
 
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -165,8 +166,25 @@ function New-CAPolicy {
                         # Convert policy object to JSON
                         $Policy = $Policy | ConvertTo-Json -Depth 10
 
+                        # Output progress
+                        if ($ConditionalAccessPolicies.count -gt 1) {
+                            Write-Host "Processing Policy $Counter of $($ConditionalAccessPolicies.count) with Display Name: $PolicyDisplayName"
+                        
+                            # Create progress bar
+                            $PercentComplete = (($counter / $ConditionalAccessPolicies.count) * 100)
+                            Write-Progress -Activity "Creating Conditional Access Policy" `
+                                -PercentComplete $PercentComplete `
+                                -CurrentOperation $PolicyDisplayName
+                        }
+                        else {
+                            Write-Host "Processing Policy $Counter with Display Name: $PolicyDisplayName"
+                            
+                        }
+                        
+                        # Increment counter
+                        $counter++
+
                         # Create policy, with one second intervals to prevent throttling
-                        Write-Host "Processing Policy: $PolicyDisplayName"
                         Start-Sleep -Seconds 1
                         $AccessToken | Invoke-MSGraphQuery `
                             -Method $Method `

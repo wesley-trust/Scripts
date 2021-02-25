@@ -114,6 +114,7 @@ function Update-CAPolicy {
                 "VER",
                 "ENV"
             )
+            $Counter = 1
 
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -150,6 +151,7 @@ function Update-CAPolicy {
                         
                         # Update policy ID, and if exists continue
                         $PolicyID = $Policy.id
+                        $PolicyDisplayName = $Policy.displayName
                         if ($PolicyID) {
 
                             # Remove properties that are not valid for when updating policies
@@ -165,8 +167,24 @@ function Update-CAPolicy {
                             # Convert policy object to JSON
                             $Policy = $Policy | ConvertTo-Json -Depth 10
                             
+                            # Output progress
+                            if ($ConditionalAccessPolicies.count -gt 1) {
+                                Write-Host "Processing Policy $Counter of $($ConditionalAccessPolicies.count) with ID: $PolicyID"
+
+                                # Create progress bar
+                                $PercentComplete = (($counter / $ConditionalAccessPolicies.count) * 100)
+                                Write-Progress -Activity "Updating Conditional Access Policy" `
+                                    -PercentComplete $PercentComplete `
+                                    -CurrentOperation $PolicyDisplayName
+                            }
+                            else {
+                                Write-Host "Processing Policy $Counter with ID: $PolicyID"
+                            }
+
+                            # Increment counter
+                            $counter++
+                            
                             # Create policy, with one second intervals to prevent throttling
-                            Write-Host "Processing Policy ID: $PolicyID"
                             Start-Sleep -Seconds 1
                             $AccessToken | Invoke-MSGraphQuery `
                                 -Method $Method `
@@ -197,6 +215,6 @@ function Update-CAPolicy {
         }
     }
     End {
-        
+
     }
 }

@@ -107,6 +107,7 @@ function Remove-CAPolicy {
             $Method = "Delete"
             $ApiVersion = "beta" # If preview features are in use, the "beta" API must be used
             $Uri = "identity/conditionalAccess/policies"
+            $Counter = 1
 
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -152,29 +153,37 @@ function Remove-CAPolicy {
                 if ($RemoveAllExistingPolicies) {
                     $ConditionalAccessPolicies = Get-CAPolicy @Parameters -ExcludeTagEvaluation
 
-                        $ConditionalAccessPolicies = Get-CAPolicy -AccessToken $AccessToken -ExcludeTagEvaluation
-                    }
+                    # Filter object to get the policy id(s) only
+                    $PolicyIDs = $ConditionalAccessPolicies.id
                 }
 
-                # If there are policies to be removed, remove each of them
-                if ($ConditionalAccessPolicies) {
-                    
-                    foreach ($Policy in $ConditionalAccessPolicies) {
-                        
-                        # Update policy ID, and if exists continue
-                        $PolicyID = $Policy.id
-                        if ($PolicyID) {
-                            Write-Host "Processing Policy ID: $PolicyID"
-                            Start-Sleep -Seconds 1
-                            $AccessToken | Invoke-MSGraphQuery `
-                                -Method $Method `
-                                -Uri "$ApiVersion/$Uri/$PolicyID" `
-                            | Out-Null
+                # If there are policies to be removed, 
+                if ($PolicyIDs) {
+                    foreach ($PolicyID in $PolicyIDs) {
+
+                        # Output progress
+                        if ($PolicyIDs.count -gt 1) {
+                            Write-Host "Processing Policy $Counter of $($PolicyIDs.count) with ID: $PolicyID"
+
+                            # Create progress bar
+                            $PercentComplete = (($counter / $PolicyIDs.count) * 100)
+                            Write-Progress -Activity "Removing Conditional Access Policy" `
+                                -PercentComplete $PercentComplete `
+                                -CurrentOperation $PolicyID
                         }
                         else {
-                            $ErrorMessage = "The Conditional Access policy does not contain an id, so cannot be removed"
-                            Write-Error $ErrorMessage
+                            Write-Host "Processing Policy $Counter with ID: $PolicyID"
                         }
+                        
+                        # Increment counter
+                        $counter++
+
+                        # Remove policy, one second apart to prevent throttling
+                        Start-Sleep -Seconds 1
+                        $AccessToken | Invoke-MSGraphQuery `
+                            -Method $Method `
+                            -Uri "$ApiVersion/$Uri/$PolicyID" `
+                        | Out-Null
                     }
                 }
                 else {

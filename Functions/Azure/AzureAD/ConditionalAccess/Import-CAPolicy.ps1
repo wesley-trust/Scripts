@@ -84,7 +84,7 @@ function Import-CAPolicy {
         [Parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "If a policy is enabled, modify the policy state when imported if specified"
+            HelpMessage = "Override the policy state when imported"
         )]
         [ValidateSet("enabled", "enabledForReportingButNotEnforced", "disabled", "")]
         [AllowNull()]
@@ -103,13 +103,19 @@ function Import-CAPolicy {
             HelpMessage = "Specify whether all existing policies deployed in the tenant will be removed"
         )]
         [switch]
-        $RemoveAllExistingPolicies,
+        $RemoveExistingPolicies,
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "Specify whether to exclude features in preview, a production API version will then be used instead"
         )]
-        [switch]$ExcludePreviewFeatures
+        [switch]$ExcludePreviewFeatures,
+        [parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "If there are no policies to import, forcibly remove any existing policies"
+        )]
+        [switch]$Force
     )
     Begin {
         try {
@@ -119,6 +125,7 @@ function Import-CAPolicy {
                 "$FunctionLocation\GraphAPI\Get-MSGraphAccessToken.ps1",
                 "$FunctionLocation\GraphAPI\Invoke-MSGraphQuery.ps1",
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Remove-CAPolicy.ps1",
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-CAPolicy.ps1",
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\New-CAPolicy.ps1"
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Update-CAPolicy.ps1"
             )
@@ -147,7 +154,17 @@ function Import-CAPolicy {
                     -TenantDomain $TenantDomain
             }
             if ($AccessToken) {
-                
+                # Build Parameters
+                $Parameters = @{}
+                $Parameters = @{
+                    AccessToken = $AccessToken
+                }
+                if ($ExcludePreviewFeatures) {
+                    $Parameters += @{
+                        ExcludePreviewFeatures = $true
+                    }
+                }
+
                 # For each directory, get the file path of all JSON files within the directory
                 if ($Path) {
                     $FilePath = foreach ($Directory in $Path) {
@@ -159,7 +176,7 @@ function Import-CAPolicy {
                 $ConditionalAccessPolicies = foreach ($File in $FilePath) {
                     Get-Content -Raw -Path $File
                 }
-                
+
                 # If a file has been imported, convert from JSON to an object for deployment
                 if ($ConditionalAccessPolicies) {
                     $ConditionalAccessPolicies = $ConditionalAccessPolicies | ConvertFrom-Json
@@ -167,61 +184,81 @@ function Import-CAPolicy {
                     # Output current action
                     Write-Host "Importing Conditional Access Policies (Count: $($ConditionalAccessPolicies.count))"
 
-                    # Build Parameters
-                    $Parameters = @{}
-                    $Parameters = @{
-                        AccessToken = $AccessToken
-                    }
-                    if ($ExcludePreviewFeatures) {
-                        $Parameters += @{
-                            ExcludePreviewFeatures = $true
-                        }
-                    }
+                    # Evaluate policies if parameters exist
+                    if ($RemoveExistingPolicies -or $UpdateExistingPolicies) {
 
-                    # Remove all existing policies if specified
-                    if ($RemoveAllExistingPolicies) {
-                        Remove-CAPolicy @Parameters -RemoveAllExistingPolicies
-                    }
-                    elseif ($UpdateExistingPolicies) {
+                        # Get existing policies for comparison
+                        $ExistingPolicies = Get-CAPolicy @Parameters -ExcludeTagEvaluation
 
-                        # Update parameters
-                        if ($PolicyState) {
-                            $Parameters += @{
-                                PolicyState = $PolicyState
+                        if ($ExistingPolicies) {
+                            # Compare object on id and pass thru all objects, including those that exist and are to be imported
+                            $PolicyComparison = Compare-Object `
+                                -ReferenceObject $ExistingPolicies `
+                                -DifferenceObject $ConditionalAccessPolicies `
+                                -Property id `
+                                -PassThru
+
+                            # Filter for policies that should be removed, as they do not exist in the import
+                            if ($RemoveExistingPolicies) {
+                                $RemovePolicies = $PolicyComparison | Where-Object { $_.sideindicator -eq "<=" }
+
+                                # If policies require removing, pass the ids
+                                if ($RemovePolicies) {
+                                    $PolicyIDs = $RemovePolicies.id
+                                    Remove-CAPolicy @Parameters -PolicyIDs $PolicyIDs
+                                }
+                                else {
+                                    $WarningMessage = "No policies will be removed, as none exist that are different to the import"
+                                    Write-Warning $WarningMessage
+                                }
                             }
+                            if ($UpdateExistingPolicies) {
+
+                                # Compare again, with all mandatory property elements for differences
+                                $PolicyPropertyComparison = Compare-Object `
+                                    -ReferenceObject $ExistingPolicies `
+                                    -DifferenceObject $ConditionalAccessPolicies `
+                                    -Property id, displayName, state, sessionControls, conditions, grantControls
+                            
+                                $UpdatePolicies = $PolicyPropertyComparison | Where-Object { $_.sideindicator -eq "=>" -and $null -ne $_.id }
+
+                                # If policies require updating, pass the ids
+                                if ($UpdatePolicies) {
+                                    Update-CAPolicy @Parameters -ConditionalAccessPolicies $UpdatePolicies -PolicyState $PolicyState
+                                }
+                                else {
+                                    $WarningMessage = "No policies will be updated, as none exist that are different to the import"
+                                    Write-Warning $WarningMessage
+                                }
+                            }
+
+                            # Filter for policies that do not contain an id, and so are policies that should be created
+                            $CreatePolicies = $PolicyComparison | Where-Object { $_.sideindicator -eq "=>" }
                         }
-                        
-                        # Filter for policies that contain an id, which is required to update a policy
-                        $UpdatePolicies = $ConditionalAccessPolicies | Where-Object id -NE $null
-
-                        Update-CAPolicy @Parameters -ConditionalAccessPolicies $UpdatePolicies
-
-                        # Filter for policies that do not contain an id, and so are policies that should be created
-                        $CreatePolicies = $ConditionalAccessPolicies | Where-Object id -EQ $null
                     }
 
-                    # If policies should not be updated, change the variable to create all the policies
-                    # If any of the policies contain existing ids, these are not validated when creating policies, so duplicates may be created
-                    if (!$UpdateExistingPolicies) {
+                    if (!$ExistingPolicies){
                         $CreatePolicies = $ConditionalAccessPolicies
-
-                        # Update parameters
-                        if ($PolicyState) {
-                            $Parameters += @{
-                                PolicyState = $PolicyState
-                            }
-                        }
                     }
 
                     # If there are new policies to be created, create them, passing through the policy state
                     if ($CreatePolicies) {
-                        New-CAPolicy @Parameters -ConditionalAccessPolicies $CreatePolicies
+                        New-CAPolicy @Parameters -ConditionalAccessPolicies $CreatePolicies -PolicyState $PolicyState
+                    }
+                    else {
+                        $WarningMessage = "No policies will be created, as none exist that are different to the import"
+                        Write-Warning $WarningMessage
                     }
                 }
                 else {
-                    $ErrorMessage = "No Conditional Access policies to be imported, check the import file"
-                    Write-Error $ErrorMessage
-                    throw $ErrorMessage
+                    # If there are no policies to be imported, specific whether all existing policies should be forcibly removed
+                    if ($Force) {
+                        Remove-CAPolicy @Parameters -RemoveAllExistingPolicies
+                    }
+                    else {
+                        $WarningMessage = "No Conditional Access policies to be imported, to remove all existing policies use the switch -Force"
+                        Write-Warning $WarningMessage
+                    }
                 }
             }
             else {

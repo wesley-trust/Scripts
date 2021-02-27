@@ -187,8 +187,8 @@ function Remove-CAPolicy {
                     }
                 }
                 else {
-                    $ErrorMessage = "There are no Conditional Access policies to be removed"
-                    Write-Error $ErrorMessage
+                    $WarningMessage = "No Conditional Access policies to be removed"
+                    Write-Warning $WarningMessage
                 }
             }
             else {

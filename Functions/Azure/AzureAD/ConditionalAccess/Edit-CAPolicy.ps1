@@ -33,11 +33,11 @@
                 ClientSecret = ""
                 TenantDomain = ""
     }
-    Update-CAPolicy @Parameters -RemoveAllExistingPolicies
-    $ConditionalAccessPolicies | Update-CAPolicy -AccessToken $AccessToken
+    Edit-CAPolicy @Parameters -RemoveAllExistingPolicies
+    $ConditionalAccessPolicies | Edit-CAPolicy -AccessToken $AccessToken
 #>
 
-function Update-CAPolicy {
+function Edit-CAPolicy {
     [cmdletbinding()]
     param (
         [parameter(

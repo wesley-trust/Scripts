@@ -127,7 +127,7 @@ function Import-CAPolicy {
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Remove-CAPolicy.ps1",
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-CAPolicy.ps1",
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\New-CAPolicy.ps1"
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Update-CAPolicy.ps1"
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Edit-CAPolicy.ps1"
             )
 
             # Function dot source
@@ -224,7 +224,7 @@ function Import-CAPolicy {
 
                                 # If policies require updating, pass the ids
                                 if ($UpdatePolicies) {
-                                    Update-CAPolicy @Parameters -ConditionalAccessPolicies $UpdatePolicies -PolicyState $PolicyState
+                                    Edit-CAPolicy @Parameters -ConditionalAccessPolicies $UpdatePolicies -PolicyState $PolicyState
                                 }
                                 else {
                                     $WarningMessage = "No policies will be updated, as none exist that are different to the import"

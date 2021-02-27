@@ -98,11 +98,9 @@ function Invoke-MSGraphQuery {
                         -Body $Body
                 }
 
+                # If the request returns a value, add this to the query result
                 if ($QueryRequest.value) {
                     $QueryResult += $QueryRequest.value
-                }
-                else {
-                    $QueryResult += $QueryRequest
                 }
 
                 # Invoke REST methods and fetch data until there are no pages left

@@ -171,7 +171,8 @@ function Get-CAPolicy {
                 }
 
                 # If there are policies, check whether policy tagging should be performed
-                if ($ConditionalAccessPolicies.value) {
+                if ($ConditionalAccessPolicies) {
+
                     if ($ExcludeTagEvaluation) {
                         $ConditionalAccessPolicies
                     }

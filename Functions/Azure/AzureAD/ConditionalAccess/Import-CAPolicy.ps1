@@ -93,14 +93,14 @@ function Import-CAPolicy {
         [Parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "Specify whether to replace existing policies deployed in the tenant, where the IDs match"
+            HelpMessage = "Specify whether to update existing policies deployed in the tenant, where the IDs match"
         )]
         [switch]
         $UpdateExistingPolicies,
         [Parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "Specify whether all existing policies deployed in the tenant will be removed"
+            HelpMessage = "Specify whether existing policies deployed in the tenant will be removed, if not present in the import"
         )]
         [switch]
         $RemoveExistingPolicies,

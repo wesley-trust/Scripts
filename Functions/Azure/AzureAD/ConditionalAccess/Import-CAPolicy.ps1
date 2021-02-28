@@ -180,7 +180,7 @@ function Import-CAPolicy {
                 # If a file has been imported, convert from JSON to an object for deployment
                 if ($ConditionalAccessPolicies) {
                     $ConditionalAccessPolicies = $ConditionalAccessPolicies | ConvertFrom-Json
-
+                    
                     # Output current action
                     Write-Host "Importing Conditional Access Policies (Count: $($ConditionalAccessPolicies.count))"
 
@@ -191,6 +191,7 @@ function Import-CAPolicy {
                         $ExistingPolicies = Get-CAPolicy @Parameters -ExcludeTagEvaluation
 
                         if ($ExistingPolicies) {
+
                             # Compare object on id and pass thru all objects, including those that exist and are to be imported
                             $PolicyComparison = Compare-Object `
                                 -ReferenceObject $ExistingPolicies `
@@ -214,13 +215,23 @@ function Import-CAPolicy {
                             }
                             if ($UpdateExistingPolicies) {
 
-                                # Compare again, with all mandatory property elements for differences
-                                $PolicyPropertyComparison = Compare-Object `
-                                    -ReferenceObject $ExistingPolicies `
-                                    -DifferenceObject $ConditionalAccessPolicies `
-                                    -Property id, displayName, state, sessionControls, conditions, grantControls
-                            
-                                $UpdatePolicies = $PolicyPropertyComparison | Where-Object { $_.sideindicator -eq "=>" -and $null -ne $_.id }
+                                # Check whether the policies that could be updated have valid ids (so can be updated, ignore the rest)
+                                $UpdatePolicies = foreach ($Policy in $ConditionalAccessPolicies) {
+                                    if ($Policy.id -in $ExistingPolicies.id) {
+                                        $Policy
+                                    }
+                                }
+
+                                if ($UpdatePolicies) {
+                                
+                                    # Compare again, with all mandatory property elements for differences
+                                    $PolicyPropertyComparison = Compare-Object `
+                                        -ReferenceObject $ExistingPolicies `
+                                        -DifferenceObject $UpdatePolicies `
+                                        -Property id, displayName, state, sessionControls, conditions, grantControls
+
+                                    $UpdatePolicies = $PolicyPropertyComparison | Where-Object { $_.sideindicator -eq "=>" }
+                                }
 
                                 # If policies require updating, pass the ids
                                 if ($UpdatePolicies) {
@@ -237,7 +248,8 @@ function Import-CAPolicy {
                         }
                     }
 
-                    if (!$ExistingPolicies){
+                    # If there are no existing policies, then create everything from the import
+                    if (!$ExistingPolicies) {
                         $CreatePolicies = $ConditionalAccessPolicies
                     }
 

@@ -251,12 +251,15 @@ function Import-CAPolicy {
                     }
                 }
                 else {
-                    # If there are no policies to be imported, specific whether all existing policies should be forcibly removed
+                    $WarningMessage = "No Conditional Access policies to be imported"
+                    Write-Warning $WarningMessage
+                    
+                    # If there are no policies to be imported, specify whether all existing policies should be forcibly removed
                     if ($Force) {
                         Remove-CAPolicy @Parameters -RemoveAllExistingPolicies
                     }
                     else {
-                        $WarningMessage = "No Conditional Access policies to be imported, to remove all existing policies use the switch -Force"
+                        $WarningMessage = "To remove any existing policies use the switch -Force"
                         Write-Warning $WarningMessage
                     }
                 }

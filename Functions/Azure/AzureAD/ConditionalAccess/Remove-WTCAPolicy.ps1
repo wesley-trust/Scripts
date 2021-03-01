@@ -95,7 +95,7 @@ function Remove-WTCAPolicy {
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
                 "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1",
-                "$FunctionLocation\GraphAPI\Remove-WTGraphQuery.ps1",
+                "$FunctionLocation\GraphAPI\Invoke-WTGraphDelete.ps1",
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-WTCAPolicy.ps1"
             )
 
@@ -145,7 +145,7 @@ function Remove-WTCAPolicy {
                 
                 # If there are policies to be removed,  remove them
                 if ($IDs) {
-                    Remove-WTGraphQuery `
+                    Invoke-WTGraphDelete `
                         @Parameters `
                         -IDs $IDs `
                         -Uri $Uri `

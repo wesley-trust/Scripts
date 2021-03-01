@@ -92,7 +92,7 @@ function Get-WTCAPolicy {
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
                 "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1",
-                "$FunctionLocation\GraphAPI\Get-WTGraphQuery.ps1"
+                "$FunctionLocation\GraphAPI\Invoke-WTGraphGet.ps1"
             )
 
             # Function dot source
@@ -140,7 +140,7 @@ function Get-WTCAPolicy {
                 }
                 
                 # Get Conditional Access Policies
-                $QueryResponse = Get-WTGraphQuery @Parameters
+                $QueryResponse = Invoke-WTGraphGet @Parameters
                 
                 if ($QueryResponse) {
                     $QueryResponse

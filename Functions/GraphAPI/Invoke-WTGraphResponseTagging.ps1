@@ -14,11 +14,11 @@
 .NOTES
 
 .Example
-    Invoke-WTGraphQueryTagging -Tags $Tags -QueryResponse $QueryResponse
-    $QueryResponse | Invoke-WTGraphQueryTagging -Tags $Tags
+    Invoke-WTGraphResponseTagging -Tags $Tags -QueryResponse $QueryResponse
+    $QueryResponse | Invoke-WTGraphResponseTagging -Tags $Tags
 #>
 
-function Invoke-WTGraphQueryTagging {
+function Invoke-WTGraphResponseTagging {
     [cmdletbinding()]
     param (
         [parameter(

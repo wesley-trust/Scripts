@@ -95,7 +95,7 @@ function New-WTCAPolicy {
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
                 "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1"
-                "$FunctionLocation\GraphAPI\New-WTGraphQuery.ps1"
+                "$FunctionLocation\GraphAPI\Invoke-WTGraphPost.ps1"
             )
 
             # Function dot source
@@ -158,7 +158,7 @@ function New-WTCAPolicy {
                     }
                     
                     # Create policies
-                    New-WTGraphQuery `
+                    Invoke-WTGraphPost `
                         @Parameters `
                         -InputObject $ConditionalAccessPolicies
                 }

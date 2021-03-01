@@ -1,11 +1,11 @@
 <#
 .Synopsis
-    Update Conditional Access objects deployed in the Azure AD tenant
+    Get Conditional Access policies deployed in the Azure AD tenant
 .Description
-    This function updates the Conditional Access objects in Azure AD using the Microsoft Graph API.
+    This function gets the Conditional Access policies from Azure AD using the Microsoft Graph API.
     The following Microsoft Graph API permissions are required for the service principal used for authentication:
-        query.ReadWrite.ConditionalAccess
-        query.Read.All
+        Query.ReadWrite.ConditionalAccess
+        Query.Read.All
         Directory.Read.All
         Agreement.Read.All
         Application.Read.All
@@ -19,10 +19,10 @@
     The access token, obtained from executing Get-WTGraphAccessToken
 .PARAMETER ExcludePreviewFeatures
     Specify whether to exclude features in preview, a production API version will then be used instead
-.PARAMETER ConditionalAccessobjects
-    The Conditional Access objects to remove, a query must have a valid id
+.PARAMETER ExcludeTagEvaluation
+    Specify whether to exclude features in preview, a production API version will then be used instead
 .INPUTS
-    None
+    JSON file with all Conditional Access policies
 .OUTPUTS
     None
 .NOTES
@@ -33,11 +33,11 @@
                 ClientSecret = ""
                 TenantDomain = ""
     }
-    Edit-WTCAquery @Parameters -RemoveAllExistingobjects
-    $InputObject | Edit-WTCAquery -AccessToken $AccessToken
+    Get-CAQuery @Parameters
+    $AccessToken | Get-CAQuery
 #>
 
-function Edit-WTGraphQuery {
+function Invoke-WTGraphGet {
     [cmdletbinding()]
     param (
         [parameter(
@@ -71,12 +71,13 @@ function Edit-WTGraphQuery {
         )]
         [switch]$ExcludePreviewFeatures,
         [parameter(
-            Mandatory = $true,
+            Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
             ValueFromPipeLine = $true,
-            HelpMessage = "The objects to be patched"
+            HelpMessage = "The specific record ids to be returned"
         )]
-        [pscustomobject]$InputObject,
+        [Alias("id")]
+        [string[]]$IDs,
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
@@ -86,15 +87,15 @@ function Edit-WTGraphQuery {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "The activity being performed"
+            HelpMessage = "The optional tags that could be evaluated in the response"
         )]
-        [string]$Activity,
+        [string[]]$Tags,
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "Properties that may exist that need to be removed prior to creation"
+            HelpMessage = "The activity being performed"
         )]
-        [string[]]$CleanUpProperties
+        [string]$Activity
     )
     Begin {
         try {
@@ -103,6 +104,7 @@ function Edit-WTGraphQuery {
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
                 "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1"
+                "$FunctionLocation\GraphAPI\Invoke-WTGraphResponseTagging.ps1"
             )
 
             # Function dot source
@@ -111,9 +113,9 @@ function Edit-WTGraphQuery {
             }
 
             # Variables
-            $Method = "Patch"
+            $Method = "Get"
             $Counter = 1
-
+            
             # Output current activity
             Write-Host $Activity
         }
@@ -124,7 +126,6 @@ function Edit-WTGraphQuery {
     }
     Process {
         try {
-
             if ($AccessToken) {
 
                 # Build parameters
@@ -136,56 +137,47 @@ function Edit-WTGraphQuery {
                 if ($ExcludePreviewFeatures) {
                     $Parameters.Add("ExcludePreviewFeatures", $true)
                 }
-
-                # If there are objects to update, foreach query with a query id
-                if ($InputObject) {
-                    
-                    foreach ($Object in $InputObject) {
+                
+                # If specific policies are specified, get each, otherwise, get all policies
+                if ($IDs) {
+                    $QueryResponse = foreach ($ID in $IDs) {
                         
-                        # Update query ID, and if exists continue
-                        $ObjectID = $Object.id
-                        $ObjectDisplayName = $Object.displayName
-                        if ($ObjectID) {
-
-                            # Remove properties that are not valid for when updating objects
-                            if ($CleanUpProperties) {
-                                foreach ($Property in $CleanUpProperties) {
-                                    $Object.PSObject.Properties.Remove("$Property")
-                                }
-                            }
-                            
-                            # Convert query object to JSON
-                            $Object = $Object | ConvertTo-Json -Depth 10
-                            
-                            # Output progress
-                            if ($InputObject.count -gt 1) {
-                                Write-Host "Processing query $Counter of $($InputObject.count) with ID: $ObjectID"
-
-                                # Create progress bar
-                                $PercentComplete = (($counter / $InputObject.count) * 100)
-                                Write-Progress -Activity $Activity `
-                                    -PercentComplete $PercentComplete `
-                                    -CurrentOperation $ObjectDisplayName
-                            }
-                            else {
-                                Write-Host "Processing query $Counter with ID: $ObjectID"
-                            }
-
-                            # Increment counter
-                            $counter++
-                            
-                            # Create query, with one second intervals to prevent throttling
-                            Start-Sleep -Seconds 1
-                            $AccessToken | Invoke-WTGraphQuery `
-                                @Parameters `
-                                -Uri $Uri/$ObjectID `
-                                -Body $Object `
-                            | Out-Null
+                        # Output progress
+                        if ($IDs.count -gt 1) {
+                            Write-Host "Processing Query $Counter of $($IDs.count) with ID: $ID"
+                                                
+                            # Create progress bar
+                            $PercentComplete = (($counter / $IDs.count) * 100)
+                            Write-Progress -Activity $Activity `
+                                -PercentComplete $PercentComplete `
+                                -CurrentOperation $ID
                         }
                         else {
-                            $ErrorMessage = "The Conditional Access query does not contain an id, so cannot be updated"
-                            Write-Error $ErrorMessage
+                            Write-Host "Processing Query $Counter with ID: $ID"
                         }
+
+                        # Increment counter
+                        $counter++
+
+                        # Get Query
+                        $AccessToken | Invoke-WTGraphQuery `
+                            @Parameters `
+                            -Uri $Uri/$ID
+                    }
+                }
+                else {
+                    $QueryResponse = $AccessToken | Invoke-WTGraphQuery `
+                        @Parameters `
+                        -Uri $Uri
+                }
+
+                # If there is a response, and tags are defined, evaluate the query response for tags, else return without tagging
+                if ($QueryResponse) {
+                    if ($Tags) {
+                        Invoke-WTGraphResponseTagging -Tags $Tags -QueryResponse $QueryResponse
+                    }
+                    else {
+                        $QueryResponse
                     }
                 }
             }
@@ -201,6 +193,6 @@ function Edit-WTGraphQuery {
         }
     }
     End {
-
+        
     }
 }

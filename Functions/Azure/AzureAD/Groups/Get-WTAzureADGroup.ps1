@@ -92,7 +92,7 @@ function Get-WTAzureADGroup {
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
                 "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1",
-                "$FunctionLocation\GraphAPI\Get-WTGraphQuery.ps1"
+                "$FunctionLocation\GraphAPI\Invoke-WTGraphGet.ps1"
             )
 
             # Function dot source
@@ -140,7 +140,7 @@ function Get-WTAzureADGroup {
                 }
                 
                 # Get Azure AD groups
-                $QueryResponse = Get-WTGraphQuery @Parameters
+                $QueryResponse = Invoke-WTGraphGet @Parameters
                 
                 # Return response if one is returned
                 if ($QueryResponse) {

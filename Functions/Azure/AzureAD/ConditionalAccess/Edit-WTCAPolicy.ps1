@@ -16,7 +16,7 @@
 .PARAMETER TenantName
     The initial domain (onmicrosoft.com) of the tenant
 .PARAMETER AccessToken
-    The access token, obtained from executing Get-MSGraphAccessToken
+    The access token, obtained from executing Get-WTGraphAccessToken
 .PARAMETER ExcludePreviewFeatures
     Specify whether to exclude features in preview, a production API version will then be used instead
 .PARAMETER ConditionalAccessPolicies
@@ -26,18 +26,18 @@
 .OUTPUTS
     None
 .NOTES
-    Reference: https://danielchronlund.com/2018/11/19/fetch-data-from-microsoft-graph-with-powershell-paging-support/
+
 .Example
     $Parameters = @{
                 ClientID = ""
                 ClientSecret = ""
                 TenantDomain = ""
     }
-    Edit-CAPolicy @Parameters -RemoveAllExistingPolicies
-    $ConditionalAccessPolicies | Edit-CAPolicy -AccessToken $AccessToken
+    Edit-WTCAPolicy @Parameters -RemoveAllExistingPolicies
+    $ConditionalAccessPolicies | Edit-WTCAPolicy -AccessToken $AccessToken
 #>
 
-function Edit-CAPolicy {
+function Edit-WTCAPolicy {
     [cmdletbinding()]
     param (
         [parameter(
@@ -61,7 +61,7 @@ function Edit-CAPolicy {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "The access token, obtained from executing Get-MSGraphAccessToken"
+            HelpMessage = "The access token, obtained from executing Get-WTGraphAccessToken"
         )]
         [string]$AccessToken,
         [parameter(
@@ -93,9 +93,10 @@ function Edit-CAPolicy {
             # Function definitions
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
-                "$FunctionLocation\GraphAPI\Get-MSGraphAccessToken.ps1",
-                "$FunctionLocation\GraphAPI\Invoke-MSGraphQuery.ps1",
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-CAPolicy.ps1"
+                "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
+                "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1",
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-WTCAPolicy.ps1"
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Edit-WTCAPolicy.ps1"
             )
 
             # Function dot source
@@ -104,23 +105,13 @@ function Edit-CAPolicy {
             }
 
             # Variables
-            $Method = "Patch"
-            $ApiVersion = "beta" # If preview features are in use, the "beta" API must be used
+            $Activity = "Updating Conditional Access Policies"
             $Uri = "identity/conditionalAccess/policies"
             $CleanUpProperties = (
                 "createdDateTime",
-                "modifiedDateTime",
-                "REF",
-                "VER",
-                "ENV"
+                "modifiedDateTime"
             )
-            $Counter = 1
 
-            # Force TLS 1.2
-            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-            # Output current activity
-            Write-Host "Updating Conditional Access Policies"
         }
         catch {
             Write-Error -Message $_.Exception
@@ -132,71 +123,45 @@ function Edit-CAPolicy {
 
             # If there is no access token, obtain one
             if (!$AccessToken) {
-                $AccessToken = Get-MSGraphAccessToken `
+                $AccessToken = Get-WTGraphAccessToken `
                     -ClientID $ClientID `
                     -ClientSecret $ClientSecret `
                     -TenantDomain $TenantDomain
             }
             if ($AccessToken) {
 
-                # Change the API version if features in preview are to be excluded
+                # Build Parameters
+                $Parameters = @{
+                    AccessToken       = $AccessToken
+                    Uri               = $Uri
+                    CleanUpProperties = $CleanUpProperties
+                    Activity          = $Activity
+                }
+
                 if ($ExcludePreviewFeatures) {
-                    $ApiVersion = "v1.0"
+                    $Parameters.Add("ExcludePreviewFeatures", $true)
                 }
 
                 # If there are policies to update, foreach policy with a policy id
                 if ($ConditionalAccessPolicies) {
                     
-                    foreach ($Policy in $ConditionalAccessPolicies) {
-                        
-                        # Update policy ID, and if exists continue
-                        $PolicyID = $Policy.id
-                        $PolicyDisplayName = $Policy.displayName
-                        if ($PolicyID) {
-
-                            # Remove properties that are not valid for when updating policies
-                            foreach ($Property in $CleanUpProperties) {
-                                $Policy.PSObject.Properties.Remove("$Property")
-                            }
+                    if ($PolicyState) {
+                        $ConditionalAccessPolicies = foreach ($Policy in $ConditionalAccessPolicies) {
 
                             # Override policy state 
                             if ($PolicyState) {
                                 $Policy.state = "$PolicyState"
                             }
                             
-                            # Convert policy object to JSON
-                            $Policy = $Policy | ConvertTo-Json -Depth 10
-                            
-                            # Output progress
-                            if ($ConditionalAccessPolicies.count -gt 1) {
-                                Write-Host "Processing Policy $Counter of $($ConditionalAccessPolicies.count) with ID: $PolicyID"
-
-                                # Create progress bar
-                                $PercentComplete = (($counter / $ConditionalAccessPolicies.count) * 100)
-                                Write-Progress -Activity "Updating Conditional Access Policy" `
-                                    -PercentComplete $PercentComplete `
-                                    -CurrentOperation $PolicyDisplayName
-                            }
-                            else {
-                                Write-Host "Processing Policy $Counter with ID: $PolicyID"
-                            }
-
-                            # Increment counter
-                            $counter++
-                            
-                            # Create policy, with one second intervals to prevent throttling
-                            Start-Sleep -Seconds 1
-                            $AccessToken | Invoke-MSGraphQuery `
-                                -Method $Method `
-                                -Uri "$ApiVersion/$Uri/$PolicyID" `
-                                -Body $Policy `
-                            | Out-Null
-                        }
-                        else {
-                            $ErrorMessage = "The Conditional Access policy does not contain an id, so cannot be updated"
-                            Write-Error $ErrorMessage
+                            # Returned modified object
+                            $Policy
                         }
                     }
+                    
+                    # Update policies
+                    Edit-WTGraphQuery `
+                        @Parameters `
+                        -InputObject $ConditionalAccessPolicies
                 }
                 else {
                     $ErrorMessage = "There are no Conditional Access policies to be updated"
@@ -204,7 +169,7 @@ function Edit-CAPolicy {
                 }
             }
             else {
-                $ErrorMessage = "No access token specified, obtain an access token object from Get-MSGraphAccessToken"
+                $ErrorMessage = "No access token specified, obtain an access token object from Get-WTGraphAccessToken"
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
             }

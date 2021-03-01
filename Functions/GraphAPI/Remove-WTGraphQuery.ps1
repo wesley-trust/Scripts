@@ -16,7 +16,7 @@
 .PARAMETER TenantName
     The initial domain (onmicrosoft.com) of the tenant
 .PARAMETER AccessToken
-    The access token, obtained from executing Get-MSGraphAccessToken
+    The access token, obtained from executing Get-WTGraphAccessToken
 .PARAMETER RemoveAllExistingPolicies
     Specify whether all existing policies deployed in the tenant will be removed
 .PARAMETER ExcludePreviewFeatures
@@ -28,18 +28,18 @@
 .OUTPUTS
     None
 .NOTES
-    Reference: https://danielchronlund.com/2018/11/19/fetch-data-from-microsoft-graph-with-powershell-paging-support/
+
 .Example
     $Parameters = @{
                 ClientID = ""
                 ClientSecret = ""
                 TenantDomain = ""
     }
-    Remove-CAPolicy @Parameters -RemoveAllExistingPolicies
-    Remove-CAPolicy -AccessToken $AccessToken -RemoveAllExistingPolicies
+    Remove-WTCAPolicy @Parameters -RemoveAllExistingPolicies
+    Remove-WTCAPolicy -AccessToken $AccessToken -RemoveAllExistingPolicies
 #>
 
-function Remove-CAPolicy {
+function Remove-WTGraphQuery {
     [cmdletbinding()]
     param (
         [parameter(
@@ -63,16 +63,9 @@ function Remove-CAPolicy {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "The access token, obtained from executing Get-MSGraphAccessToken"
+            HelpMessage = "The access token, obtained from executing Get-WTGraphAccessToken"
         )]
         [string]$AccessToken,
-        [Parameter(
-            Mandatory = $false,
-            ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "Specify whether all existing policies deployed in the tenant will be removed"
-        )]
-        [switch]
-        $RemoveAllExistingPolicies,
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
@@ -80,22 +73,34 @@ function Remove-CAPolicy {
         )]
         [switch]$ExcludePreviewFeatures,
         [parameter(
-            Mandatory = $false,
+            Mandatory = $true,
             ValueFromPipeLineByPropertyName = $true,
             ValueFromPipeLine = $true,
-            HelpMessage = "The Conditional Access policies to remove, this must contain valid id(s)"
+            HelpMessage = "The specific record ids to be returned"
         )]
-        [Alias("id", "PolicyID")]
-        [string[]]$PolicyIDs
+        [Alias("id")]
+        [string[]]$IDs,
+        [parameter(
+            Mandatory = $true,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "The uniform resource indicator"
+        )]
+        [string]$Uri,
+        [parameter(
+            Mandatory = $true,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "The activity being performed"
+        )]
+        [string]$Activity
     )
     Begin {
         try {
+
             # Function definitions
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
-                "$FunctionLocation\GraphAPI\Get-MSGraphAccessToken.ps1",
-                "$FunctionLocation\GraphAPI\Invoke-MSGraphQuery.ps1",
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-CAPolicy.ps1"
+                "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
+                "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1"
             )
 
             # Function dot source
@@ -105,15 +110,10 @@ function Remove-CAPolicy {
 
             # Variables
             $Method = "Delete"
-            $ApiVersion = "beta" # If preview features are in use, the "beta" API must be used
-            $Uri = "identity/conditionalAccess/policies"
             $Counter = 1
 
-            # Force TLS 1.2
-            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
             # Output current activity
-            Write-Host "Removing Conditional Access Policies"
+            Write-Host $Activity
 
         }
         catch {
@@ -123,76 +123,50 @@ function Remove-CAPolicy {
     }
     Process {
         try {
-
-            # If there is no access token, obtain one
-            if (!$AccessToken) {
-                $AccessToken = Get-MSGraphAccessToken `
-                    -ClientID $ClientID `
-                    -ClientSecret $ClientSecret `
-                    -TenantDomain $TenantDomain
-            }
             if ($AccessToken) {
+
+                # Build parameters
+                $Parameters = @{
+                    Method = $Method
+                }
 
                 # Change the API version if features in preview are to be excluded
                 if ($ExcludePreviewFeatures) {
-                    $ApiVersion = "v1.0"
-                }
-
-                # Build Parameters
-                $Parameters = @{}
-                $Parameters = @{
-                    AccessToken = $AccessToken
-                }
-                if ($ExcludePreviewFeatures) {
-                    $Parameters += @{
-                        ExcludePreviewFeatures = $true
-                    }
-                }
-
-                # Get all existing policies to be removed if specified
-                if ($RemoveAllExistingPolicies) {
-                    $ConditionalAccessPolicies = Get-CAPolicy @Parameters -ExcludeTagEvaluation
-
-                    # Filter object to get the policy id(s) only
-                    $PolicyIDs = $ConditionalAccessPolicies.id
+                    $Parameters.Add("ExcludePreviewFeatures", $true)
                 }
 
                 # If there are policies to be removed, 
-                if ($PolicyIDs) {
-                    foreach ($PolicyID in $PolicyIDs) {
+                if ($IDs) {
+                    foreach ($ID in $IDs) {
 
                         # Output progress
-                        if ($PolicyIDs.count -gt 1) {
-                            Write-Host "Processing Policy $Counter of $($PolicyIDs.count) with ID: $PolicyID"
+                        if ($IDs.count -gt 1) {
+                            Write-Host "Processing Query $Counter of $($IDs.count) with ID: $ID"
 
                             # Create progress bar
-                            $PercentComplete = (($counter / $PolicyIDs.count) * 100)
-                            Write-Progress -Activity "Removing Conditional Access Policy" `
+                            $PercentComplete = (($counter / $IDs.count) * 100)
+                            Write-Progress -Activity $Activity `
                                 -PercentComplete $PercentComplete `
-                                -CurrentOperation $PolicyID
+                                -CurrentOperation $ID
                         }
                         else {
-                            Write-Host "Processing Policy $Counter with ID: $PolicyID"
+                            Write-Host "Processing Query $Counter with ID: $ID"
                         }
                         
                         # Increment counter
                         $counter++
 
-                        # Remove policy, one second apart to prevent throttling
+                        # Remove record, one second apart to prevent throttling
                         Start-Sleep -Seconds 1
-                        $AccessToken | Invoke-MSGraphQuery `
-                            -Method $Method `
-                            -Uri "$ApiVersion/$Uri/$PolicyID" `
+                        $AccessToken | Invoke-WTGraphQuery `
+                            @Parameters `
+                            -Uri $Uri/$ID `
                         | Out-Null
                     }
                 }
-                else {
-                    $WarningMessage = "No Conditional Access policies to be removed"
-                    Write-Warning $WarningMessage
-                }
             }
             else {
-                $ErrorMessage = "No access token specified, obtain an access token object from Get-MSGraphAccessToken"
+                $ErrorMessage = "No access token specified, obtain an access token object from Get-WTGraphAccessToken"
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
             }

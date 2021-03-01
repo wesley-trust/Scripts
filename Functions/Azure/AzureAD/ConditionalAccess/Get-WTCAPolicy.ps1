@@ -91,7 +91,6 @@ function Get-WTCAPolicy {
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
-                "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1",
                 "$FunctionLocation\GraphAPI\Invoke-WTGraphGet.ps1"
             )
 

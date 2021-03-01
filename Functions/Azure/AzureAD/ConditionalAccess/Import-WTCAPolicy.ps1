@@ -123,7 +123,6 @@ function Import-WTCAPolicy.ps1 {
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
-                "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1",
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Remove-WTCAPolicy.ps1",
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-WTCAPolicy.ps1",
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\New-WTCAPolicy.ps1"

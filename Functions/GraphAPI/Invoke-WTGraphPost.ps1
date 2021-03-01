@@ -37,7 +37,7 @@
     $CondionalAccessPolicies | New-CAQuery -AccessToken $AccessToken
 #>
 
-function New-WTGraphQuery {
+function Invoke-WTGraphPost {
     [cmdletbinding()]
     param (
         [parameter(

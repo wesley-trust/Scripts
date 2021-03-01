@@ -39,7 +39,7 @@
     Remove-WTCAPolicy -AccessToken $AccessToken -RemoveAllExistingPolicies
 #>
 
-function Remove-WTGraphQuery {
+function Invoke-WTGraphDelete {
     [cmdletbinding()]
     param (
         [parameter(

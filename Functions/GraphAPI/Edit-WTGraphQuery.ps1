@@ -37,7 +37,7 @@
     $InputObject | Edit-WTCAquery -AccessToken $AccessToken
 #>
 
-function Edit-WTCAquery {
+function Edit-WTGraphQuery {
     [cmdletbinding()]
     param (
         [parameter(
@@ -102,8 +102,7 @@ function Edit-WTCAquery {
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
-                "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1",
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-WTCAquery.ps1"
+                "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1"
             )
 
             # Function dot source

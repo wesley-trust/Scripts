@@ -95,8 +95,7 @@ function Edit-WTCAPolicy {
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
                 "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1",
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-WTCAPolicy.ps1"
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Edit-WTCAPolicy.ps1"
+                "$FunctionLocation\GraphAPI\Edit-WTGraphQuery.ps1"
             )
 
             # Function dot source

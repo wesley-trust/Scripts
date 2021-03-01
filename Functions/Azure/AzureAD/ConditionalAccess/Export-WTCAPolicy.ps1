@@ -16,7 +16,7 @@
 .PARAMETER TenantName
     The initial domain (onmicrosoft.com) of the tenant
 .PARAMETER AccessToken
-    The access token, obtained from executing Get-MSGraphAccessToken
+    The access token, obtained from executing Get-WTGraphAccessToken
 .PARAMETER FilePath
     The file path (including file name) of where the new JSON file will be created
 .PARAMETER ExcludePreviewFeatures
@@ -28,7 +28,7 @@
 .OUTPUTS
     JSON file with all Conditional Access policies
 .NOTES
-    Reference: https://danielchronlund.com/2018/11/19/fetch-data-from-microsoft-graph-with-powershell-paging-support/
+
 .Example
     $Parameters = @{
                 ClientID = ""
@@ -36,11 +36,11 @@
                 TenantDomain = ""
                 FilePath = ""
     }
-    Export-CAPolicy @Parameters
-    $AccessToken | Export-CAPolicy
+    Export-WTCAPolicy @Parameters
+    $AccessToken | Export-WTCAPolicy
 #>
 
-function Export-CAPolicy {
+function Export-WTCAPolicy {
     [cmdletbinding()]
     param (
         [parameter(
@@ -64,7 +64,7 @@ function Export-CAPolicy {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "The access token, obtained from executing Get-MSGraphAccessToken"
+            HelpMessage = "The access token, obtained from executing Get-WTGraphAccessToken"
         )]
         [string]$AccessToken,
         [parameter(
@@ -110,9 +110,9 @@ function Export-CAPolicy {
             # Function definitions
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
-                "$FunctionLocation\GraphAPI\Get-MSGraphAccessToken.ps1",
-                "$FunctionLocation\GraphAPI\Invoke-MSGraphQuery.ps1",
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-CAPolicy.ps1"
+                "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
+                "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1",
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-WTCAPolicy.ps1"
             )
 
             # Function dot source
@@ -129,9 +129,6 @@ function Export-CAPolicy {
             $UnsupportedCharactersRegEx = '[\\\/:*?"<>|]'
             $Counter = 1
             
-            # Force TLS 1.2
-            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-            
         }
         catch {
             Write-Error -Message $_.Exception
@@ -142,7 +139,7 @@ function Export-CAPolicy {
         try {
             # If there is no access token, obtain one
             if (!$AccessToken) {
-                $AccessToken = Get-MSGraphAccessToken `
+                $AccessToken = Get-WTGraphAccessToken `
                     -ClientID $ClientID `
                     -ClientSecret $ClientSecret `
                     -TenantDomain $TenantDomain
@@ -151,7 +148,6 @@ function Export-CAPolicy {
             if ($AccessToken) {
 
                 # Build Parameters
-                $Parameters = @{}
                 $Parameters = @{
                     AccessToken = $AccessToken
                 }
@@ -172,7 +168,7 @@ function Export-CAPolicy {
                 }
 
                 # Get policies based on specified parameters
-                $ConditionalAccessPolicies = Get-CAPolicy @Parameters
+                $ConditionalAccessPolicies = Get-WTCAPolicy @Parameters
 
                 # If a response is returned that was not an error
                 if ($ConditionalAccessPolicies) {
@@ -221,7 +217,7 @@ function Export-CAPolicy {
                 }
             }
             else {
-                $ErrorMessage = "No access token specified, obtain an access token object from Get-MSGraphAccessToken"
+                $ErrorMessage = "No access token specified, obtain an access token object from Get-WTGraphAccessToken"
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
             }

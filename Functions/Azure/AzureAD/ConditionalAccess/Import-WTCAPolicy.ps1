@@ -16,7 +16,7 @@
 .PARAMETER TenantName
     The initial domain (onmicrosoft.com) of the tenant
 .PARAMETER AccessToken
-    The access token, obtained from executing Get-MSGraphAccessToken
+    The access token, obtained from executing Get-WTGraphAccessToken
 .PARAMETER FilePath
     The file path to the JSON file that will be imported
 .PARAMETER PolicyState
@@ -30,7 +30,7 @@
 .OUTPUTS
     None
 .NOTES
-    Reference: https://danielchronlund.com/2018/11/19/fetch-data-from-microsoft-graph-with-powershell-paging-support/
+
 .Example
     $Parameters = @{
                 ClientID = ""
@@ -38,11 +38,11 @@
                 TenantDomain = ""
                 FilePath = ""
     }
-    Import-CAPolicy @Parameters
-    Import-CAPolicy -AccessToken $AccessToken -FilePath ""
+    Import-WTCAPolicy.ps1 @Parameters
+    Import-WTCAPolicy.ps1 -AccessToken $AccessToken -FilePath ""
 #>
 
-function Import-CAPolicy {
+function Import-WTCAPolicy.ps1 {
     [cmdletbinding()]
     param (
         [parameter(
@@ -66,7 +66,7 @@ function Import-CAPolicy {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "The access token, obtained from executing Get-MSGraphAccessToken"
+            HelpMessage = "The access token, obtained from executing Get-WTGraphAccessToken"
         )]
         [string]$AccessToken,
         [parameter(
@@ -122,22 +122,18 @@ function Import-CAPolicy {
             # Function definitions
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
-                "$FunctionLocation\GraphAPI\Get-MSGraphAccessToken.ps1",
-                "$FunctionLocation\GraphAPI\Invoke-MSGraphQuery.ps1",
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Remove-CAPolicy.ps1",
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-CAPolicy.ps1",
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\New-CAPolicy.ps1"
-                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Edit-CAPolicy.ps1"
+                "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
+                "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1",
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Remove-WTCAPolicy.ps1",
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-WTCAPolicy.ps1",
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\New-WTCAPolicy.ps1"
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Edit-WTCAPolicy.ps1"
             )
 
             # Function dot source
             foreach ($Function in $Functions) {
                 . $Function
             }
-
-            # Force TLS 1.2
-            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
         }
         catch {
             Write-Error -Message $_.Exception
@@ -148,14 +144,13 @@ function Import-CAPolicy {
         try {
             # If there is no access token, obtain one
             if (!$AccessToken) {
-                $AccessToken = Get-MSGraphAccessToken `
+                $AccessToken = Get-WTGraphAccessToken `
                     -ClientID $ClientID `
                     -ClientSecret $ClientSecret `
                     -TenantDomain $TenantDomain
             }
             if ($AccessToken) {
                 # Build Parameters
-                $Parameters = @{}
                 $Parameters = @{
                     AccessToken = $AccessToken
                 }
@@ -188,7 +183,7 @@ function Import-CAPolicy {
                     if ($RemoveExistingPolicies -or $UpdateExistingPolicies) {
 
                         # Get existing policies for comparison
-                        $ExistingPolicies = Get-CAPolicy @Parameters -ExcludeTagEvaluation
+                        $ExistingPolicies = Get-WTCAPolicy @Parameters -ExcludeTagEvaluation
 
                         if ($ExistingPolicies) {
 
@@ -206,7 +201,7 @@ function Import-CAPolicy {
                                 # If policies require removing, pass the ids
                                 if ($RemovePolicies) {
                                     $PolicyIDs = $RemovePolicies.id
-                                    Remove-CAPolicy @Parameters -PolicyIDs $PolicyIDs
+                                    Remove-WTCAPolicy @Parameters -PolicyIDs $PolicyIDs
                                 }
                                 else {
                                     $WarningMessage = "No policies will be removed, as none exist that are different to the import"
@@ -235,7 +230,7 @@ function Import-CAPolicy {
 
                                 # If policies require updating, pass the ids
                                 if ($UpdatePolicies) {
-                                    Edit-CAPolicy @Parameters -ConditionalAccessPolicies $UpdatePolicies -PolicyState $PolicyState
+                                    Edit-WTCAPolicy @Parameters -ConditionalAccessPolicies $UpdatePolicies -PolicyState $PolicyState
                                 }
                                 else {
                                     $WarningMessage = "No policies will be updated, as none exist that are different to the import"
@@ -255,7 +250,7 @@ function Import-CAPolicy {
 
                     # If there are new policies to be created, create them, passing through the policy state
                     if ($CreatePolicies) {
-                        New-CAPolicy @Parameters -ConditionalAccessPolicies $CreatePolicies -PolicyState $PolicyState
+                        New-WTCAPolicy @Parameters -ConditionalAccessPolicies $CreatePolicies -PolicyState $PolicyState
                     }
                     else {
                         $WarningMessage = "No policies will be created, as none exist that are different to the import"
@@ -268,7 +263,7 @@ function Import-CAPolicy {
                     
                     # If there are no policies to be imported, specify whether all existing policies should be forcibly removed
                     if ($Force) {
-                        Remove-CAPolicy @Parameters -RemoveAllExistingPolicies
+                        Remove-WTCAPolicy @Parameters -RemoveAllExistingPolicies
                     }
                     else {
                         $WarningMessage = "To remove any existing policies use the switch -Force"
@@ -277,7 +272,7 @@ function Import-CAPolicy {
                 }
             }
             else {
-                $ErrorMessage = "No access token specified, obtain an access token object from Get-MSGraphAccessToken"
+                $ErrorMessage = "No access token specified, obtain an access token object from Get-WTGraphAccessToken"
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
             }

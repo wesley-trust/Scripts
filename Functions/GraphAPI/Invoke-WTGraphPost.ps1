@@ -4,8 +4,8 @@
 .Description
     This function creates the Conditional Access policies in Azure AD using the Microsoft Graph API.
     The following Microsoft Graph API permissions are required for the service principal used for authentication:
-        Policy.ReadWrite.ConditionalAccess
-        Policy.Read.All
+        Query.ReadWrite.ConditionalAccess
+        Query.Read.All
         Directory.Read.All
         Agreement.Read.All
         Application.Read.All
@@ -16,7 +16,7 @@
 .PARAMETER TenantName
     The initial domain (onmicrosoft.com) of the tenant
 .PARAMETER AccessToken
-    The access token, obtained from executing Get-MSGraphAccessToken
+    The access token, obtained from executing Get-WTGraphAccessToken
 .PARAMETER ExcludePreviewFeatures
     Specify whether to exclude features in preview, a production API version will then be used instead
 .PARAMETER ConditionalAccessPolicies
@@ -26,18 +26,18 @@
 .OUTPUTS
     None
 .NOTES
-    Reference: https://danielchronlund.com/2018/11/19/fetch-data-from-microsoft-graph-with-powershell-paging-support/
+
 .Example
     $Parameters = @{
                 ClientID = ""
                 ClientSecret = ""
                 TenantDomain = ""
     }
-    New-CAPolicy @Parameters -CondionalAccessPolicies $CondionalAccessPolicies
-    $CondionalAccessPolicies | New-CAPolicy -AccessToken $AccessToken
+    New-CAQuery @Parameters -CondionalAccessPolicies $CondionalAccessPolicies
+    $CondionalAccessPolicies | New-CAQuery -AccessToken $AccessToken
 #>
 
-function New-CAPolicy {
+function New-WTGraphQuery {
     [cmdletbinding()]
     param (
         [parameter(
@@ -61,7 +61,7 @@ function New-CAPolicy {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "The access token, obtained from executing Get-MSGraphAccessToken"
+            HelpMessage = "The access token, obtained from executing Get-WTGraphAccessToken"
         )]
         [string]$AccessToken,
         [parameter(
@@ -74,27 +74,35 @@ function New-CAPolicy {
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
             ValueFromPipeLine = $true,
-            HelpMessage = "Specify the Conditional Access policies to create"
+            HelpMessage = "The objects to be created"
         )]
-        [Alias('ConditionalAccessPolicy', 'PolicyDefinition')]
-        [pscustomobject]$ConditionalAccessPolicies,
-        [Parameter(
+        [pscustomobject]$InputObject,
+        [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "Override the policy state when value specified"
+            HelpMessage = "The uniform resource indicator"
         )]
-        [ValidateSet("enabled", "enabledForReportingButNotEnforced", "disabled", "")]
-        [AllowNull()]
-        [String]
-        $PolicyState
+        [string]$Uri,
+        [parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "The activity being performed"
+        )]
+        [string]$Activity,
+        [parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "Properties that may exist that need to be removed prior to creation"
+        )]
+        [string[]]$CleanUpProperties
     )
     Begin {
         try {
             # Function definitions
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
-                "$FunctionLocation\GraphAPI\Get-MSGraphAccessToken.ps1",
-                "$FunctionLocation\GraphAPI\Invoke-MSGraphQuery.ps1"
+                "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
+                "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1"
             )
 
             # Function dot source
@@ -104,23 +112,10 @@ function New-CAPolicy {
 
             # Variables
             $Method = "Post"
-            $ApiVersion = "beta" # If preview features are in use, the "beta" API must be used
-            $Uri = "identity/conditionalAccess/policies"
-            $CleanUpProperties = (
-                "id",
-                "createdDateTime",
-                "modifiedDateTime",
-                "REF",
-                "VER",
-                "ENV"
-            )
             $Counter = 1
-
-            # Force TLS 1.2
-            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
+            
             # Output current activity
-            Write-Host "Creating Conditional Access Policies"
+            Write-Host $Activity
 
         }
         catch {
@@ -130,76 +125,70 @@ function New-CAPolicy {
     }
     Process {
         try {
-
-            # If there is no access token, obtain one
-            if (!$AccessToken) {
-                $AccessToken = Get-MSGraphAccessToken `
-                    -ClientID $ClientID `
-                    -ClientSecret $ClientSecret `
-                    -TenantDomain $TenantDomain
-            }
             if ($AccessToken) {
+
+                # Build parameters
+                $Parameters = @{
+                    Method = $Method
+                    Uri    = $Uri
+                }
 
                 # Change the API version if features in preview are to be excluded
                 if ($ExcludePreviewFeatures) {
-                    $ApiVersion = "v1.0"
+                    $Parameters.Add("ExcludePreviewFeatures", $true)
                 }
 
                 # If there are policies to deploy, for each
-                if ($ConditionalAccessPolicies) {
+                if ($InputObject) {
                     
-                    foreach ($Policy in $ConditionalAccessPolicies) {
+                    foreach ($Object in $InputObject) {
 
-                        # Remove properties that are not valid for when creating new policies
-                        foreach ($Property in $CleanUpProperties) {
-                            $Policy.PSObject.Properties.Remove("$Property")
+                        # Remove properties that are not valid for when creating new objects
+                        if ($CleanUpProperties) {
+                            foreach ($Property in $CleanUpProperties) {
+                                $Object.PSObject.Properties.Remove("$Property")
+                            }
                         }
                         
                         # Update displayname variable prior to object converstion to JSON
-                        $PolicyDisplayName = $Policy.displayName
+                        $ObjectDisplayName = $Object.displayName
 
-                        # Override policy state 
-                        if ($PolicyState) {
-                            $Policy.state = "$PolicyState"
-                        }
-
-                        # Convert policy object to JSON
-                        $Policy = $Policy | ConvertTo-Json -Depth 10
+                        # Convert Query object to JSON
+                        $Object = $Object | ConvertTo-Json -Depth 10
 
                         # Output progress
-                        if ($ConditionalAccessPolicies.count -gt 1) {
-                            Write-Host "Processing Policy $Counter of $($ConditionalAccessPolicies.count) with Display Name: $PolicyDisplayName"
+                        if ($InputObject.count -gt 1) {
+                            Write-Host "Processing Query $Counter of $($InputObject.count) with Display Name: $ObjectDisplayName"
                         
                             # Create progress bar
-                            $PercentComplete = (($counter / $ConditionalAccessPolicies.count) * 100)
-                            Write-Progress -Activity "Creating Conditional Access Policy" `
+                            $PercentComplete = (($counter / $InputObject.count) * 100)
+                            Write-Progress -Activity $Activity `
                                 -PercentComplete $PercentComplete `
-                                -CurrentOperation $PolicyDisplayName
+                                -CurrentOperation $ObjectDisplayName
                         }
                         else {
-                            Write-Host "Processing Policy $Counter with Display Name: $PolicyDisplayName"
+                            Write-Host "Processing Query $Counter with Display Name: $ObjectDisplayName"
                             
                         }
                         
                         # Increment counter
                         $counter++
 
-                        # Create policy, with one second intervals to prevent throttling
+                        # Create record, with one second intervals to prevent throttling
                         Start-Sleep -Seconds 1
-                        $AccessToken | Invoke-MSGraphQuery `
-                            -Method $Method `
-                            -Uri $ApiVersion/$Uri `
-                            -Body $Policy `
+                        $AccessToken | Invoke-WTGraphQuery `
+                            @Parameters `
+                            -Body $Object `
                         | Out-Null
                     }
                 }
                 else {
-                    $ErrorMessage = "There are no Conditional Access policies to be created"
+                    $ErrorMessage = "There are no records to be created"
                     Write-Error $ErrorMessage
                 }
             }
             else {
-                $ErrorMessage = "No access token specified, obtain an access token object from Get-MSGraphAccessToken"
+                $ErrorMessage = "No access token specified, obtain an access token object from Get-WTGraphAccessToken"
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
             }

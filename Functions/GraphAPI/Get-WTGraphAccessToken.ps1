@@ -16,11 +16,11 @@
 .NOTES
     Reference: https://danielchronlund.com/2018/11/19/fetch-data-from-microsoft-graph-with-powershell-paging-support/
 .Example
-    $AccessToken = Get-MSGraphAccessToken -ClientID "" -ClientSecret "" -TenantDomain ""
-    $AccessToken = $ServicePrincipalObject | Get-MSGraphAccessToken
+    $AccessToken = Get-WTGraphAccessToken -ClientID "" -ClientSecret "" -TenantDomain ""
+    $AccessToken = $ServicePrincipalObject | Get-WTGraphAccessToken
 #>
 
-function Get-MSGraphAccessToken {
+function Get-WTGraphAccessToken {
     [cmdletbinding()]
     param (
         [parameter(
@@ -44,12 +44,14 @@ function Get-MSGraphAccessToken {
     )
     Begin {
         try {
+
             # Variables
+            $Method = "Post"
             $AuthenticationUrl = "https://login.microsoft.com"
             $ResourceUrl = "https://graph.microsoft.com"
             $GrantType = "client_credentials"
             $Uri = "oauth2/token?api-version=1.0"
-                        
+            
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         }
@@ -60,20 +62,22 @@ function Get-MSGraphAccessToken {
     }
     Process {
         try {
+            
             # Compose and invoke REST request
             $Body = @{
-                grant_type    = $GrantType;
-                resource      = $ResourceUrl;
-                client_id     = $ClientID;
-                client_secret = $ClientSecret 
+                grant_type    = $GrantType
+                resource      = $ResourceUrl
+                client_id     = $ClientID
+                client_secret = $ClientSecret
             }
+            
             $OAuth2 = Invoke-RestMethod `
-                -Method Post `
+                -Method $Method `
                 -Uri $AuthenticationUrl/$TenantDomain/$Uri `
                 -Body $Body
 
             # If an access token is returned, return this
-            if ($OAuth2.access_token){
+            if ($OAuth2.access_token) {
                 $OAuth2.access_token
             }
             else {

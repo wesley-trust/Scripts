@@ -1,16 +1,16 @@
 <#
 .Synopsis
-    Run a Microsoft Graph query
+    Execute a Microsoft Graph query
 .Description
-    This function will run a query against Microsoft Graph and return the result
+    This function will execute a query against Microsoft Graph and return the result
 .PARAMETER Method
-    The HTTP method for the Graph call, like GET, POST, PUT, PATCH, DELETE. Default is GET
+    The HTTP method for the Graph call (GET, POST, PUT, PATCH, DELETE).
 .PARAMETER Uri
     The Uniform Resource Identifier for the Microsoft Graph API call, for example: "v1.0/users/"
 .PARAMETER Body
     The request body of the Microsoft Graph API call. Used with methods such as POST, PUT and PATCH. Not required for GET.
 .PARAMETER AccessToken
-    The access token, obtained from executing Get-MSGraphAccessToken
+    The access token, obtained from executing Get-WTGraphAccessToken
 .INPUTS
     None
 .OUTPUTS
@@ -18,20 +18,20 @@
 .NOTES
     Reference: https://danielchronlund.com/2018/11/19/fetch-data-from-microsoft-graph-with-powershell-paging-support/
 .Example
-    Invoke-MSGraphQuery -AccessToken $AccessToken -Method "GET" -Uri "v1.0/users/"
-    $QueryObject | Invoke-MSGraphQuery -Method "GET" -Uri "v1.0/users/"
-    $AccessToken | Invoke-MSGraphQuery -Method "GET" -Uri "v1.0/users/"
+    Invoke-WTGraphQuery -AccessToken $AccessToken -Method "GET" -Uri "v1.0/users/"
+    $AccessToken | Invoke-WTGraphQuery -Method "GET" -Uri "v1.0/users/"
 #>
 
-function Invoke-MSGraphQuery {
+function Invoke-WTGraphQuery {
     [cmdletbinding()]
     param (
         [parameter(
-            Mandatory = $false,
+            Mandatory = $true,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "The HTTP method for the Microsoft Graph call. Default is GET"
+            HelpMessage = "The HTTP method for the Microsoft Graph call"
         )]
-        [string]$Method = "GET",
+        [ValidateSet("Get", "Patch", "Post", "Delete", "Put")]
+        [string]$Method,
         [parameter(
             Mandatory = $true,
             ValueFromPipeLineByPropertyName = $true,
@@ -48,15 +48,22 @@ function Invoke-MSGraphQuery {
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
             ValueFromPipeLine = $true,
-            HelpMessage = "The access token, obtained from executing Get-MSGraphAccessToken"
+            HelpMessage = "The access token, obtained from executing Get-WTGraphAccessToken"
         )]
-        [string]$AccessToken
+        [string]$AccessToken,
+        [parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "Specify whether to exclude features in preview, a production API version will then be used instead"
+        )]
+        [switch]$ExcludePreviewFeatures
     )
     Begin {
         try {
             # Variables
             $ResourceUrl = "https://graph.microsoft.com"
             $ContentType = "application/json"
+            $ApiVersion = "beta" # If preview features are in use, the "beta" API must be used
 
             # Force TLS 1.2
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -68,7 +75,13 @@ function Invoke-MSGraphQuery {
     }
     Process {
         try {
+
             if ($AccessToken) {
+
+                # Change the API version if features in preview are to be excluded
+                if ($ExcludePreviewFeatures) {
+                    $ApiVersion = "v1.0"
+                }
 
                 $HeaderParameters = @{
                     "Content-Type"  = "application\json"
@@ -83,7 +96,7 @@ function Invoke-MSGraphQuery {
                 if ($Method -eq "GET") {
                     $QueryRequest = Invoke-RestMethod `
                         -Headers $HeaderParameters `
-                        -Uri "$ResourceUrl/$Uri" `
+                        -Uri $ResourceUrl/$ApiVersion/$Uri `
                         -UseBasicParsing `
                         -Method $Method `
                         -ContentType $ContentType
@@ -91,16 +104,19 @@ function Invoke-MSGraphQuery {
                 else {
                     $QueryRequest = Invoke-RestMethod `
                         -Headers $HeaderParameters `
-                        -Uri $ResourceUrl/$Uri `
+                        -Uri $ResourceUrl/$ApiVersion/$Uri `
                         -UseBasicParsing `
                         -Method $Method `
                         -ContentType $ContentType `
                         -Body $Body
                 }
-
-                # If the request returns a value, add this to the query result
+                
+                # Check if a value is returned, and if not, whether an ID is, and add either to the query result, ignoring null objects returned
                 if ($QueryRequest.value) {
                     $QueryResult += $QueryRequest.value
+                }
+                elseif ($QueryRequest.id) {
+                    $QueryResult += $QueryRequest
                 }
 
                 # Invoke REST methods and fetch data until there are no pages left
@@ -121,7 +137,7 @@ function Invoke-MSGraphQuery {
                 $QueryResult
             }
             else {
-                $ErrorMessage = "No access token specified, obtain an access token object from Get-MSGraphAccessToken"
+                $ErrorMessage = "No access token specified, obtain an access token object from Get-WTGraphAccessToken"
                 Write-Error $ErrorMessage
                 throw $ErrorMessage
             }

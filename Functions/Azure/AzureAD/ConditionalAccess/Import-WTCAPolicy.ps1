@@ -42,7 +42,7 @@
     Import-WTCAPolicy.ps1 -AccessToken $AccessToken -FilePath ""
 #>
 
-function Import-WTCAPolicy.ps1 {
+function Import-WTCAPolicy {
     [cmdletbinding()]
     param (
         [parameter(
@@ -80,7 +80,7 @@ function Import-WTCAPolicy.ps1 {
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "The directory path(s) of which all JSON file(s) will be imported"
         )]
-        [string[]]$Path,
+        [string]$Path,
         [Parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
@@ -123,16 +123,22 @@ function Import-WTCAPolicy.ps1 {
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
+                "$FunctionLocation\GraphAPI\Invoke-WTGraphResponseTagging.ps1",
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Remove-WTCAPolicy.ps1",
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-WTCAPolicy.ps1",
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\New-WTCAPolicy.ps1"
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\New-WTCAGroup.ps1"
                 "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Edit-WTCAPolicy.ps1"
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Export-WTCAPolicy.ps1"
             )
 
             # Function dot source
             foreach ($Function in $Functions) {
                 . $Function
             }
+
+            # Variables
+            $Tags = @("REF", "ENV")
         }
         catch {
             Write-Error -Message $_.Exception
@@ -249,7 +255,68 @@ function Import-WTCAPolicy.ps1 {
 
                     # If there are new policies to be created, create them, passing through the policy state
                     if ($CreatePolicies) {
-                        New-WTCAPolicy @Parameters -ConditionalAccessPolicies $CreatePolicies -PolicyState $PolicyState
+                        
+                        # Remove existing tags, so these can be updated from the display name
+                        foreach ($Tag in $Tags) {
+                            $CreatePolicies | Foreach-Object {
+                                $_.PSObject.Properties.Remove($Tag)
+                            }
+                        }
+                        
+                        # Evaluate the tags on the policies to be created
+                        $TaggedPolicies = Invoke-WTGraphResponseTagging -Tags $Tags -QueryResponse $CreatePolicies
+
+                        # Calculate the display names to be used for the CA groups
+                        $CAGroupDisplayNames = foreach ($Policy in $TaggedPolicies) {
+                            $DisplayName = $null
+                            foreach ($Tag in $Tags) {
+                                $DisplayName += $Tag + "-" + $Policy.$Tag + ";"
+                            }
+                            $DisplayName
+                        }
+
+                        # Create include and exclude groups
+                        $ConditionalAccessIncludeGroups = New-WTCAGroup @Parameters -DisplayNames $CAGroupDisplayNames -GroupType Include
+                        $ConditionalAccessExcludeGroups = New-WTCAGroup @Parameters -DisplayNames $CAGroupDisplayNames -GroupType Exclude
+                        
+                        # Tag groups
+                        $TaggedCAIncludeGroups = Invoke-WTGraphResponseTagging -Tags $Tags -QueryResponse $ConditionalAccessIncludeGroups
+                        $TaggedCAExcludeGroups = Invoke-WTGraphResponseTagging -Tags $Tags -QueryResponse $ConditionalAccessExcludeGroups
+                        
+                        # For each policy, find the matching group
+                        $CreatePolicies = foreach ($Policy in $TaggedPolicies) {
+                            
+                            # Find the matching include group
+                            $CAIncludeGroup = $null
+                            $CAIncludeGroup = $TaggedCAIncludeGroups | Where-Object {
+                                $_.ref -eq $Policy.ref -and $_.env -eq $Policy.env
+                            }
+
+                            # Update the property with the group id, which must be in an array, and return the policy
+                            $Policy.conditions.users.includeGroups = @($CAIncludeGroup.id)
+
+                            # Find the matching include group
+                            $CAExcludeGroup = $null
+                            $CAExcludeGroup = $TaggedCAExcludeGroups | Where-Object {
+                                $_.ref -eq $Policy.ref -and $_.env -eq $Policy.env
+                            }
+
+                            # Update the property with the group id, which must be in an array
+                            $Policy.conditions.users.excludeGroups = @($CAExcludeGroup.id)
+                            
+                            # Return the policy
+                            $Policy
+                        }
+
+                        # Create policies
+                        $ConditionalAccessPolicies = New-WTCAPolicy @Parameters `
+                            -ConditionalAccessPolicies $CreatePolicies `
+                            -PolicyState $PolicyState
+                        
+                        # Update configuration files
+                        Export-WTCAPolicy -ConditionalAccessPolicies $ConditionalAccessPolicies `
+                            -Path $Path `
+                            -ExcludeExportCleanup
                     }
                     else {
                         $WarningMessage = "No policies will be created, as none exist that are different to the import"

@@ -4,8 +4,8 @@
 .Description
     This function gets the Azure AD groups from Azure AD using the Microsoft Graph API.
     The following Microsoft Graph API permissions are required for the service principal used for authentication:
-        Policy.ReadWrite.ConditionalAccess
-        Policy.Read.All
+        group.ReadWrite.ConditionalAccess
+        group.Read.All
         Directory.Read.All
         Agreement.Read.All
         Application.Read.All
@@ -18,8 +18,6 @@
 .PARAMETER AccessToken
     The access token, obtained from executing Get-WTGraphAccessToken
 .PARAMETER ExcludePreviewFeatures
-    Specify whether to exclude features in preview, a production API version will then be used instead
-.PARAMETER ExcludeTagEvaluation
     Specify whether to exclude features in preview, a production API version will then be used instead
 .INPUTS
     JSON file with all Azure AD groups
@@ -37,7 +35,7 @@
     Get-WTAzureADGroup -AccessToken $AccessToken
 #>
 
-function Get-WTAzureADGroup {
+function New-WTAzureADGroup {
     [cmdletbinding()]
     param (
         [parameter(
@@ -73,17 +71,11 @@ function Get-WTAzureADGroup {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "Specify whether to exclude tag processing of groups"
-        )]
-        [switch]$ExcludeTagEvaluation,
-        [parameter(
-            Mandatory = $false,
-            ValueFromPipeLineByPropertyName = $true,
             ValueFromPipeLine = $true,
-            HelpMessage = "The Azure AD groups to get, this must contain valid id(s)"
+            HelpMessage = "Specify the Azure AD Groups to create"
         )]
-        [Alias("id", "GroupID", "GroupIDs")]
-        [string[]]$IDs
+        [Alias('AzureADGroup')]
+        [pscustomobject]$AzureADGroups
     )
     Begin {
         try {
@@ -91,7 +83,7 @@ function Get-WTAzureADGroup {
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
-                "$FunctionLocation\GraphAPI\Invoke-WTGraphGet.ps1"
+                "$FunctionLocation\GraphAPI\Invoke-WTGraphPost.ps1"
             )
 
             # Function dot source
@@ -100,9 +92,13 @@ function Get-WTAzureADGroup {
             }
 
             # Variables
-            $Activity = "Getting Azure AD groups"
+            $Activity = "Creating Azure AD groups"
             $Uri = "groups"
-            $Tags = @("SVC", "REF", "ENV")
+            $CleanUpProperties = (
+                "id",
+                "createdDateTime",
+                "modifiedDateTime"
+            )
 
         }
         catch {
@@ -124,30 +120,27 @@ function Get-WTAzureADGroup {
                 
                 # Build Parameters
                 $Parameters = @{
-                    AccessToken = $AccessToken
-                    Uri         = $Uri
-                    Activity    = $Activity
+                    AccessToken       = $AccessToken
+                    Uri               = $Uri
+                    CleanUpProperties = $CleanUpProperties
+                    Activity          = $Activity
                 }
+
                 if ($ExcludePreviewFeatures) {
                     $Parameters.Add("ExcludePreviewFeatures", $true)
                 }
-                if (!$ExcludeTagEvaluation) {
-                    $Parameters.Add("Tags", $Tags)
-                }
-                if ($IDs) {
-                    $Parameters.Add("IDs", $IDs)
-                }
                 
-                # Get Azure AD groups
-                $QueryResponse = Invoke-WTGraphGet @Parameters
-                
-                # Return response if one is returned
-                if ($QueryResponse) {
-                    $QueryResponse
+                # If there are groups to deploy, for each
+                if ($AzureADGroups) {
+                    
+                    # Create groups
+                    Invoke-WTGraphPost `
+                        @Parameters `
+                        -InputObject $AzureADGroups
                 }
                 else {
-                    $WarningMessage = "No Azure AD groups exist in Azure AD"
-                    Write-Warning $WarningMessage
+                    $ErrorMessage = "There are no groups to be created"
+                    Write-Error $ErrorMessage
                 }
             }
             else {

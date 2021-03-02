@@ -102,6 +102,13 @@ function Export-WTCAPolicy {
             ValueFromPipeLineByPropertyName = $true,
             HelpMessage = "The Conditional Access policies to get, this must contain valid id(s), when not specified, all policies are returned"
         )]
+        [Alias("policy", "ConditionalAccessPolicy")]
+        [pscustomobject]$ConditionalAccessPolicies,
+        [parameter(
+            Mandatory = $false,
+            ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "The Conditional Access policies to get, this must contain valid id(s), when not specified, all policies are returned"
+        )]
         [Alias("id", "PolicyID")]
         [string[]]$PolicyIDs
     )
@@ -136,89 +143,100 @@ function Export-WTCAPolicy {
     }
     Process {
         try {
-            # If there is no access token, obtain one
-            if (!$AccessToken) {
-                $AccessToken = Get-WTGraphAccessToken `
-                    -ClientID $ClientID `
-                    -ClientSecret $ClientSecret `
-                    -TenantDomain $TenantDomain
-            }
-
-            if ($AccessToken) {
-
-                # Build Parameters
-                $Parameters = @{
-                    AccessToken = $AccessToken
+            
+            # If there are no policies to export, get policies based on specified parameters
+            if (!$ConditionalAccessPolicies) {
+                
+                # If there is no access token, obtain one
+                if (!$AccessToken) {
+                    $AccessToken = Get-WTGraphAccessToken `
+                        -ClientID $ClientID `
+                        -ClientSecret $ClientSecret `
+                        -TenantDomain $TenantDomain
                 }
-                if ($ExcludeTagEvaluation) {
-                    $Parameters += @{
-                        ExcludeTagEvaluation = $true
+
+                if ($AccessToken) {
+
+                    # Build Parameters
+                    $Parameters = @{
+                        AccessToken = $AccessToken
                     }
-                }
-                if ($ExcludePreviewFeatures) {
-                    $Parameters += @{
-                        ExcludePreviewFeatures = $true
-                    }
-                }
-                if ($PolicyIDs) {
-                    $Parameters += @{
-                        PolicyIDs = $PolicyIDs
-                    }
-                }
-
-                # Get policies based on specified parameters
-                $ConditionalAccessPolicies = Get-WTCAPolicy @Parameters
-
-                # If a response is returned that was not an error
-                if ($ConditionalAccessPolicies) {
-                    
-                    # Sort and filter (if applicable) policies
-                    $ConditionalAccessPolicies = $ConditionalAccessPolicies | Sort-Object displayName
-                    if (!$ExcludeExportCleanup) {
-                        $ConditionalAccessPolicies | Foreach-object {
-                            
-                            # Cleanup properties for export
-                            foreach ($Property in $CleanUpProperties) {
-                                $_.PSObject.Properties.Remove("$Property")
-                            }
+                    if ($ExcludeTagEvaluation) {
+                        $Parameters += @{
+                            ExcludeTagEvaluation = $true
                         }
                     }
-
-                    # Export to JSON
-                    Write-Host "Exporting Conditional Access Policies (Count: $($ConditionalAccessPolicies.count))"
-                    
-                    # If a file path is specified, output all policies in one JSON formatted file
-                    if ($FilePath) {
-                        $ConditionalAccessPolicies | ConvertTo-Json -Depth 10 `
-                        | Out-File -Force:$true -FilePath $FilePath
-                    }
-                    else {
-                        foreach ($Policy in $ConditionalAccessPolicies) {
-
-                            # Remove characters not supported in Windows file names
-                            $PolicyDisplayName = $Policy.displayname -replace $UnsupportedCharactersRegEx, "_"
-                            
-                            # Output current status
-                            Write-Host "Processing Policy $Counter with file name: $PolicyDisplayName.json"
-                            
-                            # Output individual policy JSON file
-                            $Policy | ConvertTo-Json -Depth 10 `
-                            | Out-File -Force:$true -FilePath "$Path\$PolicyDisplayName.json"
-
-                            # Increment counter
-                            $Counter++
+                    if ($ExcludePreviewFeatures) {
+                        $Parameters += @{
+                            ExcludePreviewFeatures = $true
                         }
+                    }
+                    if ($PolicyIDs) {
+                        $Parameters += @{
+                            PolicyIDs = $PolicyIDs
+                        }
+                    }
+                    
+                    # Get all Conditional Access policies
+                    $ConditionalAccessPolicies = Get-WTCAPolicy @Parameters
+
+                    if (!$ConditionalAccessPolicies) {
+                        $ErrorMessage = "Microsoft Graph did not return a valid response"
+                        Write-Error $ErrorMessage
+                        throw $ErrorMessage
                     }
                 }
                 else {
-                    $ErrorMessage = "Microsoft Graph did not return a valid response"
+                    $ErrorMessage = "No access token specified, obtain an access token object from Get-WTGraphAccessToken"
                     Write-Error $ErrorMessage
+                    throw $ErrorMessage
+                }
+            }
+
+            # If there are policies
+            if ($ConditionalAccessPolicies) {
+                    
+                # Sort and filter (if applicable) policies
+                $ConditionalAccessPolicies = $ConditionalAccessPolicies | Sort-Object displayName
+                if (!$ExcludeExportCleanup) {
+                    $ConditionalAccessPolicies | Foreach-object {
+                            
+                        # Cleanup properties for export
+                        foreach ($Property in $CleanUpProperties) {
+                            $_.PSObject.Properties.Remove("$Property")
+                        }
+                    }
+                }
+
+                # Export to JSON
+                Write-Host "Exporting Conditional Access Policies (Count: $($ConditionalAccessPolicies.count))"
+                    
+                # If a file path is specified, output all policies in one JSON formatted file
+                if ($FilePath) {
+                    $ConditionalAccessPolicies | ConvertTo-Json -Depth 10 `
+                    | Out-File -Force:$true -FilePath $FilePath
+                }
+                else {
+                    foreach ($Policy in $ConditionalAccessPolicies) {
+
+                        # Remove characters not supported in Windows file names
+                        $PolicyDisplayName = $Policy.displayname -replace $UnsupportedCharactersRegEx, "_"
+                            
+                        # Output current status
+                        Write-Host "Processing Policy $Counter with file name: $PolicyDisplayName.json"
+                            
+                        # Output individual policy JSON file
+                        $Policy | ConvertTo-Json -Depth 10 `
+                        | Out-File -Force:$true -FilePath "$Path\$PolicyDisplayName.json"
+
+                        # Increment counter
+                        $Counter++
+                    }
                 }
             }
             else {
-                $ErrorMessage = "No access token specified, obtain an access token object from Get-WTGraphAccessToken"
-                Write-Error $ErrorMessage
-                throw $ErrorMessage
+                $WarningMessage = "There are no Conditional Access Policies to export"
+                Write-Warning $WarningMessage
             }
         }
         catch {

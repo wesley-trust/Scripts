@@ -49,22 +49,27 @@ function Invoke-WTGraphResponseTagging {
     }
     Process {
         try {
-                    
+
             # Get Query properties
-            $QueryProperties = ($QueryResponse | Get-Member -MemberType NoteProperty).name
-
+            $QueryProperties = ($QueryResponse | Get-Member -MemberType NoteProperty).name 
+            
             foreach ($Query in $QueryResponse) {
-
+                
                 # Split out Query information by defined delimeter(s) and tag(s)
                 $QueryDisplayNameSplit = ($Query.displayName.split($MajorDelimiter)).Split($MinorDelimiter)
+
                 $TaggedQueryResponse = [ordered]@{}
                 foreach ($Tag in $Tags) {
 
-                    # If the tag exists, get the index, increment by one to obtain the tag's value index, then add value to hashtable
+                    # If the tag exists in the display name, 
                     if ($QueryDisplayNameSplit -contains $Tag) {
+
+                        # Get the object index, increment by one to obtain the tag's value index
                         $TagIndex = $QueryDisplayNameSplit.IndexOf($Tag)
                         $TagValueIndex = $TagIndex + 1
                         $TagValue = $QueryDisplayNameSplit[$TagValueIndex]
+                        
+                        # Add tag to hashtable
                         $TaggedQueryResponse.Add($Tag, $TagValue)
                     }
                     else {

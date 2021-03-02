@@ -37,7 +37,7 @@
     Get-WTAzureADGroup -AccessToken $AccessToken
 #>
 
-function Get-WTAzureADGroup {
+function Get-WTCAGroup {
     [cmdletbinding()]
     param (
         [parameter(
@@ -73,14 +73,8 @@ function Get-WTAzureADGroup {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            HelpMessage = "Specify whether to exclude tag processing of groups"
-        )]
-        [switch]$ExcludeTagEvaluation,
-        [parameter(
-            Mandatory = $false,
-            ValueFromPipeLineByPropertyName = $true,
             ValueFromPipeLine = $true,
-            HelpMessage = "The Azure AD groups to get, this must contain valid id(s)"
+            HelpMessage = "The Conditional Access groups to get, this must contain valid id(s)"
         )]
         [Alias("id", "GroupID", "GroupIDs")]
         [string[]]$IDs
@@ -91,7 +85,7 @@ function Get-WTAzureADGroup {
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
-                "$FunctionLocation\GraphAPI\Invoke-WTGraphGet.ps1"
+                "$FunctionLocation\Azure\AzureAD\Groups\Get-WTAzureADGroup.ps1"
             )
 
             # Function dot source
@@ -100,9 +94,9 @@ function Get-WTAzureADGroup {
             }
 
             # Variables
-            $Activity = "Getting Azure AD groups"
-            $Uri = "groups"
-            $Tags = @("SVC", "REF", "ENV")
+            $Activity = "Getting Conditional Access groups"
+            $Tag = "SVC"
+            $Service = "CA"
 
         }
         catch {
@@ -125,28 +119,24 @@ function Get-WTAzureADGroup {
                 # Build Parameters
                 $Parameters = @{
                     AccessToken = $AccessToken
-                    Uri         = $Uri
                     Activity    = $Activity
                 }
                 if ($ExcludePreviewFeatures) {
                     $Parameters.Add("ExcludePreviewFeatures", $true)
                 }
-                if (!$ExcludeTagEvaluation) {
-                    $Parameters.Add("Tags", $Tags)
-                }
                 if ($IDs) {
                     $Parameters.Add("IDs", $IDs)
                 }
                 
-                # Get Azure AD groups
-                $QueryResponse = Invoke-WTGraphGet @Parameters
+                # Get Azure AD groups, and filter
+                $ConditionalAccessGroups = Get-WTAzureADGroup @Parameters | Where-Object {$_.$Tag -eq $Service}
                 
-                # Return response if one is returned
-                if ($QueryResponse) {
-                    $QueryResponse
+                # Return response if the filtered objects contain the specified service
+                if ($ConditionalAccessGroups) {
+                    $ConditionalAccessGroups
                 }
                 else {
-                    $WarningMessage = "No Azure AD groups exist in Azure AD"
+                    $WarningMessage = "No Conditional Access groups exist in Azure AD"
                     Write-Warning $WarningMessage
                 }
             }

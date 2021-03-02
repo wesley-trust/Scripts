@@ -178,8 +178,8 @@ function Invoke-WTGraphPost {
                         Start-Sleep -Seconds 1
                         $AccessToken | Invoke-WTGraphQuery `
                             @Parameters `
-                            -Body $Object `
-                        | Out-Null
+                            -Body $Object
+                        #| Out-Null
                     }
                 }
                 else {

@@ -150,7 +150,7 @@ function Invoke-WTGraphPost {
                             }
                         }
                         
-                        # Update displayname variable prior to object converstion to JSON
+                        # Update displayname variable prior to object conversion to JSON
                         $ObjectDisplayName = $Object.displayName
 
                         # Convert Query object to JSON

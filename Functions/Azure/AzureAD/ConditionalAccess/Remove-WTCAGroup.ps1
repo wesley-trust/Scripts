@@ -37,7 +37,7 @@
     Get-WTAzureADGroup -AccessToken $AccessToken
 #>
 
-function Get-WTCAGroup {
+function Remove-WTCAGroup {
     [cmdletbinding()]
     param (
         [parameter(
@@ -73,7 +73,6 @@ function Get-WTCAGroup {
         [parameter(
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
-            ValueFromPipeLine = $true,
             HelpMessage = "The Conditional Access groups to get, this must contain valid id(s)"
         )]
         [Alias("id", "GroupID", "GroupIDs")]
@@ -85,17 +84,13 @@ function Get-WTCAGroup {
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
-                "$FunctionLocation\Azure\AzureAD\Groups\Get-WTAzureADGroup.ps1"
+                "$FunctionLocation\Azure\AzureAD\ConditionalAccess\Get-WTCAGroup.ps1"
             )
 
             # Function dot source
             foreach ($Function in $Functions) {
                 . $Function
             }
-
-            # Variables
-            $Tag = "SVC"
-            $Service = "CA"
 
         }
         catch {
@@ -122,19 +117,22 @@ function Get-WTCAGroup {
                 if ($ExcludePreviewFeatures) {
                     $Parameters.Add("ExcludePreviewFeatures", $true)
                 }
-                if ($IDs) {
-                    $Parameters.Add("IDs", $IDs)
+                
+                # Pass IDs to function, and return only Conditional Access groups
+                if ($IDs){
+                    $CAGroups = Get-WTCAGroup @Parameters -IDs $IDs
                 }
-                
-                # Get Azure AD groups, and filter
-                $ConditionalAccessGroups = Get-WTAzureADGroup @Parameters | Where-Object {$_.$Tag -eq $Service}
-                
+
                 # Return response if the filtered objects contain the specified service
-                if ($ConditionalAccessGroups) {
-                    $ConditionalAccessGroups
+                if ($CAGroups) {
+                    if ($CAGroups.id.count -lt $IDs.count) {
+                        $WarningMessage = "There are groups marked for removal, that are not CA groups, these will be ignored and will not be removed"
+                        Write-Warning $WarningMessage
+                    }
+                    Remove-WTAzureADGroup @Parameters -IDs $CAGroups.id
                 }
                 else {
-                    $WarningMessage = "No Conditional Access groups exist in Azure AD, or with the specified IDs"
+                    $WarningMessage = "No Conditional Access groups to be removed in Azure AD"
                     Write-Warning $WarningMessage
                 }
             }

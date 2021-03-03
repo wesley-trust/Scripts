@@ -104,7 +104,7 @@ function Invoke-WTGraphGet {
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
                 "$FunctionLocation\GraphAPI\Invoke-WTGraphQuery.ps1"
-                "$FunctionLocation\GraphAPI\Invoke-WTGraphResponseTagging.ps1"
+                "$FunctionLocation\Toolkit\Invoke-WTPropertyTagging.ps1"
             )
 
             # Function dot source
@@ -115,6 +115,7 @@ function Invoke-WTGraphGet {
             # Variables
             $Method = "Get"
             $Counter = 1
+            $PropertyToTag = "DisplayName"
             
             # Output current activity
             Write-Host $Activity
@@ -174,7 +175,7 @@ function Invoke-WTGraphGet {
                 # If there is a response, and tags are defined, evaluate the query response for tags, else return without tagging
                 if ($QueryResponse) {
                     if ($Tags) {
-                        Invoke-WTGraphResponseTagging -Tags $Tags -QueryResponse $QueryResponse
+                        Invoke-WTPropertyTagging -Tags $Tags -QueryResponse $QueryResponse -PropertyToTag $PropertyToTag
                     }
                     else {
                         $QueryResponse

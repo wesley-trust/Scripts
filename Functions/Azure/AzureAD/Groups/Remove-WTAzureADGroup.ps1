@@ -4,8 +4,8 @@
 .Description
     This function gets the Azure AD groups from Azure AD using the Microsoft Graph API.
     The following Microsoft Graph API permissions are required for the service principal used for authentication:
-        Policy.ReadWrite.ConditionalAccess
-        Policy.Read.All
+        group.ReadWrite.ConditionalAccess
+        group.Read.All
         Directory.Read.All
         Agreement.Read.All
         Application.Read.All
@@ -18,8 +18,6 @@
 .PARAMETER AccessToken
     The access token, obtained from executing Get-WTGraphAccessToken
 .PARAMETER ExcludePreviewFeatures
-    Specify whether to exclude features in preview, a production API version will then be used instead
-.PARAMETER ExcludeTagEvaluation
     Specify whether to exclude features in preview, a production API version will then be used instead
 .INPUTS
     JSON file with all Azure AD groups
@@ -37,7 +35,7 @@
     Get-WTAzureADGroup -AccessToken $AccessToken
 #>
 
-function Get-WTCAGroup {
+function Remove-WTAzureADGroup {
     [cmdletbinding()]
     param (
         [parameter(
@@ -74,7 +72,7 @@ function Get-WTCAGroup {
             Mandatory = $false,
             ValueFromPipeLineByPropertyName = $true,
             ValueFromPipeLine = $true,
-            HelpMessage = "The Conditional Access groups to get, this must contain valid id(s)"
+            HelpMessage = "The Azure AD Groups to remove, this must contain valid id(s)"
         )]
         [Alias("id", "GroupID", "GroupIDs")]
         [string[]]$IDs
@@ -85,7 +83,7 @@ function Get-WTCAGroup {
             $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
-                "$FunctionLocation\Azure\AzureAD\Groups\Get-WTAzureADGroup.ps1"
+                "$FunctionLocation\GraphAPI\Invoke-WTGraphDelete.ps1"
             )
 
             # Function dot source
@@ -94,8 +92,8 @@ function Get-WTCAGroup {
             }
 
             # Variables
-            $Tag = "SVC"
-            $Service = "CA"
+            $Activity = "Removing Azure AD groups"
+            $Uri = "groups"
 
         }
         catch {
@@ -117,24 +115,23 @@ function Get-WTCAGroup {
                 
                 # Build Parameters
                 $Parameters = @{
-                    AccessToken = $AccessToken
+                    AccessToken       = $AccessToken
+                    Uri               = $Uri
+                    Activity          = $Activity
                 }
+
                 if ($ExcludePreviewFeatures) {
                     $Parameters.Add("ExcludePreviewFeatures", $true)
                 }
+                
+                # If there are policies to be removed,  remove them
                 if ($IDs) {
-                    $Parameters.Add("IDs", $IDs)
-                }
-                
-                # Get Azure AD groups, and filter
-                $ConditionalAccessGroups = Get-WTAzureADGroup @Parameters | Where-Object {$_.$Tag -eq $Service}
-                
-                # Return response if the filtered objects contain the specified service
-                if ($ConditionalAccessGroups) {
-                    $ConditionalAccessGroups
+                    Invoke-WTGraphDelete `
+                        @Parameters `
+                        -IDs $IDs
                 }
                 else {
-                    $WarningMessage = "No Conditional Access groups exist in Azure AD, or with the specified IDs"
+                    $WarningMessage = "No Azure AD groups to be removed"
                     Write-Warning $WarningMessage
                 }
             }

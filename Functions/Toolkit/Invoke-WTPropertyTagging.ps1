@@ -14,11 +14,11 @@
 .NOTES
 
 .Example
-    Invoke-WTGraphResponseTagging -Tags $Tags -QueryResponse $QueryResponse
-    $QueryResponse | Invoke-WTGraphResponseTagging -Tags $Tags
+    Invoke-WTPropertyTagging -Tags $Tags -QueryResponse $QueryResponse
+    $QueryResponse | Invoke-WTPropertyTagging -Tags $Tags
 #>
 
-function Invoke-WTGraphResponseTagging {
+function Invoke-WTPropertyTagging {
     [cmdletbinding()]
     param (
         [parameter(
@@ -30,8 +30,14 @@ function Invoke-WTGraphResponseTagging {
         [parameter(
             Mandatory = $true,
             ValueFromPipeLineByPropertyName = $true,
+            HelpMessage = "The property to tag within the input object"
+        )]
+        [string]$PropertyToTag,
+        [parameter(
+            Mandatory = $true,
+            ValueFromPipeLineByPropertyName = $true,
             ValueFromPipeLine = $true,
-            HelpMessage = "The MS Graph queries to add the tags to"
+            HelpMessage = "The input object"
         )]
         [psobject]$QueryResponse
     )
@@ -56,18 +62,18 @@ function Invoke-WTGraphResponseTagging {
             foreach ($Query in $QueryResponse) {
                 
                 # Split out Query information by defined delimeter(s) and tag(s)
-                $QueryDisplayNameSplit = ($Query.displayName.split($MajorDelimiter)).Split($MinorDelimiter)
+                $QueryPropertySplit = ($Query.$PropertyToTag.split($MajorDelimiter)).Split($MinorDelimiter)
 
                 $TaggedQueryResponse = [ordered]@{}
                 foreach ($Tag in $Tags) {
 
                     # If the tag exists in the display name, 
-                    if ($QueryDisplayNameSplit -contains $Tag) {
+                    if ($QueryPropertySplit -contains $Tag) {
 
                         # Get the object index, increment by one to obtain the tag's value index
-                        $TagIndex = $QueryDisplayNameSplit.IndexOf($Tag)
+                        $TagIndex = $QueryPropertySplit.IndexOf($Tag)
                         $TagValueIndex = $TagIndex + 1
-                        $TagValue = $QueryDisplayNameSplit[$TagValueIndex]
+                        $TagValue = $QueryPropertySplit[$TagValueIndex]
                         
                         # Add tag to hashtable
                         $TaggedQueryResponse.Add($Tag, $TagValue)

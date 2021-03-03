@@ -127,7 +127,9 @@ function Remove-WTCAPolicy {
                 
                 # Build Parameters
                 $Parameters = @{
-                    AccessToken = $AccessToken
+                    AccessToken       = $AccessToken
+                    Uri               = $Uri
+                    Activity          = $Activity
                 }
                 
                 if ($ExcludePreviewFeatures) {
@@ -146,9 +148,7 @@ function Remove-WTCAPolicy {
                 if ($IDs) {
                     Invoke-WTGraphDelete `
                         @Parameters `
-                        -IDs $IDs `
-                        -Uri $Uri `
-                        -Activity $Activity
+                        -IDs $IDs
                 }
                 else {
                     $WarningMessage = "No Conditional Access policies to be removed"

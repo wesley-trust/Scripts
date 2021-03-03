@@ -103,7 +103,7 @@ Begin {
         # Function definitions
         $FunctionLocation = "$ENV:USERPROFILE\GitHub\Scripts\Functions"
         $Functions = @(
-            "$FunctionLocation\Toolkit\New-RandomString.ps1",
+            "$FunctionLocation\Toolkit\New-WTRandomString.ps1",
             "$FunctionLocation\Toolkit\Invoke-DependencyCheck.ps1"
         )
         # Function dot source
@@ -205,7 +205,7 @@ Process {
         $NewAzVM = foreach ($VM in 1..$VMCount) {
             
             # Create random string for VM name
-            $RandomString = New-RandomString -CharacterLength $VMRandomStringLength -Alphanumeric
+            $RandomString = New-WTRandomString -CharacterLength $VMRandomStringLength -Alphanumeric
             $RandomVMName = $VMName + $RandomString
 
             New-AzVM `

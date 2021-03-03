@@ -98,6 +98,7 @@ function New-WTCAGroup {
             $Functions = @(
                 "$FunctionLocation\GraphAPI\Get-WTGraphAccessToken.ps1",
                 "$FunctionLocation\Azure\AzureAD\Groups\New-WTAzureADGroup.ps1"
+                "$FunctionLocation\Toolkit\New-WTRandomString.ps1"
             )
 
             # Function dot source
@@ -142,7 +143,7 @@ function New-WTCAGroup {
                             [PSCustomObject]@{
                                 displayName     = $Tag + "-" + $Service + ";" + $DisplayName + " Include in Conditional Access Policy"
                                 mailEnabled     = $False
-                                mailNickname    = $Service + (Get-Random)
+                                mailNickname    = $Service + "-" + (New-WTRandomString -CharacterLength 48 -Alphanumeric)
                                 securityEnabled = $true
                             }
                         }
@@ -152,12 +153,13 @@ function New-WTCAGroup {
                             [PSCustomObject]@{
                                 displayName     = $Tag + "-" + $Service + ";" + $DisplayName + " Exclude from Conditional Access Policy"
                                 mailEnabled     = $False
-                                mailNickname    = $Service + (Get-Random)
+                                mailNickname    = $Service + "-" + (New-WTRandomString -CharacterLength 48 -Alphanumeric)
                                 securityEnabled = $true
                             }
                         }
                     }
                 }
+
                 # If there are groups to deploy, for each
                 if ($ConditionalAccessGroups) {
 

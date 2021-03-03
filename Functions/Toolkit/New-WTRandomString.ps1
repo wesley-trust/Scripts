@@ -1,8 +1,7 @@
 <#
-#Script name: New-RandomString
+#Script name: New-WTRandomString
 #Creator: Wesley Trust
 #Date: 2017-12-03
-#Revision: 1
 #References: 
 
 .Synopsis
@@ -15,7 +14,7 @@
     
 #>
 
-function New-RandomString() {
+function New-WTRandomString() {
     Param(
         [Parameter(
             Mandatory = $false,

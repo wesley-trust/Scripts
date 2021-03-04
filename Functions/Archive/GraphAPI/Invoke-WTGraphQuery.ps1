@@ -16,7 +16,7 @@
 .OUTPUTS
     None
 .NOTES
-    Reference: https://danielchronlund.com/2018/11/19/fetch-data-from-microsoft-graph-with-powershell-paging-support/
+
 .Example
     Invoke-WTGraphQuery -AccessToken $AccessToken -Method "GET" -Uri "v1.0/users/"
     $AccessToken | Invoke-WTGraphQuery -Method "GET" -Uri "v1.0/users/"

@@ -14,7 +14,7 @@
 .OUTPUTS
     None
 .NOTES
-    Reference: https://danielchronlund.com/2018/11/19/fetch-data-from-microsoft-graph-with-powershell-paging-support/
+
 .Example
     $AccessToken = Get-WTGraphAccessToken -ClientID "" -ClientSecret "" -TenantDomain ""
     $AccessToken = $ServicePrincipalObject | Get-WTGraphAccessToken
